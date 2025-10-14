@@ -1,7 +1,6 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import womenImage from "@assets/generated_images/Women_fitness_model_2640a1dc.png";
-import menImage from "@assets/generated_images/Hero_fitness_model_6eee6e85.png";
 
 export default function CategorySection() {
   const categories = [
@@ -10,7 +9,7 @@ export default function CategorySection() {
       title: "Women's Collection",
       subtitle: "Performance meets style",
       description: "Engineered for the modern athlete who demands both function and form",
-      image: womenImage,
+      image: "/attached_assets/generated_images/Women_fitness_model_2640a1dc.png",
       href: "/collections/women",
       ctaText: "Shop Women's"
     },
@@ -19,7 +18,7 @@ export default function CategorySection() {
       title: "Men's Collection",
       subtitle: "Built for performance",
       description: "Technical apparel designed to withstand your toughest training sessions",
-      image: menImage,
+      image: "/attached_assets/generated_images/Hero_fitness_model_6eee6e85.png",
       href: "/collections/men", 
       ctaText: "Shop Men's"
     }

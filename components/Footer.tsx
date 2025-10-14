@@ -1,3 +1,4 @@
+"use client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Instagram, Facebook, Twitter, Youtube, Mail } from "lucide-react";

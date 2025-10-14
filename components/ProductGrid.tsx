@@ -1,9 +1,6 @@
+"use client";
 import ProductCard from "./ProductCard";
 import { Button } from "@/components/ui/button";
-import tshirtImage from "@assets/generated_images/Black_athletic_t-shirt_4a985312.png";
-import hoodieImage from "@assets/generated_images/Grey_athletic_hoodie_4c0e3d1e.png";
-import leggingsImage from "@assets/generated_images/Black_athletic_leggings_58ef3b77.png";
-import sportsbraImage from "@assets/generated_images/Olive_sports_bra_ca407dad.png";
 
 interface ProductGridProps {
   title: string;
@@ -18,7 +15,7 @@ export default function ProductGrid({ title, subtitle, showLoadMore = true }: Pr
       id: "1",
       name: "1st Rep Classic T-Shirt",
       price: 22.00,
-      image: tshirtImage,
+      image: "/attached_assets/generated_images/Black_athletic_t-shirt_4a985312.png",
       category: "Men's T-Shirts",
       colors: ['#000000', '#808080'],
       sizes: ['S', 'M', 'L', 'XL', 'XXL']
@@ -27,7 +24,7 @@ export default function ProductGrid({ title, subtitle, showLoadMore = true }: Pr
       id: "2",
       name: "1st Rep Classic Hoodie",
       price: 40.00,
-      image: hoodieImage,
+      image: "/attached_assets/generated_images/Grey_athletic_hoodie_4c0e3d1e.png",
       category: "Men's Hoodies",
       colors: ['#808080', '#000000'],
       sizes: ['S', 'M', 'L', 'XL']
@@ -36,7 +33,7 @@ export default function ProductGrid({ title, subtitle, showLoadMore = true }: Pr
       id: "3",
       name: "High Neck Sports Bra",
       price: 30.00,
-      image: sportsbraImage,
+      image: "/attached_assets/generated_images/Olive_sports_bra_ca407dad.png",
       category: "Women's Vests",
       colors: ['#000000', '#CD853F', '#FF1493'],
       sizes: ['XS', 'S', 'M', 'L']
@@ -45,7 +42,7 @@ export default function ProductGrid({ title, subtitle, showLoadMore = true }: Pr
       id: "4",
       name: "High Impact Sports Bra",
       price: 30.00,
-      image: sportsbraImage,
+      image: "/attached_assets/generated_images/Olive_sports_bra_ca407dad.png",
       category: "Women's Vests",
       isNew: true,
       colors: ['#000000', '#4169E1'],
@@ -55,7 +52,7 @@ export default function ProductGrid({ title, subtitle, showLoadMore = true }: Pr
       id: "5",
       name: "1st Rep Organic Cropped Tank",
       price: 25.00,
-      image: leggingsImage,
+      image: "/attached_assets/generated_images/Black_athletic_leggings_58ef3b77.png",
       category: "Women's Vests",
       colors: ['#FFB6C1', '#D2B48C'],
       sizes: ['XS', 'S', 'M', 'L']
@@ -64,7 +61,7 @@ export default function ProductGrid({ title, subtitle, showLoadMore = true }: Pr
       id: "6",
       name: "1st Rep Classic Tank",
       price: 25.00,
-      image: leggingsImage,
+      image: "/attached_assets/generated_images/Black_athletic_leggings_58ef3b77.png",
       category: "Women's Vests",
       colors: ['#008080', '#000000'],
       sizes: ['XS', 'S', 'M', 'L']
@@ -73,7 +70,7 @@ export default function ProductGrid({ title, subtitle, showLoadMore = true }: Pr
       id: "7",
       name: "1st Rep Hoodie - Lime",
       price: 55.00,
-      image: hoodieImage,
+      image: "/attached_assets/generated_images/Grey_athletic_hoodie_4c0e3d1e.png",
       category: "Unisex Hoodies",
       isNew: true,
       colors: ['#32CD32'],
@@ -83,7 +80,7 @@ export default function ProductGrid({ title, subtitle, showLoadMore = true }: Pr
       id: "8",
       name: "1st Rep Batwing Jacket",
       price: 38.00,
-      image: hoodieImage,
+      image: "/attached_assets/generated_images/Grey_athletic_hoodie_4c0e3d1e.png",
       category: "Women's Outerwear",
       colors: ['#000000'],
       sizes: ['XS', 'S', 'M', 'L']

@@ -1,3 +1,4 @@
+"use client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,7 @@ import { ShoppingCart, Search, User, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
 import CartSheet from "./CartSheet";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Header() {
   const { totalItems } = useCart();
@@ -68,6 +70,9 @@ export default function Header() {
 
           {/* Right side actions */}
           <div className="flex items-center space-x-4">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {/* User Account */}
             <Button 
               variant="ghost" 
@@ -137,6 +142,12 @@ export default function Header() {
                       </a>
                     ))}
                   </nav>
+
+                  {/* Mobile Theme Toggle */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Theme</span>
+                    <ThemeToggle />
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>

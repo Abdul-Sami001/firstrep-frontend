@@ -1,108 +1,89 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { useRef } from "react";
 
-// Import hero images
-import sunriseRunMale from "@assets/stock_images/man_running_at_sunri_81367675.jpg";
-import outdoorJogFemale from "@assets/stock_images/woman_jogging_trail__2510baa6.jpg";
-import strengthMale from "@assets/stock_images/male_athlete_deadlif_d35adc8a.jpg";
-import strengthFemale from "@assets/stock_images/woman_squat_dumbbell_809f2989.jpg";
-import hiitFunctional from "@assets/stock_images/hiit_battle_ropes_bo_eff163ed.jpg";
-import womanGymWear from "@assets/stock_images/woman_wearing_athlet_9e87b5d7.jpg";
-import manHoodieWear from "@assets/stock_images/man_wearing_fitness__afc6a273.jpg";
-import womanYogaWear from "@assets/stock_images/woman_wearing_sports_f1df1f6f.jpg";
-import modestWear1 from "@assets/stock_images/woman_wearing_modest_e1991178.jpg";
-import modestWear2 from "@assets/stock_images/woman_wearing_modest_8e688010.jpg";
-import modestWear3 from "@assets/stock_images/female_athlete_modes_e44bd1ba.jpg";
-import modestWear4 from "@assets/stock_images/female_athlete_modes_86c1b641.jpg";
-import hijabGym1 from "@assets/stock_images/muslim_woman_wearing_87a068e7.jpg";
-import hijabGym2 from "@assets/stock_images/muslim_woman_wearing_0614751b.jpg";
-import hijabGym3 from "@assets/stock_images/muslim_woman_wearing_fc889ac7.jpg";
-import hijabAthletic1 from "@assets/stock_images/female_athlete_hijab_653e6699.jpg";
-import hijabAthletic2 from "@assets/stock_images/female_athlete_hijab_5b2848b3.jpg";
-import hijabAthletic3 from "@assets/stock_images/female_athlete_hijab_321089cf.jpg";
-
 // Hero media items - diverse athletic training scenarios with focus on hijab-style gymwear
 const heroMedia = [
   {
     type: "image" as const,
-    url: hijabGym1,
+    url: "/attached_assets/stock_images/muslim_woman_wearing_87a068e7.jpg",
     alt: "Muslim woman wearing sports hijab during gym training."
   },
   {
     type: "image" as const,
-    url: outdoorJogFemale,
+    url: "/attached_assets/stock_images/woman_jogging_trail__2510baa6.jpg",
     alt: "Woman jogging in modest gym wear and sports hijab."
   },
   {
     type: "image" as const,
-    url: hijabAthletic1,
+    url: "/attached_assets/stock_images/female_athlete_hijab_653e6699.jpg",
     alt: "Female athlete in sports hijab running workout."
   },
   {
     type: "image" as const,
-    url: modestWear1,
+    url: "/attached_assets/stock_images/woman_wearing_modest_e1991178.jpg",
     alt: "Woman wearing modest athletic hijab sportswear for training."
   },
   {
     type: "image" as const,
-    url: hijabGym2,
+    url: "/attached_assets/stock_images/muslim_woman_wearing_0614751b.jpg",
     alt: "Athlete in sports hijab and modest fitness wear training."
   },
   {
     type: "image" as const,
-    url: strengthFemale,
+    url: "/attached_assets/stock_images/woman_squat_dumbbell_809f2989.jpg",
     alt: "Woman training with dumbbells in high-support sports bra and leggings."
   },
   {
     type: "image" as const,
-    url: hijabAthletic2,
+    url: "/attached_assets/stock_images/female_athlete_hijab_5b2848b3.jpg",
     alt: "Muslim athlete in hijab doing active workout."
   },
   {
     type: "image" as const,
-    url: sunriseRunMale,
+    url: "/attached_assets/stock_images/man_running_at_sunri_81367675.jpg",
     alt: "Man running at sunrise wearing lightweight gym tee and compression shorts."
   },
   {
     type: "image" as const,
-    url: hijabGym3,
+    url: "/attached_assets/stock_images/muslim_woman_wearing_fc889ac7.jpg",
     alt: "Woman in sports hijab wearing athletic fitness apparel."
   },
   {
     type: "image" as const,
-    url: modestWear2,
+    url: "/attached_assets/stock_images/woman_wearing_modest_8e688010.jpg",
     alt: "Female athlete in modest full-coverage gym outfit."
   },
   {
     type: "image" as const,
-    url: hijabAthletic3,
+    url: "/attached_assets/stock_images/female_athlete_hijab_321089cf.jpg",
     alt: "Athlete training in sports hijab and modest sportswear."
   },
   {
     type: "image" as const,
-    url: strengthMale,
+    url: "/attached_assets/stock_images/male_athlete_deadlif_d35adc8a.jpg",
     alt: "Athlete lifting weights in moisture-wicking t-shirt."
   },
   {
     type: "image" as const,
-    url: modestWear3,
+    url: "/attached_assets/stock_images/female_athlete_modes_e44bd1ba.jpg",
     alt: "Woman in modest long-sleeve sportswear and leggings."
   },
   {
     type: "image" as const,
-    url: womanGymWear,
+    url: "/attached_assets/stock_images/woman_wearing_athlet_9e87b5d7.jpg",
     alt: "Woman wearing athletic tank top and leggings for gym training."
   },
   {
     type: "image" as const,
-    url: modestWear4,
+    url: "/attached_assets/stock_images/female_athlete_modes_86c1b641.jpg",
     alt: "Athlete training in full-coverage modest athletic wear."
   },
   {
     type: "image" as const,
-    url: manHoodieWear,
+    url: "/attached_assets/stock_images/man_wearing_fitness__afc6a273.jpg",
     alt: "Man wearing fitness hoodie and joggers outdoors."
   }
 ];
@@ -158,6 +139,7 @@ export default function HeroSection() {
           BUILD YOUR
           <br />
           <span className="text-primary">IMPOSSIBLE</span>
+          {/* <span className="text-primary bg-red-500 text-white p-2">IMPOSSIBLE</span> */}
         </h1>
         
         <p className="text-xl md:text-2xl text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed" data-testid="hero-subtitle">

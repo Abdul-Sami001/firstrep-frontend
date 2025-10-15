@@ -1,13 +1,5 @@
 // app/(site)/layout.tsx
 import type { Metadata } from "next";
-import "../globals.css";
-import { Inter } from "next/font/google";
-import { CartProvider } from "@/contexts/CartContext";
-import { ThemeProvider } from "@/contexts/ThemeProvider";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer"; // Add this import
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
     title: {
@@ -26,19 +18,5 @@ export default function SiteLayout({
 }: {
     children: React.ReactNode;
 }) {
-    return (
-        <html lang="en" suppressHydrationWarning>
-            <body className={`${inter.className} bg-background text-foreground`}>
-                <ThemeProvider>
-                    <CartProvider>
-                        <Header />
-                        <main>
-                            {children}
-                        </main>
-                        <Footer /> {/* Add this line */}
-                    </CartProvider>
-                </ThemeProvider>
-            </body>
-        </html>
-    );
+    return children;
 }

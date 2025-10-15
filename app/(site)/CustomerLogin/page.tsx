@@ -1,69 +1,67 @@
+// app/(site)/CustomerLogin/page.tsx
 "use client";
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useRouter } from "next/navigation"; // Change this import
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { useLogin, useRegister } from "@/hooks/useAuth";
 import { Mail, Lock, User } from "lucide-react";
 
 export default function CustomerLogin() {
-    const [, setLocation] = useLocation();
+    const router = useRouter(); // Change this line
     const { toast } = useToast();
     const [isLogin, setIsLogin] = useState(true);
     const [formData, setFormData] = useState({
         email: "",
         password: "",
-        confirmPassword: ""
+        confirmPassword: "",
+        firstName: "",
+        lastName: ""
     });
     const [error, setError] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
+
+    // Use the new auth hooks
+    const loginMutation = useLogin();
+    const registerMutation = useRegister();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
-        setIsLoading(true);
 
         try {
-            if (!isLogin && formData.password !== formData.confirmPassword) {
-                setError("Passwords do not match");
-                return;
-            }
+            if (!isLogin) {
+                // Registration validation
+                if (formData.password !== formData.confirmPassword) {
+                    setError("Passwords do not match");
+                    return;
+                }
 
-            const endpoint = isLogin ? "/api/auth/customer/login" : "/api/auth/customer/register";
-            const response = await fetch(endpoint, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
+                if (!formData.firstName || !formData.lastName) {
+                    setError("First name and last name are required");
+                    return;
+                }
+
+                // Register user
+                registerMutation.mutate({
                     email: formData.email,
                     password: formData.password,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                setError(data.error || "Authentication failed");
-                return;
+                    first_name: formData.firstName,
+                    last_name: formData.lastName,
+                });
+            } else {
+                // Login user
+                loginMutation.mutate({
+                    email: formData.email,
+                    password: formData.password,
+                });
             }
-
-            // Show success message
-            toast({
-                title: isLogin ? "Welcome back!" : "Account created!",
-                description: isLogin ? "You have been logged in successfully." : "Your account has been created successfully.",
-            });
-
-            // Redirect to home page
-            setLocation("/");
         } catch (err) {
             setError("Something went wrong. Please try again.");
             console.error("Auth error:", err);
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -73,6 +71,19 @@ export default function CustomerLogin() {
             [e.target.name]: e.target.value
         }));
     };
+
+    // Handle successful login/register
+    if (loginMutation.isSuccess || registerMutation.isSuccess) {
+        if (isLogin) {
+            router.push("/"); // Change this line
+        } else {
+            // For registration, show email verification message
+            setIsLogin(true);
+            setFormData({ email: "", password: "", confirmPassword: "", firstName: "", lastName: "" });
+        }
+    }
+
+    const isLoading = loginMutation.isPending || registerMutation.isPending;
 
     return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -104,6 +115,46 @@ export default function CustomerLogin() {
                             <Alert variant="destructive">
                                 <AlertDescription>{error}</AlertDescription>
                             </Alert>
+                        )}
+
+                        {/* First Name & Last Name (Registration only) */}
+                        {!isLogin && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="firstName">First Name</Label>
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            id="firstName"
+                                            name="firstName"
+                                            type="text"
+                                            placeholder="John"
+                                            className="pl-10"
+                                            value={formData.firstName}
+                                            onChange={handleInputChange}
+                                            required={!isLogin}
+                                            data-testid="input-first-name"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="lastName">Last Name</Label>
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            id="lastName"
+                                            name="lastName"
+                                            type="text"
+                                            placeholder="Doe"
+                                            className="pl-10"
+                                            value={formData.lastName}
+                                            onChange={handleInputChange}
+                                            required={!isLogin}
+                                            data-testid="input-last-name"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         )}
 
                         {/* Email */}
@@ -190,7 +241,17 @@ export default function CustomerLogin() {
                             <Button
                                 variant="ghost"
                                 className="ml-1 p-0 h-auto"
-                                onClick={() => setIsLogin(!isLogin)}
+                                onClick={() => {
+                                    setIsLogin(!isLogin);
+                                    setError("");
+                                    setFormData({
+                                        email: "",
+                                        password: "",
+                                        confirmPassword: "",
+                                        firstName: "",
+                                        lastName: ""
+                                    });
+                                }}
                                 data-testid="button-toggle-mode"
                             >
                                 {isLogin ? "Create Account" : "Sign In"}
@@ -205,7 +266,7 @@ export default function CustomerLogin() {
                             <Button
                                 variant="ghost"
                                 className="ml-1 p-0 text-xs h-auto"
-                                onClick={() => setLocation("/reseller")}
+                                onClick={() => router.push("/reseller")} // Change this line
                                 data-testid="link-reseller"
                             >
                                 Apply for Reseller Account

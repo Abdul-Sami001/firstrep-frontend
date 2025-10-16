@@ -1,168 +1,110 @@
-"use client";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Instagram, Facebook, Twitter, Youtube, Mail } from "lucide-react";
+import Link from 'next/link';
+import { Instagram, Facebook, Twitter, Youtube } from 'lucide-react';
 
 export default function Footer() {
-  const footerSections = [
-    {
-      title: "Shop",
-      links: [
-        { label: "Men", href: "/collections/men" },
-        { label: "Women", href: "/collections/women" },
-        { label: "Accessories", href: "/collections/accessories" },
-        { label: "T-shirts", href: "/collections/t-shirts" },
-        { label: "Hoodies", href: "/collections/hoodies" },
-        { label: "Vests", href: "/collections/vests" },
-        { label: "Bottoms & Leggings", href: "/collections/leggings" }
-      ]
-    },
-    {
-      title: "Customer Care",
-      links: [
-        { label: "Size Guide", href: "/size-guide" },
-        { label: "Shipping & Returns", href: "/shipping" },
-        { label: "Order Tracking", href: "/track-order" },
-        { label: "Contact Support", href: "/support" },
-        { label: "FAQ", href: "/faq" }
-      ]
-    },
-    {
-      title: "Company",
-      links: [
-        { label: "About Us", href: "/about" },
-        { label: "Sustainability", href: "/sustainability" },
-        { label: "Careers", href: "/careers" },
-        { label: "Press", href: "/press" },
-        { label: "Reseller Portal", href: "/reseller" }
-      ]
-    },
-    {
-      title: "Connect",
-      links: [
-        { label: "Store Locator", href: "/stores" },
-        { label: "Athlete Program", href: "/athletes" },
-        { label: "Community", href: "/community" },
-        { label: "Events", href: "/events" },
-        { label: "Blog", href: "/blog" }
-      ]
-    }
-  ];
-
-  const socialLinks = [
-    { icon: Instagram, href: "https://instagram.com/1strep", label: "Instagram" },
-    { icon: Facebook, href: "https://facebook.com/1strep", label: "Facebook" },
-    { icon: Twitter, href: "https://twitter.com/1strep", label: "Twitter" },
-    { icon: Youtube, href: "https://youtube.com/1strep", label: "YouTube" }
-  ];
-
   return (
-    <footer className="bg-card border-t border-card-border">
-      <div className="container mx-auto px-4">
-        {/* Newsletter Section */}
-        <div className="py-12 border-b border-card-border">
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="flex justify-center mb-6">
-              <Mail className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="text-2xl font-bold mb-4" data-testid="newsletter-title">
-              Stay in the Loop
-            </h3>
-            <p className="text-muted-foreground mb-6" data-testid="newsletter-subtitle">
-              Get early access to new collections, exclusive offers, and training tips from our athletes.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <Input
+    <footer className="bg-card border-t mt-20">
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-8">
+          <div>
+            <h3 className="font-bold text-lg mb-4" data-testid="text-footer-brand">1strep</h3>
+            <p className="text-sm text-muted-foreground">Your First Step to Fitness</p>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-4">Shop</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><Link href="/editorial" className="hover:text-foreground transition-colors">New In</Link></li>
+              <li><Link href="/collection/training" className="hover:text-foreground transition-colors">Training</Link></li>
+              <li><Link href="/collection/yoga" className="hover:text-foreground transition-colors">Yoga</Link></li>
+              <li><Link href="/collection/running" className="hover:text-foreground transition-colors">Running</Link></li>
+              <li><Link href="/collection/studio" className="hover:text-foreground transition-colors">Studio</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-4">Customer Service</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><Link href="/contact" className="hover:text-foreground transition-colors">Contact Us</Link></li>
+              <li><Link href="/shipping-returns" className="hover:text-foreground transition-colors">Shipping & Returns</Link></li>
+              <li><Link href="/size-guide" className="hover:text-foreground transition-colors">Size Guide</Link></li>
+              <li><Link href="/faq" className="hover:text-foreground transition-colors">FAQ</Link></li>
+              <li><Link href="/track-order" className="hover:text-foreground transition-colors">Track Order</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-4">About</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><Link href="/about" className="hover:text-foreground transition-colors">Our Story</Link></li>
+              <li><Link href="/sustainability" className="hover:text-foreground transition-colors">Sustainability</Link></li>
+              <li><Link href="/careers" className="hover:text-foreground transition-colors">Careers</Link></li>
+              <li><Link href="/store-locator" className="hover:text-foreground transition-colors">Store Locator</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-4">Newsletter</h4>
+            <p className="text-sm text-muted-foreground mb-4">Get 10% off your first order</p>
+            <div className="flex gap-2 mb-6">
+              <input
                 type="email"
-                placeholder="Enter your email"
-                className="flex-1"
-                data-testid="input-newsletter-email"
+                placeholder="Email"
+                className="flex-1 px-3 py-2 text-sm border rounded-md bg-background"
+                data-testid="input-newsletter"
               />
-              <Button 
-                onClick={() => console.log('Newsletter signup clicked')}
-                data-testid="button-newsletter-signup"
-              >
+              <button className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover-elevate" data-testid="button-subscribe">
                 Subscribe
-              </Button>
+              </button>
+            </div>
+            <div className="flex gap-4">
+              <a
+                href="https://instagram.com/1strep"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-instagram"
+              >
+                <Instagram className="h-5 w-5" />
+              </a>
+              <a
+                href="https://facebook.com/1strep"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-facebook"
+              >
+                <Facebook className="h-5 w-5" />
+              </a>
+              <a
+                href="https://twitter.com/1strep"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-twitter"
+              >
+                <Twitter className="h-5 w-5" />
+              </a>
+              <a
+                href="https://youtube.com/1strep"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-youtube"
+              >
+                <Youtube className="h-5 w-5" />
+              </a>
             </div>
           </div>
         </div>
 
-        {/* Main Footer Content */}
-        <div className="py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-            {/* Brand Section */}
-            <div className="lg:col-span-1">
-              <img 
-                src="https://1strep.com/cdn/shop/files/1stRep_White.png?v=1706179237" 
-                alt="1stRep" 
-                className="h-10 w-auto mb-6" 
-                data-testid="footer-logo"
-              />
-              <p className="text-muted-foreground mb-6" data-testid="footer-brand-description">
-                It all starts with your 1st Rep. Performance range designed for athletes who never settle for ordinary.
-              </p>
-              
-              {/* Social Links */}
-              <div className="flex space-x-4">
-                {socialLinks.map((social) => (
-                  <Button
-                    key={social.label}
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => console.log(`${social.label} clicked`)}
-                    data-testid={`social-${social.label.toLowerCase()}`}
-                  >
-                    <social.icon className="h-5 w-5" />
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Footer Links */}
-            {footerSections.map((section) => (
-              <div key={section.title}>
-                <h4 className="font-semibold mb-4" data-testid={`footer-section-${section.title.toLowerCase().replace(/\s+/g, '-')}`}>
-                  {section.title}
-                </h4>
-                <ul className="space-y-3">
-                  {section.links.map((link) => (
-                    <li key={link.label}>
-                      <a
-                        href={link.href}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                        data-testid={`footer-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
-                      >
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom Footer */}
-        <div className="py-6 border-t border-card-border">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="text-sm text-muted-foreground" data-testid="footer-copyright">
-              © 2024 1stRep. All rights reserved.
-            </div>
-            
-            <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
-              <a href="/privacy" className="hover:text-foreground transition-colors" data-testid="footer-privacy">
-                Privacy Policy
-              </a>
-              <a href="/terms" className="hover:text-foreground transition-colors" data-testid="footer-terms">
-                Terms of Service
-              </a>
-              <a href="/cookies" className="hover:text-foreground transition-colors" data-testid="footer-cookies">
-                Cookie Policy
-              </a>
-              <a href="/accessibility" className="hover:text-foreground transition-colors" data-testid="footer-accessibility">
-                Accessibility
-              </a>
+        <div className="pt-8 border-t">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
+            <p>&copy; 2024 1strep. All rights reserved.</p>
+            <div className="flex gap-6">
+              <Link href="/privacy-policy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+              <Link href="/terms-of-service" className="hover:text-foreground transition-colors">Terms of Service</Link>
+              <Link href="/cookies" className="hover:text-foreground transition-colors">Cookies</Link>
             </div>
           </div>
         </div>

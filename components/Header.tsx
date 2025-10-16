@@ -1,158 +1,109 @@
-"use client";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { ShoppingCart, Search, User, Menu } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useCart } from "@/contexts/CartContext";
-import CartSheet from "./CartSheet";
-import ThemeToggle from "./ThemeToggle";
+import { useState } from 'react';
+import { ShoppingCart, Search, Menu, X, Heart, User } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { useTheme } from '@/components/ThemeProvider';
+import { useCart } from '@/contexts/CartContext';
 
-export default function Header() {
-  const { totalItems } = useCart();
-  const [searchQuery, setSearchQuery] = useState("");
-  
-  const navigationItems = [
-    { label: "Men", href: "/collections/men" },
-    { label: "Women", href: "/collections/women" },
-    { label: "Accessories", href: "/collections/accessories" }
+interface HeaderProps {
+  onCartClick?: () => void;
+}
+
+export default function Header({ onCartClick }: HeaderProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { setTheme } = useTheme();
+  const { totalItems } = useCart(); // ✅ Get cart data from context
+
+  const categories = [
+    { name: 'New In', href: '/editorial', id: null },
+    { name: 'Training', href: '/collection/training', id: 'training' as const },
+    { name: 'Yoga', href: '/collection/yoga', id: 'yoga' as const },
+    { name: 'Running', href: '/collection/running', id: 'running' as const },
+    { name: 'Studio', href: '/collection/studio', id: 'studio' as const },
+    { name: 'Sale', href: '#', id: null },
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-background border-b border-border">
+    <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur border-b">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <a 
-              href="/" 
-              className="cursor-pointer hover:opacity-80 transition-opacity duration-200"
-              data-testid="link-home-logo"
+          <div className="flex items-center gap-8">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden"
+              data-testid="button-mobile-menu"
             >
-              <img 
-                src="https://1strep.com/cdn/shop/files/1stRep_White.png?v=1706179237" 
-                alt="1stRep" 
-                className="h-8 w-auto" 
-                data-testid="logo-image"
-              />
-            </a>
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+
+            <Link href="/" className="text-2xl font-bold tracking-tight cursor-pointer hover:text-primary transition-colors" data-testid="text-logo">
+              1strep
+            </Link>
+
+            <nav className="hidden lg:flex items-center gap-6" data-testid="nav-desktop">
+              {categories.map((category) => (
+                <Link
+                  key={category.name}
+                  href={category.href}
+                  className="text-sm font-medium tracking-wide uppercase hover-elevate px-3 py-2 rounded-md transition-colors"
+                  data-testid={`link-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  onClick={() => {
+                    if (category.id) setTheme(category.id);
+                    console.log(`Navigated to ${category.name}`);
+                  }}
+                >
+                  {category.name}
+                </Link>
+              ))}
+            </nav>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            {navigationItems.map((item) => (
-              <a 
-                key={item.label} 
-                href={item.href}
-                className="text-foreground hover:text-primary transition-colors duration-200 font-medium"
-                data-testid={`nav-${item.label.toLowerCase()}`}
-              >
-                {item.label}
-              </a>
-            ))}
-          </nav>
-
-          {/* Search Bar - Desktop */}
-          <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                type="search" 
-                placeholder="Search products..."
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                data-testid="input-search"
-              />
-            </div>
-          </div>
-
-          {/* Right side actions */}
-          <div className="flex items-center space-x-4">
-            {/* Theme Toggle */}
-            <ThemeToggle />
-
-            {/* User Account */}
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => window.location.href = '/account'}
-              data-testid="button-account"
-            >
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" data-testid="button-search">
+              <Search className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" data-testid="button-account">
               <User className="h-5 w-5" />
             </Button>
-
-            {/* Shopping Cart */}
-            <CartSheet>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="relative"
-                data-testid="button-cart"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                {totalItems > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-                    data-testid="badge-cart-count"
-                  >
-                    {totalItems}
-                  </Badge>
-                )}
-              </Button>
-            </CartSheet>
-
-            {/* Mobile Menu */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="md:hidden"
-                  data-testid="button-mobile-menu"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-80">
-                <div className="flex flex-col space-y-6 pt-6">
-                  {/* Mobile Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      type="search" 
-                      placeholder="Search products..."
-                      className="pl-10"
-                      data-testid="input-search-mobile"
-                    />
-                  </div>
-
-                  {/* Mobile Navigation */}
-                  <nav className="flex flex-col space-y-4">
-                    {navigationItems.map((item) => (
-                      <a 
-                        key={item.label} 
-                        href={item.href}
-                        className="text-lg font-medium text-foreground hover:text-primary transition-colors"
-                        data-testid={`nav-mobile-${item.label.toLowerCase()}`}
-                      >
-                        {item.label}
-                      </a>
-                    ))}
-                  </nav>
-
-                  {/* Mobile Theme Toggle */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Theme</span>
-                    <ThemeToggle />
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+            <Button variant="ghost" size="icon" data-testid="button-wishlist">
+              <Heart className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={onCartClick}
+              data-testid="button-cart"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center" data-testid="text-cart-count">
+                  {totalItems}
+                </span>
+              )}
+            </Button>
           </div>
         </div>
+
+        {mobileMenuOpen && (
+          <nav className="lg:hidden py-4 border-t" data-testid="nav-mobile">
+            {categories.map((category) => (
+              <Link
+                key={category.name}
+                href={category.href}
+                className="block w-full text-left px-4 py-3 text-sm font-medium uppercase hover-elevate rounded-md transition-colors"
+                data-testid={`link-mobile-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
+                onClick={() => {
+                  if (category.id) setTheme(category.id);
+                  setMobileMenuOpen(false);
+                  console.log(`Navigated to ${category.name}`);
+                }}
+              >
+                {category.name}
+              </Link>
+            ))}
+          </nav>
+        )}
       </div>
     </header>
   );

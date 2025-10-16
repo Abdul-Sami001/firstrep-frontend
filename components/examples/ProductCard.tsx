@@ -1,20 +1,17 @@
-import ProductCard from '../ProductCard'
-import productImage from '@assets/generated_images/Black_athletic_t-shirt_4a985312.png'
+import ProductCard from '../ProductCard';
+import productImg1 from '@assets/stock_images/athletic_wear_leggin_a986799a.jpg';
+import productImg2 from '@assets/stock_images/athletic_wear_leggin_c6f767d1.jpg';
 
 export default function ProductCardExample() {
   return (
-    <div className="max-w-sm">
+    <div className="p-8 max-w-xs">
       <ProductCard
         id="1"
-        name="Performance T-Shirt"
-        price={35.00}
-        originalPrice={45.00}
-        image={productImage}
-        category="Men's Apparel"
-        isNew={true}
-        colors={['#000000', '#333333', '#666666']}
-        sizes={['S', 'M', 'L', 'XL']}
+        name="Performance Leggings"
+        price={89.99}
+        image={productImg1}
+        hoverImage={productImg2}
       />
     </div>
-  )
+  );
 }

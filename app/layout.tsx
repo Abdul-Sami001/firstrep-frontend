@@ -8,9 +8,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
-import { ThemeProvider } from "@/contexts/ThemeProvider";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PromoBanner from "@/components/PromoBanner";
+import Cart from "@/components/Cart";
 import { ReactNode, useState } from "react";
 
 const geistSans = Geist({
@@ -24,7 +26,6 @@ const geistMono = Geist_Mono({
 });
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  // Create QueryClient inside the Client Component
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
@@ -52,11 +53,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <ThemeProvider>
               <TooltipProvider>
                 <CartProvider>
+                  <PromoBanner />
                   <Header />
                   <main>
                     {children}
                   </main>
                   <Footer />
+                  <Cart />
                   <Toaster />
                 </CartProvider>
               </TooltipProvider>

@@ -1,5 +1,10 @@
-import Header from '../Header'
+import Header from '../Header';
+import { ThemeProvider } from '../ThemeProvider';
 
 export default function HeaderExample() {
-  return <Header />
+  return (
+    <ThemeProvider>
+      <Header cartItemCount={3} />
+    </ThemeProvider>
+  );
 }

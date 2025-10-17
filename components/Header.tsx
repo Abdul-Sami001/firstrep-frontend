@@ -1,4 +1,4 @@
-// components/Header.tsx - Mobile-First Responsive
+// components/Header.tsx - Fixed Mobile-First Responsive Design
 import { useState } from 'react';
 import { ShoppingCart, Search, Menu, X, Heart, User, LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
@@ -49,34 +49,40 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur border-b">
-      <div className="container mx-auto px-4">
+      {/* Mobile-First Container */}
+      <div className="mobile-container tablet-container desktop-container">
+
         {/* Mobile-First Header Layout */}
-        <div className="flex items-center justify-between h-14 sm:h-16">
-          {/* Mobile Menu Button - Always Visible on Mobile */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 -ml-2"
-            data-testid="button-mobile-menu"
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+        <div className="flex items-center justify-between h-mobile-header md:h-tablet-header lg:h-desktop-header">
 
-          {/* Logo - Mobile Optimized */}
-          <Link
-            href="/"
-            className="text-xl sm:text-2xl font-bold tracking-tight cursor-pointer hover:text-primary transition-colors"
-            data-testid="text-logo"
-          >
-            1strep
-          </Link>
+          {/* Left Side: Mobile Menu + Logo */}
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Mobile Menu Button - Left Side */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden touch-target p-2 -ml-2"
+              data-testid="button-mobile-menu"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
 
-          {/* Desktop Navigation - Hidden on Mobile */}
-          <nav className="hidden lg:flex items-center gap-4 xl:gap-6" data-testid="nav-desktop">
+            {/* Logo - Centered on Mobile, Left on Desktop */}
+            <Link
+              href="/"
+              className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold tracking-tight cursor-pointer hover:text-primary transition-colors"
+              data-testid="text-logo"
+            >
+              1strep
+            </Link>
+          </div>
+
+          {/* Center: Desktop Navigation - Hidden on Mobile */}
+          <nav className="hidden lg:flex items-center gap-mobile md:gap-tablet lg:gap-desktop" data-testid="nav-desktop">
             {categories.map((category) => (
               <Link
                 key={category.name}
                 href={category.href}
-                className="text-sm font-medium tracking-wide uppercase hover-elevate px-2 xl:px-3 py-2 rounded-md transition-colors"
+                className="text-sm font-medium tracking-wide uppercase hover-elevate px-2 xl:px-3 py-2 rounded-md transition-colors touch-target"
                 data-testid={`link-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
                 onClick={() => {
                   if (category.id) setTheme(category.id);
@@ -88,13 +94,13 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Action Icons - Mobile Optimized */}
+          {/* Right Side: Action Icons - Mobile Optimized */}
           <div className="flex items-center gap-1 sm:gap-2">
             {/* Search - Hidden on very small screens */}
             <Button
               variant="ghost"
               size="icon"
-              className="hidden sm:flex h-9 w-9"
+              className="hidden sm:flex touch-target-sm"
               data-testid="button-search"
             >
               <Search className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -107,7 +113,7 @@ export default function Header() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 sm:h-10 sm:w-10"
+                    className="touch-target-sm"
                     data-testid="button-account"
                   >
                     <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
@@ -150,7 +156,7 @@ export default function Header() {
                 variant="ghost"
                 size="icon"
                 onClick={handleUserClick}
-                className="h-9 w-9 sm:h-10 sm:w-10"
+                className="touch-target-sm"
                 data-testid="button-account"
               >
                 <User className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -161,7 +167,7 @@ export default function Header() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10"
+              className="touch-target-sm"
               data-testid="button-wishlist"
             >
               <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -171,7 +177,7 @@ export default function Header() {
             <Button
               variant="ghost"
               size="icon"
-              className="relative h-9 w-9 sm:h-10 sm:w-10"
+              className="relative touch-target-sm"
               onClick={openCart}
               data-testid="button-cart"
             >
@@ -193,7 +199,7 @@ export default function Header() {
                 <Link
                   key={category.name}
                   href={category.href}
-                  className="block w-full text-left px-4 py-3 text-sm font-medium uppercase hover-elevate rounded-md transition-colors"
+                  className="block w-full text-left px-4 py-3 text-sm font-medium uppercase hover-elevate rounded-md transition-colors touch-target"
                   data-testid={`link-mobile-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
                   onClick={() => {
                     if (category.id) setTheme(category.id);
@@ -209,7 +215,7 @@ export default function Header() {
               <div className="px-4 py-2">
                 <Button
                   variant="outline"
-                  className="w-full justify-start"
+                  className="w-full justify-start touch-target"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     // Handle search

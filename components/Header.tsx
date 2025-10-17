@@ -5,14 +5,11 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/ThemeProvider';
 import { useCart } from '@/contexts/CartContext';
 
-interface HeaderProps {
-  onCartClick?: () => void;
-}
-
-export default function Header({ onCartClick }: HeaderProps) {
+// ✅ Remove onCartClick prop - use context instead
+export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { setTheme } = useTheme();
-  const { totalItems } = useCart(); // ✅ Get cart data from context
+  const { totalItems, openCart } = useCart(); // ✅ Get openCart from context
 
   const categories = [
     { name: 'New In', href: '/editorial', id: null },
@@ -72,7 +69,7 @@ export default function Header({ onCartClick }: HeaderProps) {
               variant="ghost"
               size="icon"
               className="relative"
-              onClick={onCartClick}
+              onClick={openCart} // ✅ Use context function directly
               data-testid="button-cart"
             >
               <ShoppingCart className="h-5 w-5" />

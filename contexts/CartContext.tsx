@@ -22,6 +22,10 @@ interface CartContextType {
   subtotal: number;
   shipping: number;
   total: number;
+  // ✅ Add cart visibility state
+  isCartOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -40,23 +44,24 @@ interface CartProviderProps {
 
 export const CartProvider = ({ children }: CartProviderProps) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false); // ✅ Add cart visibility state
 
   const addToCart = (product: Omit<CartItem, 'quantity'>) => {
     console.log('CartContext: addToCart called with product:', product);
     setCartItems(items => {
       console.log('CartContext: Current cart items before adding:', items);
-      const existingItem = items.find(item => 
-        item.id === product.id && 
-        item.size === product.size && 
+      const existingItem = items.find(item =>
+        item.id === product.id &&
+        item.size === product.size &&
         item.color === product.color
       );
 
       if (existingItem) {
         console.log('CartContext: Found existing item, updating quantity');
         const updatedItems = items.map(item =>
-          item.id === existingItem.id && 
-          item.size === existingItem.size && 
-          item.color === existingItem.color
+          item.id === existingItem.id &&
+            item.size === existingItem.size &&
+            item.color === existingItem.color
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
@@ -68,18 +73,21 @@ export const CartProvider = ({ children }: CartProviderProps) => {
       console.log('CartContext: New cart items after adding:', newItems);
       return newItems;
     });
+
+    // ✅ Auto-open cart when item is added
+    setIsCartOpen(true);
   };
 
   const updateQuantity = (id: string, newQuantity: number, size?: string, color?: string) => {
     if (newQuantity <= 0) {
-      setCartItems(items => items.filter(item => 
+      setCartItems(items => items.filter(item =>
         item.id !== id || (size && item.size !== size) || (color && item.color !== color)
       ));
     } else {
-      setCartItems(items => 
-        items.map(item => 
+      setCartItems(items =>
+        items.map(item =>
           item.id === id && (!size || item.size === size) && (!color || item.color === color)
-            ? { ...item, quantity: newQuantity } 
+            ? { ...item, quantity: newQuantity }
             : item
         )
       );
@@ -87,9 +95,9 @@ export const CartProvider = ({ children }: CartProviderProps) => {
   };
 
   const removeItem = (id: string, size?: string, color?: string) => {
-    setCartItems(items => items.filter(item => 
-      !(item.id === id && 
-        (!size || item.size === size) && 
+    setCartItems(items => items.filter(item =>
+      !(item.id === id &&
+        (!size || item.size === size) &&
         (!color || item.color === color))
     ));
   };
@@ -97,6 +105,10 @@ export const CartProvider = ({ children }: CartProviderProps) => {
   const clearCart = () => {
     setCartItems([]);
   };
+
+  // ✅ Add cart visibility functions
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
 
   const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
   const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -112,7 +124,10 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     totalItems,
     subtotal,
     shipping,
-    total
+    total,
+    isCartOpen, // ✅ Include cart visibility
+    openCart,
+    closeCart
   };
 
   return (

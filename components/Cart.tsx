@@ -2,29 +2,37 @@ import { X, Minus, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCart } from '@/contexts/CartContext';
-import { useState } from 'react';
 
 export default function Cart() {
-  const { cartItems, updateQuantity, removeItem, totalItems, subtotal, shipping, total } = useCart();
-  const [isOpen, setIsOpen] = useState(false);
+  const {
+    cartItems,
+    updateQuantity,
+    removeItem,
+    totalItems,
+    subtotal,
+    shipping,
+    total,
+    isCartOpen, // ✅ Get visibility from context
+    closeCart    // ✅ Get close function from context
+  } = useCart();
 
-  // ✅ Only show cart when there are items
-  if (totalItems === 0) return null;
+  // ✅ Don't render if cart is closed
+  if (!isCartOpen) return null;
 
   return (
     <>
       <div
-        className={`fixed inset-0 bg-black/50 z-50 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={() => setIsOpen(false)}
+        className="fixed inset-0 bg-black/50 z-50 transition-opacity"
+        onClick={closeCart} // ✅ Use context function
         data-testid="overlay-cart"
       />
       <div
-        className={`fixed right-0 top-0 h-full w-full max-w-md bg-background z-50 shadow-xl flex flex-col transition-transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className="fixed right-0 top-0 h-full w-full max-w-md bg-background z-50 shadow-xl flex flex-col transition-transform"
         data-testid="panel-cart"
       >
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-bold" data-testid="text-cart-title">Shopping Cart ({totalItems})</h2>
-          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} data-testid="button-close-cart">
+          <Button variant="ghost" size="icon" onClick={closeCart} data-testid="button-close-cart">
             <X className="h-5 w-5" />
           </Button>
         </div>

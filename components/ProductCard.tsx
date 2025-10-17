@@ -1,6 +1,8 @@
+// components/ProductCard.tsx - Mobile-First with Next.js Image
 import { useState } from 'react';
 import { Heart, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 
@@ -10,7 +12,7 @@ interface ProductCardProps {
   price: number;
   image: string;
   hoverImage?: string;
-  category?: string; // Add category prop
+  category?: string;
   onToggleWishlist?: (id: string) => void;
   isWishlisted?: boolean;
 }
@@ -21,12 +23,13 @@ export default function ProductCard({
   price,
   image,
   hoverImage,
-  category = 'general', // Default category
+  category = 'general',
   onToggleWishlist,
   isWishlisted = false
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const { addToCart } = useCart(); // ✅ Direct context usage
+  const [imageLoading, setImageLoading] = useState(true);
+  const { addToCart } = useCart();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -36,9 +39,9 @@ export default function ProductCard({
       name,
       price,
       image,
-      size: 'M', // Default values
+      size: 'M',
       color: 'Default',
-      category // ✅ Include category
+      category
     });
     console.log(`Added ${name} to cart`);
   };
@@ -50,24 +53,43 @@ export default function ProductCard({
       onMouseLeave={() => setIsHovered(false)}
       data-testid={`card-product-${id}`}
     >
-      <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-muted mb-3">
+      {/* Mobile-First Image Container */}
+      <div className="relative aspect-[2/3] md:aspect-[3/4] overflow-hidden rounded-md bg-muted mb-3">
         <Link href={`/product/${id}`} className="absolute inset-0 z-10">
           <span className="sr-only">View {name}</span>
         </Link>
 
-        <img
+        {/* Main Image with Loading State */}
+        <Image
           src={image}
           alt={name}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isHovered && hoverImage ? 'opacity-0' : 'opacity-100'}`}
+          fill
+          className={`object-cover transition-opacity duration-300 ${isHovered && hoverImage ? 'opacity-0' : 'opacity-100'
+            } ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          onLoad={() => setImageLoading(false)}
+          quality={85}
         />
+
+        {/* Hover Image */}
         {hoverImage && (
-          <img
+          <Image
             src={hoverImage}
             alt={`${name} alternate view`}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+            fill
+            className={`object-cover transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'
+              }`}
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            quality={85}
           />
         )}
 
+        {/* Loading State */}
+        {imageLoading && (
+          <div className="absolute inset-0 bg-muted animate-pulse" />
+        )}
+
+        {/* Wishlist Button */}
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -75,16 +97,18 @@ export default function ProductCard({
             onToggleWishlist?.(id);
             console.log(`Wishlist toggled for ${name}`);
           }}
-          className="absolute top-3 right-3 p-2 rounded-full bg-white/80 backdrop-blur-sm hover-elevate z-20"
+          className="absolute top-3 right-3 p-2 rounded-full bg-white/80 backdrop-blur-sm hover-elevate z-20 touch-target-sm"
           data-testid={`button-wishlist-${id}`}
         >
           <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current text-destructive' : ''}`} />
         </button>
 
+        {/* Add to Cart Button */}
         <Button
           size="sm"
-          onClick={handleAddToCart} // ✅ Use context-based handler
-          className={`absolute bottom-4 left-1/2 -translate-x-1/2 transition-opacity duration-300 z-20 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+          onClick={handleAddToCart}
+          className={`absolute bottom-4 left-1/2 -translate-x-1/2 transition-opacity duration-300 z-20 touch-target ${isHovered ? 'opacity-100' : 'opacity-0'
+            }`}
           data-testid={`button-add-to-cart-${id}`}
         >
           <ShoppingCart className="h-4 w-4 mr-2" />
@@ -92,15 +116,16 @@ export default function ProductCard({
         </Button>
       </div>
 
+      {/* Mobile-First Product Info */}
       <div className="space-y-1">
         <Link
           href={`/product/${id}`}
-          className="text-sm font-medium cursor-pointer hover:text-primary transition-colors"
+          className="text-sm md:text-base font-medium cursor-pointer hover:text-primary transition-colors"
           data-testid={`text-product-name-${id}`}
         >
           {name}
         </Link>
-        <p className="text-base font-semibold" data-testid={`text-product-price-${id}`}>
+        <p className="text-base md:text-lg font-semibold" data-testid={`text-product-price-${id}`}>
           ${price.toFixed(2)}
         </p>
       </div>

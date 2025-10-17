@@ -1,6 +1,8 @@
+// app/(site)/page.tsx - Mobile-First Responsive Design
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import Hero from '@/components/Hero';
 import ProductCard from '@/components/ProductCard';
 import CategoryCard from '@/components/CategoryCard';
@@ -8,7 +10,6 @@ import { useTheme } from '@/components/ThemeProvider';
 
 // Import hero/lifestyle images
 const trainingHero = '/attached_assets/videoframe_6232_1760252496970.png';
-// Use string paths for missing images
 const yogaHero = '/attached_assets/stock_images/woman_yoga_meditatio_5c026a27.jpg';
 const runningHero = '/attached_assets/M5583226771-f_1760251696002.webp';
 const studioHero = '/attached_assets/stock_images/woman_pilates_studio_fd48cd53.jpg';
@@ -151,163 +152,103 @@ export default function HomePage() {
         <div className="min-h-screen">
             <Hero {...content.hero} />
 
-            {/* Featured Categories - Shop by Style */}
-            <section className="container mx-auto px-4 py-16">
-                <div className="mb-12 text-center">
-                    <h2 className="text-3xl font-bold mb-2" data-testid="text-featured-title">Shop by Style</h2>
-                    <p className="text-muted-foreground">Discover our curated collections for every occasion</p>
-                </div>
+            {/* Mobile-First Container */}
+            <div className="mobile-container tablet-container desktop-container">
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    {/* Large featured category - Jackets with Video */}
-                    <div className="md:col-span-2 md:row-span-2">
-                        <Link href="/Collections/training" data-testid="link-category-jackets">
-                            <div className="group relative h-full min-h-[400px] rounded-md overflow-hidden">
-                                <video
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                >
-                                    <source src={styleVideo1} type="video/mp4" />
-                                </video>
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                                <div className="absolute bottom-8 left-8 text-white">
-                                    <h3 className="text-3xl font-bold mb-2">Jackets</h3>
-                                    <p className="text-sm text-white/90 mb-4">Essential layers for every season</p>
-                                    <span className="inline-block border-b-2 border-white pb-1 text-sm font-medium">
-                                        Shop Now
-                                    </span>
-                                </div>
-                            </div>
-                        </Link>
+                {/* Featured Categories - Mobile-First */}
+                <section className="py-8 md:py-12 lg:py-16">
+                    <div className="mb-8 md:mb-12 text-center">
+                        <h2 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold mb-2" data-testid="text-featured-title">
+                            Shop by Style
+                        </h2>
+                        <p className="text-sm md:text-base text-muted-foreground">
+                            Discover our curated collections for every occasion
+                        </p>
                     </div>
 
-                    {/* Athletic Sets */}
-                    <div>
-                        <Link href="/Collections/yoga" data-testid="link-category-sweatshirts">
-                            <div className="group relative h-full min-h-[192px] rounded-md overflow-hidden">
-                                <img
-                                    src={newLifestyle1}
-                                    alt="Athletic Sets Collection"
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                                <div className="absolute bottom-6 left-6 text-white">
-                                    <h3 className="text-xl font-bold mb-1">Athletic Sets</h3>
-                                    <p className="text-xs text-white/90 mb-2">Coordinated performance wear</p>
-                                    <span className="inline-block border-b border-white pb-1 text-xs font-medium">
-                                        Shop Now
-                                    </span>
-                                </div>
-                            </div>
-                        </Link>
-                    </div>
+                    {/* Mobile-First Grid: Stack on Mobile, Complex on Desktop */}
+                    <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop mb-8 md:mb-12 lg:mb-20">
 
-                    {/* Training Essentials */}
-                    <div>
-                        <Link href="/Collections/studio" data-testid="link-category-knitwear">
-                            <div className="group relative h-full min-h-[192px] rounded-md overflow-hidden">
-                                <img
-                                    src={newLifestyle7}
-                                    alt="Training Essentials"
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                                <div className="absolute bottom-6 left-6 text-white">
-                                    <h3 className="text-xl font-bold mb-1">Training Essentials</h3>
-                                    <p className="text-xs text-white/90 mb-2">Performance-driven pieces</p>
-                                    <span className="inline-block border-b border-white pb-1 text-xs font-medium">
-                                        Shop Now
-                                    </span>
+                        {/* Large featured category - Mobile Full Width */}
+                        <div className="md:col-span-2 md:row-span-2">
+                            <Link href="/Collections/training" data-testid="link-category-jackets">
+                                <div className="group relative h-64 md:h-80 lg:h-96 rounded-md overflow-hidden">
+                                    <video
+                                        autoPlay
+                                        loop
+                                        muted
+                                        playsInline
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                    >
+                                        <source src={styleVideo1} type="video/mp4" />
+                                    </video>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                                    <div className="absolute bottom-4 md:bottom-6 lg:bottom-8 left-4 md:left-6 lg:left-8 text-white">
+                                        <h3 className="text-xl md:text-2xl lg:text-3xl font-bold mb-1 md:mb-2">Jackets</h3>
+                                        <p className="text-xs md:text-sm text-white/90 mb-2 md:mb-4">Essential layers for every season</p>
+                                        <span className="inline-block border-b-2 border-white pb-1 text-xs md:text-sm font-medium">
+                                            Shop Now
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                        </Link>
-                    </div>
-                </div>
-
-                {/* Bottom row - Borreguito and By Activity */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-20">
-                    {/* Borreguito/Sherpa with Video */}
-                    <Link href="/Collections/running" data-testid="link-category-borreguito">
-                        <div className="group relative h-64 rounded-md overflow-hidden">
-                            <video
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            >
-                                <source src={styleVideo2} type="video/mp4" />
-                            </video>
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                            <div className="absolute bottom-8 left-8 text-white">
-                                <h3 className="text-2xl font-bold mb-2">Borreguito</h3>
-                                <p className="text-sm text-white/90 mb-3">Sherpa & fleece favorites</p>
-                                <span className="inline-block border-b-2 border-white pb-1 text-sm font-medium">
-                                    Shop Now
-                                </span>
-                            </div>
+                            </Link>
                         </div>
-                    </Link>
 
-                    {/* By Activity with Video */}
-                    <Link href="/Collections/training" data-testid="link-category-activity">
-                        <div className="group relative h-64 rounded-md overflow-hidden">
-                            <video
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            >
-                                <source src={newVideo1} type="video/mp4" />
-                            </video>
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                            <div className="absolute bottom-8 left-8 text-white">
-                                <h3 className="text-2xl font-bold mb-2">By Activity</h3>
-                                <p className="text-sm text-white/90 mb-3">Find gear for your workout</p>
-                                <span className="inline-block border-b-2 border-white pb-1 text-sm font-medium">
-                                    Shop Now
-                                </span>
-                            </div>
+                        {/* Athletic Sets - Mobile Stack */}
+                        <div>
+                            <Link href="/Collections/yoga" data-testid="link-category-sweatshirts">
+                                <div className="group relative h-48 md:h-56 lg:h-64 rounded-md overflow-hidden">
+                                    <Image
+                                        src={newLifestyle1}
+                                        alt="Athletic Sets Collection"
+                                        fill
+                                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                        quality={85}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                                    <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 text-white">
+                                        <h3 className="text-lg md:text-xl font-bold mb-1">Athletic Sets</h3>
+                                        <p className="text-xs text-white/90 mb-2">Coordinated performance wear</p>
+                                        <span className="inline-block border-b border-white pb-1 text-xs font-medium">
+                                            Shop Now
+                                        </span>
+                                    </div>
+                                </div>
+                            </Link>
                         </div>
-                    </Link>
-                </div>
 
-                {/* Original activity categories */}
-                <div className="mb-12">
-                    <h2 className="text-3xl font-bold mb-2">Shop by Activity</h2>
-                    <p className="text-muted-foreground">Explore our complete range of fitness essentials</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
-                    <Link href="/Collections/training">
-                        <CategoryCard name="Training" image={newLifestyle3} />
-                    </Link>
-                    <Link href="/Collections/yoga">
-                        <CategoryCard name="Yoga" image={newLifestyle4} />
-                    </Link>
-                    <Link href="/Collections/running">
-                        <CategoryCard name="Running" image={newLifestyle2} />
-                    </Link>
-                    <Link href="/Collections/studio">
-                        <CategoryCard name="Studio" image={newLifestyle6} />
-                    </Link>
-                </div>
-
-                {/* Editorial Features Section */}
-                <div className="mb-20">
-                    <div className="mb-12 text-center">
-                        <h2 className="text-3xl font-bold mb-2">Performance Features</h2>
-                        <p className="text-muted-foreground">Discover the technology behind our designs</p>
+                        {/* Training Essentials - Mobile Stack */}
+                        <div>
+                            <Link href="/Collections/studio" data-testid="link-category-knitwear">
+                                <div className="group relative h-48 md:h-56 lg:h-64 rounded-md overflow-hidden">
+                                    <Image
+                                        src={newLifestyle7}
+                                        alt="Training Essentials"
+                                        fill
+                                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                        quality={85}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                                    <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 text-white">
+                                        <h3 className="text-lg md:text-xl font-bold mb-1">Training Essentials</h3>
+                                        <p className="text-xs text-white/90 mb-2">Performance-driven pieces</p>
+                                        <span className="inline-block border-b border-white pb-1 text-xs font-medium">
+                                            Shop Now
+                                        </span>
+                                    </div>
+                                </div>
+                            </Link>
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {/* Lifestyle Editorial with Video */}
-                        <Link href="/Collections/training" data-testid="link-editorial-jacket">
-                            <div className="group relative aspect-[3/4] rounded-md overflow-hidden">
+                    {/* Bottom row - Mobile Stack */}
+                    <div className="grid grid-cols-mobile md:grid-cols-tablet gap-mobile md:gap-tablet lg:gap-desktop mb-12 md:mb-16 lg:mb-20">
+
+                        {/* Borreguito/Sherpa with Video */}
+                        <Link href="/Collections/running" data-testid="link-category-borreguito">
+                            <div className="group relative h-48 md:h-56 lg:h-64 rounded-md overflow-hidden">
                                 <video
                                     autoPlay
                                     loop
@@ -315,26 +256,22 @@ export default function HomePage() {
                                     playsInline
                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 >
-                                    <source src={featureVideo1} type="video/mp4" />
+                                    <source src={styleVideo2} type="video/mp4" />
                                 </video>
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                                <div className="absolute bottom-4 md:bottom-6 lg:bottom-8 left-4 md:left-6 lg:left-8 text-white">
+                                    <h3 className="text-lg md:text-xl lg:text-2xl font-bold mb-1 md:mb-2">Borreguito</h3>
+                                    <p className="text-xs md:text-sm text-white/90 mb-2 md:mb-3">Sherpa & fleece favorites</p>
+                                    <span className="inline-block border-b-2 border-white pb-1 text-xs md:text-sm font-medium">
+                                        Shop Now
+                                    </span>
+                                </div>
                             </div>
                         </Link>
 
-                        {/* Strength Training */}
-                        <Link href="/Collections/training" data-testid="link-editorial-highrise">
-                            <div className="group relative aspect-[3/4] rounded-md overflow-hidden bg-muted">
-                                <img
-                                    src={newLifestyle8}
-                                    alt="Strength Training"
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                            </div>
-                        </Link>
-
-                        {/* Cardio Training with Video */}
-                        <Link href="/Collections/training" data-testid="link-editorial-tech">
-                            <div className="group relative aspect-[3/4] rounded-md overflow-hidden bg-muted">
+                        {/* By Activity with Video */}
+                        <Link href="/Collections/training" data-testid="link-category-activity">
+                            <div className="group relative h-48 md:h-56 lg:h-64 rounded-md overflow-hidden">
                                 <video
                                     autoPlay
                                     loop
@@ -342,78 +279,181 @@ export default function HomePage() {
                                     playsInline
                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 >
-                                    <source src={newVideo2} type="video/mp4" />
+                                    <source src={newVideo1} type="video/mp4" />
                                 </video>
-                            </div>
-                        </Link>
-
-                        {/* Outdoor Running */}
-                        <Link href="/Collections/training" data-testid="link-editorial-training">
-                            <div className="group relative aspect-[3/4] rounded-md overflow-hidden">
-                                <img
-                                    src={newLifestyle11}
-                                    alt="Outdoor Running"
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                                <div className="absolute bottom-4 md:bottom-6 lg:bottom-8 left-4 md:left-6 lg:left-8 text-white">
+                                    <h3 className="text-lg md:text-xl lg:text-2xl font-bold mb-1 md:mb-2">By Activity</h3>
+                                    <p className="text-xs md:text-sm text-white/90 mb-2 md:mb-3">Find gear for your workout</p>
+                                    <span className="inline-block border-b-2 border-white pb-1 text-xs md:text-sm font-medium">
+                                        Shop Now
+                                    </span>
+                                </div>
                             </div>
                         </Link>
                     </div>
 
-                    {/* Bottom Row - Feature Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                        {/* Core Training */}
-                        <Link href="/Collections/training" data-testid="link-editorial-totallook">
-                            <div className="group relative aspect-square rounded-md overflow-hidden bg-muted">
-                                <img
-                                    src={newLifestyle9}
-                                    alt="Core Training"
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                            </div>
-                        </Link>
+                    {/* Activity Categories - Mobile-First */}
+                    <div className="mb-8 md:mb-12">
+                        <h2 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold mb-2">Shop by Activity</h2>
+                        <p className="text-sm md:text-base text-muted-foreground">Explore our complete range of fitness essentials</p>
+                    </div>
 
-                        {/* Speed Training */}
-                        <Link href="/Collections/yoga" data-testid="link-editorial-outdoor">
-                            <div className="group relative aspect-square rounded-md overflow-hidden">
-                                <img
-                                    src={newLifestyle10}
-                                    alt="Speed Training"
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            </div>
+                    <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop mb-12 md:mb-16 lg:mb-20">
+                        <Link href="/Collections/training">
+                            <CategoryCard name="Training" image={newLifestyle3} />
                         </Link>
-
-                        {/* Recovery & Flexibility */}
-                        <Link href="/Collections/training" data-testid="link-editorial-flare">
-                            <div className="group relative aspect-square rounded-md overflow-hidden bg-muted">
-                                <img
-                                    src={newLifestyle5}
-                                    alt="Recovery & Flexibility"
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                            </div>
+                        <Link href="/Collections/yoga">
+                            <CategoryCard name="Yoga" image={newLifestyle4} />
+                        </Link>
+                        <Link href="/Collections/running">
+                            <CategoryCard name="Running" image={newLifestyle2} />
+                        </Link>
+                        <Link href="/Collections/studio">
+                            <CategoryCard name="Studio" image={newLifestyle6} />
                         </Link>
                     </div>
-                </div>
 
-                <div className="mb-12">
-                    <h2 className="text-3xl font-bold mb-2" data-testid="text-products-title">New Arrivals</h2>
-                    <p className="text-muted-foreground">Discover the latest additions to our collection</p>
-                </div>
+                    {/* Editorial Features Section - Mobile-First */}
+                    <div className="mb-12 md:mb-16 lg:mb-20">
+                        <div className="mb-8 md:mb-12 text-center">
+                            <h2 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold mb-2">Performance Features</h2>
+                            <p className="text-sm md:text-base text-muted-foreground">Discover the technology behind our designs</p>
+                        </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {content.products.map((product) => (
-                        <ProductCard
-                            key={product.id}
-                            {...product}
-                            onToggleWishlist={handleToggleWishlist}
-                            isWishlisted={wishlist.has(product.id)}
-                        />
-                    ))}
-                </div>
-            </section>
+                        <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop">
+
+                            {/* Lifestyle Editorial with Video */}
+                            <Link href="/Collections/training" data-testid="link-editorial-jacket">
+                                <div className="group relative aspect-[3/4] rounded-md overflow-hidden">
+                                    <video
+                                        autoPlay
+                                        loop
+                                        muted
+                                        playsInline
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                    >
+                                        <source src={featureVideo1} type="video/mp4" />
+                                    </video>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                </div>
+                            </Link>
+
+                            {/* Strength Training */}
+                            <Link href="/Collections/training" data-testid="link-editorial-highrise">
+                                <div className="group relative aspect-[3/4] rounded-md overflow-hidden bg-muted">
+                                    <Image
+                                        src={newLifestyle8}
+                                        alt="Strength Training"
+                                        fill
+                                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                                        quality={85}
+                                    />
+                                </div>
+                            </Link>
+
+                            {/* Cardio Training with Video */}
+                            <Link href="/Collections/training" data-testid="link-editorial-tech">
+                                <div className="group relative aspect-[3/4] rounded-md overflow-hidden bg-muted">
+                                    <video
+                                        autoPlay
+                                        loop
+                                        muted
+                                        playsInline
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                    >
+                                        <source src={newVideo2} type="video/mp4" />
+                                    </video>
+                                </div>
+                            </Link>
+
+                            {/* Outdoor Running */}
+                            <Link href="/Collections/training" data-testid="link-editorial-training">
+                                <div className="group relative aspect-[3/4] rounded-md overflow-hidden">
+                                    <Image
+                                        src={newLifestyle11}
+                                        alt="Outdoor Running"
+                                        fill
+                                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                                        quality={85}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                </div>
+                            </Link>
+                        </div>
+
+                        {/* Bottom Row - Feature Details - Mobile Stack */}
+                        <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop mt-4 md:mt-6">
+
+                            {/* Core Training */}
+                            <Link href="/Collections/training" data-testid="link-editorial-totallook">
+                                <div className="group relative aspect-square rounded-md overflow-hidden bg-muted">
+                                    <Image
+                                        src={newLifestyle9}
+                                        alt="Core Training"
+                                        fill
+                                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                        quality={85}
+                                    />
+                                </div>
+                            </Link>
+
+                            {/* Speed Training */}
+                            <Link href="/Collections/yoga" data-testid="link-editorial-outdoor">
+                                <div className="group relative aspect-square rounded-md overflow-hidden">
+                                    <Image
+                                        src={newLifestyle10}
+                                        alt="Speed Training"
+                                        fill
+                                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                        quality={85}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                </div>
+                            </Link>
+
+                            {/* Recovery & Flexibility */}
+                            <Link href="/Collections/training" data-testid="link-editorial-flare">
+                                <div className="group relative aspect-square rounded-md overflow-hidden bg-muted">
+                                    <Image
+                                        src={newLifestyle5}
+                                        alt="Recovery & Flexibility"
+                                        fill
+                                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                        quality={85}
+                                    />
+                                </div>
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* New Arrivals - Mobile-First */}
+                    <div className="mb-8 md:mb-12">
+                        <h2 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold mb-2" data-testid="text-products-title">
+                            New Arrivals
+                        </h2>
+                        <p className="text-sm md:text-base text-muted-foreground">
+                            Discover the latest additions to our collection
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop">
+                        {content.products.map((product) => (
+                            <ProductCard
+                                key={product.id}
+                                {...product}
+                                onToggleWishlist={handleToggleWishlist}
+                                isWishlisted={wishlist.has(product.id)}
+                            />
+                        ))}
+                    </div>
+                </section>
+            </div>
         </div>
     );
 }

@@ -1,7 +1,10 @@
+// app/(site)/Collections/page.tsx - Mobile-First Responsive Design
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { ChevronDown, SlidersHorizontal, Grid3x3, List } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { ChevronDown, SlidersHorizontal, Grid3x3, List, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/ProductCard';
 import { useTheme } from '@/components/ThemeProvider';
@@ -156,6 +159,7 @@ export default function CollectionPage() {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [sortBy, setSortBy] = useState('newest');
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
     const products = collectionProducts[collectionName as keyof typeof collectionProducts] || [];
     const heroImage = collectionHeroImages[collectionName as keyof typeof collectionHeroImages];
@@ -173,20 +177,26 @@ export default function CollectionPage() {
     }, [collectionName, setTheme]);
 
     return (
-        <div>
-            {/* Breadcrumb */}
-            <div className="border-b">
-                <div className="container mx-auto px-4 py-3">
-                    <div className="text-sm text-muted-foreground">
-                        <a href="/" className="hover:text-foreground" data-testid="link-home">Home</a>
-                        <span className="mx-2">/</span>
-                        <span className="capitalize" data-testid="text-breadcrumb">{collectionName}</span>
+        <div className="min-h-screen">
+            {/* Mobile-First Breadcrumb */}
+            <div className="border-b bg-background">
+                <div className="mobile-container tablet-container desktop-container">
+                    <div className="py-3">
+                        <div className="text-sm text-muted-foreground">
+                            <Link href="/" className="hover:text-foreground transition-colors" data-testid="link-home">
+                                Home
+                            </Link>
+                            <span className="mx-2">/</span>
+                            <span className="capitalize font-medium" data-testid="text-breadcrumb">
+                                {collectionName}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Hero Banner */}
-            <div className="relative py-24 overflow-hidden">
+            {/* Mobile-First Hero Banner */}
+            <div className="relative h-[40vh] md:h-[50vh] lg:h-[60vh] min-h-[300px] md:min-h-[400px] lg:min-h-[500px] overflow-hidden">
                 {heroVideo ? (
                     <video
                         autoPlay
@@ -198,126 +208,240 @@ export default function CollectionPage() {
                         <source src={heroVideo} type="video/mp4" />
                     </video>
                 ) : (
-                    <div
-                        className="absolute inset-0 bg-cover bg-center"
-                        style={{ backgroundImage: `url(${heroImage})` }}
+                    <Image
+                        src={heroImage}
+                        alt={`${collectionName} collection`}
+                        fill
+                        className="object-cover"
+                        sizes="100vw"
+                        priority={true}
+                        quality={85}
                     />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/40"></div>
-                <div className="container mx-auto px-4 text-center relative z-10">
-                    <h1 className="text-4xl md:text-5xl font-bold mb-4 capitalize text-white" data-testid="text-collection-title">
-                        {collectionName}
-                    </h1>
-                    <p className="text-lg text-white/90 max-w-2xl mx-auto">
-                        Discover our premium {collectionName} collection designed for performance and style
-                    </p>
+                <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/40" />
+                <div className="mobile-container tablet-container desktop-container text-center relative z-10 h-full flex items-center justify-center">
+                    <div className="max-w-3xl">
+                        <h1 className="text-mobile-h1 md:text-tablet-h1 lg:text-desktop-h1 font-bold mb-4 capitalize text-white" data-testid="text-collection-title">
+                            {collectionName}
+                        </h1>
+                        <p className="text-sm md:text-base lg:text-lg text-white/90 max-w-2xl mx-auto">
+                            Discover our premium {collectionName} collection designed for performance and style
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            {/* Features Section */}
-            <div className="bg-muted/30 py-16">
-                <div className="container mx-auto px-4">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold mb-3">{features.title}</h2>
-                        <p className="text-lg text-muted-foreground">{features.subtitle}</p>
+            {/* Mobile-First Features Section */}
+            <div className="bg-muted/30 py-8 md:py-12 lg:py-16">
+                <div className="mobile-container tablet-container desktop-container">
+                    <div className="text-center mb-8 md:mb-12">
+                        <h2 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold mb-3">
+                            {features.title}
+                        </h2>
+                        <p className="text-sm md:text-base lg:text-lg text-muted-foreground">
+                            {features.subtitle}
+                        </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop">
                         {features.features.map((feature, index) => (
-                            <div key={index} className="text-center">
-                                <h3 className="font-semibold mb-2 text-lg">{feature.title}</h3>
-                                <p className="text-sm text-muted-foreground">{feature.description}</p>
+                            <div key={index} className="text-center p-4 md:p-6 bg-background rounded-lg shadow-sm">
+                                <h3 className="font-semibold mb-2 text-sm md:text-base lg:text-lg">
+                                    {feature.title}
+                                </h3>
+                                <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
+                                    {feature.description}
+                                </p>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* Filters & Sorting Bar */}
-            <div className="sticky top-16 z-40 bg-background border-b">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4 flex-wrap">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" data-testid="button-filter">
-                                        <SlidersHorizontal className="h-4 w-4 mr-2" />
-                                        Filter
-                                        <ChevronDown className="h-4 w-4 ml-2" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start">
-                                    {categories.map((cat) => (
-                                        <DropdownMenuItem
-                                            key={cat}
-                                            onClick={() => setSelectedCategory(cat)}
-                                            data-testid={`filter-${cat}`}
-                                        >
-                                            {cat === 'all' ? 'All Products' : cat}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+            {/* Mobile-First Filters & Sorting Bar */}
+            <div className="sticky top-16 z-40 bg-background border-b shadow-sm">
+                <div className="mobile-container tablet-container desktop-container">
+                    <div className="py-4">
 
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" data-testid="button-sort">
-                                        Sort: {sortBy}
-                                        <ChevronDown className="h-4 w-4 ml-2" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start">
-                                    <DropdownMenuItem onClick={() => setSortBy('newest')} data-testid="sort-newest">Newest</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSortBy('price-low')} data-testid="sort-price-low">Price: Low to High</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSortBy('price-high')} data-testid="sort-price-high">Price: High to Low</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSortBy('popular')} data-testid="sort-popular">Most Popular</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            <span className="text-sm text-muted-foreground" data-testid="text-product-count">
-                                {filteredProducts.length} products
-                            </span>
+                        {/* Mobile Filter Toggle */}
+                        <div className="flex items-center justify-between mb-4 md:hidden">
+                            <Button
+                                variant="outline"
+                                onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+                                className="flex-1 mr-2 touch-target"
+                                data-testid="button-mobile-filters"
+                            >
+                                <SlidersHorizontal className="h-4 w-4 mr-2" />
+                                Filters & Sort
+                                <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${mobileFiltersOpen ? 'rotate-180' : ''}`} />
+                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                                    size="icon"
+                                    onClick={() => setViewMode('grid')}
+                                    className="touch-target-sm"
+                                    data-testid="button-grid-view"
+                                >
+                                    <Grid3x3 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                                    size="icon"
+                                    onClick={() => setViewMode('list')}
+                                    className="touch-target-sm"
+                                    data-testid="button-list-view"
+                                >
+                                    <List className="h-4 w-4" />
+                                </Button>
+                            </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                                size="icon"
-                                onClick={() => setViewMode('grid')}
-                                data-testid="button-grid-view"
-                            >
-                                <Grid3x3 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                                size="icon"
-                                onClick={() => setViewMode('list')}
-                                data-testid="button-list-view"
-                            >
-                                <List className="h-4 w-4" />
-                            </Button>
+                        {/* Mobile Filters Panel */}
+                        {mobileFiltersOpen && (
+                            <div className="md:hidden mb-4 p-4 bg-muted/50 rounded-lg space-y-4">
+                                {/* Category Filter */}
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Category</label>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" className="w-full justify-between touch-target" data-testid="button-mobile-filter">
+                                                {selectedCategory === 'all' ? 'All Products' : selectedCategory}
+                                                <ChevronDown className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start" className="w-full">
+                                            {categories.map((cat) => (
+                                                <DropdownMenuItem
+                                                    key={cat}
+                                                    onClick={() => setSelectedCategory(cat)}
+                                                    data-testid={`mobile-filter-${cat}`}
+                                                >
+                                                    {cat === 'all' ? 'All Products' : cat}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+
+                                {/* Sort Filter */}
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Sort By</label>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" className="w-full justify-between touch-target" data-testid="button-mobile-sort">
+                                                {sortBy}
+                                                <ChevronDown className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start" className="w-full">
+                                            <DropdownMenuItem onClick={() => setSortBy('newest')} data-testid="mobile-sort-newest">Newest</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setSortBy('price-low')} data-testid="mobile-sort-price-low">Price: Low to High</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setSortBy('price-high')} data-testid="mobile-sort-price-high">Price: High to Low</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setSortBy('popular')} data-testid="mobile-sort-popular">Most Popular</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+
+                                {/* Product Count */}
+                                <div className="text-center">
+                                    <span className="text-sm text-muted-foreground" data-testid="text-mobile-product-count">
+                                        {filteredProducts.length} products
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Desktop Filters */}
+                        <div className="hidden md:flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4 flex-wrap">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" data-testid="button-filter">
+                                            <SlidersHorizontal className="h-4 w-4 mr-2" />
+                                            Filter
+                                            <ChevronDown className="h-4 w-4 ml-2" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        {categories.map((cat) => (
+                                            <DropdownMenuItem
+                                                key={cat}
+                                                onClick={() => setSelectedCategory(cat)}
+                                                data-testid={`filter-${cat}`}
+                                            >
+                                                {cat === 'all' ? 'All Products' : cat}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" data-testid="button-sort">
+                                            Sort: {sortBy}
+                                            <ChevronDown className="h-4 w-4 ml-2" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        <DropdownMenuItem onClick={() => setSortBy('newest')} data-testid="sort-newest">Newest</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setSortBy('price-low')} data-testid="sort-price-low">Price: Low to High</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setSortBy('price-high')} data-testid="sort-price-high">Price: High to Low</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setSortBy('popular')} data-testid="sort-popular">Most Popular</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                <span className="text-sm text-muted-foreground" data-testid="text-product-count">
+                                    {filteredProducts.length} products
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                                    size="icon"
+                                    onClick={() => setViewMode('grid')}
+                                    data-testid="button-grid-view"
+                                >
+                                    <Grid3x3 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                                    size="icon"
+                                    onClick={() => setViewMode('list')}
+                                    data-testid="button-list-view"
+                                >
+                                    <List className="h-4 w-4" />
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Products Grid */}
-            <div className="container mx-auto px-4 py-12">
-                <div className={`grid gap-6 ${viewMode === 'grid'
-                        ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+            {/* Mobile-First Products Grid */}
+            <div className="mobile-container tablet-container desktop-container py-8 md:py-12">
+                <div className={`grid gap-mobile md:gap-tablet lg:gap-desktop ${viewMode === 'grid'
+                        ? 'grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop'
                         : 'grid-cols-1'
                     }`}>
                     {filteredProducts.map((product) => (
-                        <ProductCard key={product.id} {...product} />
+                        <ProductCard
+                            key={product.id}
+                            {...product}
+                            category={collectionName}
+                        />
                     ))}
                 </div>
             </div>
 
-            {/* Collection Story Section */}
-            <div className="border-t">
-                <div className="container mx-auto px-4 py-16">
+            {/* Mobile-First Collection Story Section */}
+            <div className="border-t bg-muted/20">
+                <div className="mobile-container tablet-container desktop-container py-8 md:py-12 lg:py-16">
                     <div className="max-w-3xl mx-auto text-center">
-                        <h2 className="text-3xl font-bold mb-6 capitalize">The {collectionName} Collection</h2>
-                        <div className="space-y-4 text-muted-foreground">
+                        <h2 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold mb-6 capitalize">
+                            The {collectionName} Collection
+                        </h2>
+                        <div className="space-y-4 text-sm md:text-base text-muted-foreground leading-relaxed">
                             {collectionName === 'training' && (
                                 <>
                                     <p>

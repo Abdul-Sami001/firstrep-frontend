@@ -1,3 +1,5 @@
+// components/Hero.tsx - Mobile-First with Next.js Image
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
 interface HeroProps {
@@ -9,9 +11,20 @@ interface HeroProps {
   onCtaClick?: () => void;
 }
 
-export default function Hero({ image, video, title, subtitle, ctaText = 'Shop Now', onCtaClick }: HeroProps) {
+export default function Hero({
+  image,
+  video,
+  title,
+  subtitle,
+  ctaText = 'Shop Now',
+  onCtaClick
+}: HeroProps) {
   return (
-    <section className="relative h-[70vh] min-h-[500px] overflow-hidden" data-testid="section-hero">
+    <section
+      className="relative h-[50vh] md:h-[60vh] lg:h-[70vh] min-h-[300px] md:min-h-[400px] lg:min-h-[500px] overflow-hidden"
+      data-testid="section-hero"
+    >
+      {/* Mobile-First Background */}
       {video ? (
         <video
           autoPlay
@@ -22,32 +35,48 @@ export default function Hero({ image, video, title, subtitle, ctaText = 'Shop No
         >
           <source src={video} type="video/mp4" />
         </video>
-      ) : (
-        <img
+      ) : image ? (
+        <Image
           src={image}
           alt={title}
-          className="absolute inset-0 w-full h-full object-cover"
+          fill
+          className="object-cover"
+          sizes="100vw"
+          priority={true}
+          quality={85}
         />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20" />
       )}
-      <div 
+
+      {/* Mobile-First Gradient Overlay */}
+      <div
         className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"
         aria-hidden="true"
       />
-      <div className="relative h-full flex items-center justify-center text-center px-4">
-        <div className="max-w-3xl">
-          <h2 className="text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight" data-testid="text-hero-title">
+
+      {/* Mobile-First Content */}
+      <div className="relative h-full flex items-center justify-center text-center px-mobile md:px-tablet lg:px-desktop">
+        <div className="max-w-3xl w-full">
+          <h2
+            className="text-mobile-h1 md:text-tablet-h1 lg:text-desktop-h1 font-bold text-white mb-4 tracking-tight"
+            data-testid="text-hero-title"
+          >
             {title}
           </h2>
-          <p className="text-lg md:text-xl text-white/90 mb-8" data-testid="text-hero-subtitle">
+          <p
+            className="text-sm md:text-base lg:text-lg text-white/90 mb-6 md:mb-8"
+            data-testid="text-hero-subtitle"
+          >
             {subtitle}
           </p>
-          <Button 
+          <Button
             size="lg"
             onClick={() => {
               onCtaClick?.();
               console.log('Hero CTA clicked');
             }}
-            className="bg-white/10 backdrop-blur-md text-white border-2 border-white/20 hover:bg-white/20"
+            className="touch-target bg-white/10 backdrop-blur-md text-white border-2 border-white/20 hover:bg-white/20 transition-all duration-300"
             data-testid="button-hero-cta"
           >
             {ctaText}

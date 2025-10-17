@@ -4,6 +4,15 @@ import { usersApi, LoginRequest, RegisterRequest, ProfileUpdateRequest, Password
 import { QUERY_KEYS } from '@/lib/utils/constants';
 import { useToast } from '@/hooks/use-toast';
 
+// Performance-optimized query configuration
+const QUERY_CONFIG = {
+    staleTime: 5 * 60 * 1000,        // 5 minutes
+    cacheTime: 10 * 60 * 1000,       // 10 minutes
+    retry: 2,                        // Reduced retries for speed
+    retryDelay: 1000,                // 1 second delay
+    refetchOnWindowFocus: false,     // Prevent unnecessary refetches
+};
+
 export const useLogin = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
@@ -11,10 +20,11 @@ export const useLogin = () => {
     return useMutation({
         mutationFn: (data: LoginRequest) => usersApi.login(data),
         onSuccess: (response) => {
-            // Store access token (refresh token is in httpOnly cookie)
+            // Store access token
             if (typeof window !== 'undefined') {
                 localStorage.setItem('access_token', response.access);
             }
+
             // Invalidate user queries
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USER.CURRENT });
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USER.PROFILE });
@@ -35,7 +45,6 @@ export const useLogin = () => {
 };
 
 export const useRegister = () => {
-    const queryClient = useQueryClient();
     const { toast } = useToast();
 
     return useMutation({
@@ -63,7 +72,7 @@ export const useLogout = () => {
     return useMutation({
         mutationFn: usersApi.logout,
         onSuccess: () => {
-            // Clear access token (refresh token cookie will be deleted by backend)
+            // Clear access token
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('access_token');
             }
@@ -89,12 +98,11 @@ export const useCurrentUser = (enabled: boolean = true) => {
     return useQuery({
         queryKey: QUERY_KEYS.USER.CURRENT,
         queryFn: usersApi.getCurrentUser,
-        enabled, // Only fetch if enabled
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        enabled,
+        ...QUERY_CONFIG,
         retry: (failureCount, error: any) => {
-            // Don't retry on 401 (unauthorized)
             if (error?.response?.status === 401) return false;
-            return failureCount < 3;
+            return failureCount < 2;
         },
     });
 };
@@ -103,10 +111,10 @@ export const useUserProfile = () => {
     return useQuery({
         queryKey: QUERY_KEYS.USER.PROFILE,
         queryFn: usersApi.getProfile,
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        ...QUERY_CONFIG,
         retry: (failureCount, error: any) => {
             if (error?.response?.status === 401) return false;
-            return failureCount < 3;
+            return failureCount < 2;
         },
     });
 };

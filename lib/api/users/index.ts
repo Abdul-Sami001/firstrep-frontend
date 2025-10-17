@@ -1,29 +1,38 @@
 // lib/api/users/index.ts
 import { api } from '../client';
 
-// Types based on your Django backend
+// Types matching your Django backend
 export interface User {
-    id: number;
+    id: string;
     email: string;
     first_name: string;
     last_name: string;
     is_active: boolean;
     date_joined: string;
+    last_login?: string;
 }
 
 export interface UserProfile {
-    id: number;
-    user: User;
-    phone?: string;
+    id: string;
+    user: string;
+    phone_number?: string;
     date_of_birth?: string;
     address?: string;
     city?: string;
     state?: string;
-    postal_code?: string;
+    zip_code?: string;
     country?: string;
     avatar?: string;
-    created_at: string;
-    updated_at: string;
+    preferences?: {
+        newsletter: boolean;
+        sms_notifications: boolean;
+        email_notifications: boolean;
+    };
+}
+
+export interface AuthResponse {
+    access: string;
+    refresh?: string; // Not returned due to httpOnly cookie
 }
 
 export interface LoginRequest {
@@ -38,18 +47,20 @@ export interface RegisterRequest {
     last_name: string;
 }
 
-export interface AuthResponse {
-    access: string; // Only access token, refresh is in httpOnly cookie
-}
-
 export interface ProfileUpdateRequest {
-    phone?: string;
+    phone_number?: string;
     date_of_birth?: string;
     address?: string;
     city?: string;
     state?: string;
-    postal_code?: string;
+    zip_code?: string;
     country?: string;
+    avatar?: string;
+    preferences?: {
+        newsletter?: boolean;
+        sms_notifications?: boolean;
+        email_notifications?: boolean;
+    };
 }
 
 export interface PasswordResetRequest {
@@ -62,42 +73,42 @@ export interface PasswordResetConfirmRequest {
     password: string;
 }
 
-// API Methods matching your Django URLs
+// API Methods - Production Ready
 export const usersApi = {
     // Authentication
-    login: (data: LoginRequest) =>
+    login: (data: LoginRequest): Promise<AuthResponse> =>
         api.post<AuthResponse>('/auth/token/', data),
 
-    register: (data: RegisterRequest) =>
+    register: (data: RegisterRequest): Promise<{ detail: string }> =>
         api.post<{ detail: string }>('/auth/register/', data),
 
-    logout: () =>
-        api.post<{ detail: string }>('/auth/logout/'),
+    logout: (): Promise<{ detail: string }> =>
+        api.post<{ detail: string }>('/auth/logout/', {}),
 
-    refreshToken: () =>
-        api.post<{ access: string }>('/auth/token/refresh/'),
+    refreshToken: (): Promise<{ access: string }> =>
+        api.post<{ access: string }>('/auth/token/refresh/', {}),
 
-    verifyToken: (token: string) =>
-        api.post('/auth/token/verify/', { token }),
+    verifyToken: (token: string): Promise<{ detail: string }> =>
+        api.post<{ detail: string }>('/auth/token/verify/', { token }),
 
     // User profile
-    getCurrentUser: () =>
+    getCurrentUser: (): Promise<User> =>
         api.get<User>('/auth/me/'),
 
-    getProfile: () =>
+    getProfile: (): Promise<UserProfile> =>
         api.get<UserProfile>('/auth/profile/'),
 
-    updateProfile: (data: ProfileUpdateRequest) =>
+    updateProfile: (data: ProfileUpdateRequest): Promise<UserProfile> =>
         api.patch<UserProfile>('/auth/profile/', data),
 
     // Email verification
-    verifyEmail: (uid: string, token: string) =>
+    verifyEmail: (uid: string, token: string): Promise<{ detail: string }> =>
         api.get<{ detail: string }>(`/auth/verify-email/?uid=${uid}&token=${token}`),
 
     // Password reset
-    requestPasswordReset: (data: PasswordResetRequest) =>
+    requestPasswordReset: (data: PasswordResetRequest): Promise<{ detail: string }> =>
         api.post<{ detail: string }>('/password-reset/', data),
 
-    confirmPasswordReset: (data: PasswordResetConfirmRequest) =>
+    confirmPasswordReset: (data: PasswordResetConfirmRequest): Promise<{ detail: string }> =>
         api.post<{ detail: string }>('/password-reset-confirm/', data),
 };

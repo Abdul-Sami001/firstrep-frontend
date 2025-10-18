@@ -1,75 +1,52 @@
-// lib/api/cart/index.ts
+// lib/api/cart/index.ts - Production-Ready Cart API
 import { api } from '../client';
 
-// Types
+// Backend-Matching Types
 export interface CartItem {
     id: string;
-    product: {
-        id: string;
-        name: string;
-        price: number;
-        images: string[];
-        slug: string;
-    };
-    variant?: {
-        id: string;
-        size: string;
-        color: string;
-        price?: number;
-    };
+    product: string; // Product ID
+    product_name: string;
+    variant?: string | null; // Variant ID
+    variant_name?: string | null;
     quantity: number;
-    total_price: number;
-    added_at: string;
+    price_at_time: number;
+    subtotal: number;
 }
 
 export interface Cart {
     id: string;
+    user?: string | null; // User ID
+    session_key?: string | null;
     items: CartItem[];
-    total_items: number;
-    subtotal: number;
-    shipping_cost: number;
     total: number;
-    created_at: string;
-    updated_at: string;
 }
 
 export interface AddToCartRequest {
-    product_id: string;
-    variant_id?: string;
-    quantity: number;
+    product: string; // Product ID
+    variant?: string; // Variant ID
+    quantity?: number;
 }
 
-export interface UpdateCartItemRequest {
-    quantity: number;
+export interface CheckoutResponse {
+    detail: string;
+    order_id: string;
 }
 
-// API Methods
+// Production API Methods
 export const cartApi = {
-    // Get current cart
+    // Get current cart (user or guest)
     getCart: () =>
         api.get<Cart>('/cart/'),
 
     // Add item to cart
     addToCart: (data: AddToCartRequest) =>
-        api.post<CartItem>('/cart/items/', data),
-
-    // Update cart item quantity
-    updateCartItem: (itemId: string, data: UpdateCartItemRequest) =>
-        api.patch<CartItem>(`/cart/items/${itemId}/`, data),
+        api.post<Cart>('/cart/add/', data),
 
     // Remove item from cart
-    removeCartItem: (itemId: string) =>
-        api.delete(`/cart/items/${itemId}/`),
+    removeFromCart: (itemId: string) =>
+        api.delete(`/cart/remove/${itemId}/`),
 
-    // Clear entire cart
-    clearCart: () =>
-        api.delete('/cart/'),
-
-    // Apply coupon code
-    applyCoupon: (code: string) =>
-        api.post<{ discount_amount: number; message: string }>('/cart/coupon/', { code }),
-
-    // Remove coupon
-    removeCoupon: () =>
-        api.delete('/cart/coupon/'),
+    // Checkout cart (create order)
+    checkout: () =>
+        api.post<CheckoutResponse>('/cart/checkout/'),
 };

@@ -49,14 +49,16 @@ export const API_ENDPOINTS = {
     },
 } as const;
 
+// lib/utils/constants.ts - Updated Query Keys
 export const QUERY_KEYS = {
     PRODUCTS: {
         ALL: ['products'] as const,
         LIST: (filters?: any) => ['products', 'list', filters] as const,
+        INFINITE: (filters?: any) => ['products', 'infinite', filters] as const,
         DETAIL: (id: string) => ['products', 'detail', id] as const,
-        SEARCH: (query: string) => ['products', 'search', query] as const,
-        FEATURED: ['products', 'featured'] as const,
-        RELATED: (id: string) => ['products', 'related', id] as const,
+        SEARCH: (query: string, filters?: any) => ['products', 'search', query, filters] as const,
+        CATEGORIES: ['products', 'categories'] as const,
+        MY: (params?: any) => ['products', 'my', params] as const,
     },
     CART: {
         ALL: ['cart'] as const,

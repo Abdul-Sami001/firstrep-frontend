@@ -421,14 +421,16 @@ export default function CollectionPage() {
             {/* Mobile-First Products Grid */}
             <div className="mobile-container tablet-container desktop-container py-8 md:py-12">
                 <div className={`grid gap-mobile md:gap-tablet lg:gap-desktop ${viewMode === 'grid'
-                        ? 'grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop'
-                        : 'grid-cols-1'
+                    ? 'grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop'
+                    : 'grid-cols-1'
                     }`}>
                     {filteredProducts.map((product) => (
                         <ProductCard
                             key={product.id}
-                            {...product}
-                            category={collectionName}
+                            product={{
+                                ...product,
+                                category: collectionName
+                            }}
                         />
                     ))}
                 </div>

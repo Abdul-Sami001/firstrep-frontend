@@ -1,42 +1,49 @@
-// lib/api/payments/index.ts
+// lib/api/payments/index.ts - Production-Ready Payments API
 import { api } from '../client';
 
-// Types
-export interface PaymentIntent {
+// Backend-Matching Types
+export interface Payment {
     id: string;
+    order: string; // Order ID
+    stripe_id?: string | null;
     amount: number;
     currency: string;
-    status: 'requires_payment_method' | 'requires_confirmation' | 'requires_action' | 'processing' | 'succeeded' | 'canceled';
-    client_secret: string;
-    payment_method_types: string[];
+    status: 'created' | 'processing' | 'succeeded' | 'failed' | 'refunded';
+    created_at: string;
+    updated_at: string;
+    metadata?: Record<string, any>;
 }
 
-export interface CreatePaymentIntentRequest {
+export interface CreateCheckoutRequest {
     order_id: string;
-    payment_method_id?: string;
 }
 
-// API Methods
+export interface CreateCheckoutResponse {
+    checkout_url: string;
+    session_id: string;
+}
+
+export interface RefundRequest {
+    payment_id: string;
+    amount?: number; // Optional partial refund
+}
+
+export interface RefundResponse {
+    detail: string;
+    refund: any; // Stripe refund object
+}
+
+// Production API Methods
 export const paymentsApi = {
-    // Create payment intent
-    createPaymentIntent: (data: CreatePaymentIntentRequest) =>
-        api.post<PaymentIntent>('/payments/create-intent/', data),
+    // Create Stripe checkout session
+    createCheckoutSession: (data: CreateCheckoutRequest) =>
+        api.post<CreateCheckoutResponse>('/payments/create-checkout-session/', data),
 
-    // Confirm payment
-    confirmPayment: (paymentIntentId: string, paymentMethodId?: string) =>
-        api.post<{ status: string; message?: string }>(`/payments/${paymentIntentId}/confirm/`, {
-            payment_method_id: paymentMethodId
-        }),
+    // Get payment details
+    getPayment: (id: string) =>
+        api.get<Payment>(`/payments/payments/${id}/`),
 
-    // Get payment methods
-    getPaymentMethods: () =>
-        api.get<any[]>('/payments/methods/'),
-
-    // Add payment method
-    addPaymentMethod: (data: any) =>
-        api.post('/payments/methods/', data),
-
-    // Remove payment method
-    removePaymentMethod: (methodId: string) =>
-        api.delete(`/payments/methods/${methodId}/`),
+    // Create refund (admin only)
+    createRefund: (data: RefundRequest) =>
+        api.post<RefundResponse>('/payments/refund/', data),
 };

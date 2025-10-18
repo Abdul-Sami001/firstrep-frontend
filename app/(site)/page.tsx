@@ -1,4 +1,4 @@
-// app/(site)/page.tsx - Mobile-First Responsive Design
+// app/(site)/page.tsx - Hybrid Frontend + API Integration
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -7,7 +7,10 @@ import Hero from '@/components/Hero';
 import ProductCard from '@/components/ProductCard';
 import CategoryCard from '@/components/CategoryCard';
 import { useTheme } from '@/components/ThemeProvider';
+import { useProducts } from '@/hooks/useProducts';
+import { Loader2 } from 'lucide-react';
 
+// ✅ KEEP ALL YOUR EXISTING IMAGES AND DATA
 // Import hero/lifestyle images
 const trainingHero = '/attached_assets/videoframe_6232_1760252496970.png';
 const yogaHero = '/attached_assets/stock_images/woman_yoga_meditatio_5c026a27.jpg';
@@ -65,6 +68,7 @@ const newLifestyle9 = '/attached_assets/pexels-jonathanborba-3076513_17602583694
 const newLifestyle10 = '/attached_assets/pexels-nappy-936094_1760258372261.jpg';
 const newLifestyle11 = '/attached_assets/pexels-olly-3764537_1760258374850.jpg';
 
+// ✅ KEEP YOUR EXISTING THEME CONTENT
 const themeContent = {
     'training': {
         hero: {
@@ -128,6 +132,12 @@ export default function HomePage() {
     const { setTheme } = useTheme();
     const [wishlist, setWishlist] = useState<Set<string>>(new Set());
 
+    // ✅ HYBRID APPROACH: Try API first, fallback to frontend data
+    const { data: apiProducts, isLoading: apiLoading, error: apiError } = useProducts({
+        page_size: 8,
+        ordering: '-created_at'
+    });
+
     // Always use running content for homepage
     const content = themeContent['running'];
 
@@ -148,8 +158,14 @@ export default function HomePage() {
         });
     };
 
+    // ✅ HYBRID PRODUCTS: Use API products if available, otherwise use frontend data
+    const displayProducts = apiProducts?.results && apiProducts.results.length > 0
+        ? apiProducts.results
+        : content.products;
+
     return (
         <div className="min-h-screen">
+            {/* ✅ KEEP YOUR ORIGINAL HERO WITH ALL IMAGES AND VIDEOS */}
             <Hero {...content.hero} />
 
             {/* Mobile-First Container */}
@@ -432,26 +448,70 @@ export default function HomePage() {
                         </div>
                     </div>
 
-                    {/* New Arrivals - Mobile-First */}
+                    {/* ✅ HYBRID PRODUCTS SECTION */}
                     <div className="mb-8 md:mb-12">
                         <h2 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold mb-2" data-testid="text-products-title">
-                            New Arrivals
+                            {apiProducts?.results && apiProducts.results.length > 0 ? 'Featured Products' : 'New Arrivals'}
                         </h2>
                         <p className="text-sm md:text-base text-muted-foreground">
-                            Discover the latest additions to our collection
+                            {apiProducts?.results && apiProducts.results.length > 0
+                                ? 'Discover our handpicked selection of premium activewear'
+                                : 'Discover the latest additions to our collection'
+                            }
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop">
-                        {content.products.map((product) => (
-                            <ProductCard
-                                key={product.id}
-                                {...product}
-                                onToggleWishlist={handleToggleWishlist}
-                                isWishlisted={wishlist.has(product.id)}
-                            />
-                        ))}
-                    </div>
+                    {/* ✅ HYBRID PRODUCTS GRID */}
+                    {apiLoading ? (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-center">
+                                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                                <p>Loading products...</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop">
+                            {displayProducts.map((product, index) => {
+                                // ✅ Handle both API products and frontend products
+                                const productData = typeof product === 'object' && 'id' in product && 'title' in product
+                                    ? product // API product
+                                    : {
+                                        id: product.id,
+                                        title: product.name,
+                                        price: product.price,
+                                        images: [{ image: product.image, alt_text: product.name, position: 0 }],
+                                        variants: [{
+                                            id: product.id,
+                                            attributes: { size: 'M', color: 'Default' },
+                                            stock: 10,
+                                            is_active: true
+                                        }],
+                                        category: { name: 'General', slug: 'general' },
+                                        total_stock: 10,
+                                        currency: 'USD'
+                                    };
+
+                                return (
+                                    <ProductCard
+                                        key={productData.id}
+                                        product={productData}
+                                        onToggleWishlist={handleToggleWishlist}
+                                        isWishlisted={wishlist.has(productData.id)}
+                                        priority={index < 4}
+                                    />
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* ✅ API Error Fallback Message */}
+                    {apiError && (
+                        <div className="text-center py-8">
+                            <p className="text-sm text-muted-foreground">
+                                Using sample products. Backend integration coming soon!
+                            </p>
+                        </div>
+                    )}
                 </section>
             </div>
         </div>

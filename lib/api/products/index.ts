@@ -1,48 +1,62 @@
-// lib/api/products/index.ts
+// lib/api/products/index.ts - Production-Ready Types
 import { api } from '../client';
 
-// Types
-export interface Product {
+// Backend-Matching Types
+export interface Category {
     id: string;
     name: string;
-    description: string;
-    price: number;
-    original_price?: number;
-    images: string[];
-    category: {
-        id: string;
-        name: string;
-        slug: string;
-    };
-    brand?: {
-        id: string;
-        name: string;
-    };
-    variants: ProductVariant[];
-    in_stock: boolean;
-    stock_quantity: number;
     slug: string;
-    created_at: string;
-    updated_at: string;
+    parent?: string | null;
 }
 
 export interface ProductVariant {
     id: string;
-    size: string;
-    color: string;
-    price?: number;
-    stock_quantity: number;
+    product: string;
     sku: string;
+    attributes: Record<string, any>; // JSON field from backend
+    price_override?: number;
+    stock: number;
+    is_active: boolean;
+}
+
+export interface ProductImage {
+    id: string;
+    product: string;
+    image: string; // URL to image
+    alt_text: string;
+    position: number;
+}
+
+export interface Product {
+    id: string;
+    seller: string;
+    category?: Category | null;
+    title: string;
+    slug: string;
+    description: string;
+    price: number;
+    currency: string;
+    is_active: boolean;
+    specifications: Record<string, any>; // JSON field
+    popularity: number;
+    created_at: string;
+    updated_at: string;
+    // Related data
+    variants: ProductVariant[];
+    images: ProductImage[];
+    // Computed fields
+    total_stock?: number;
 }
 
 export interface ProductFilters {
-    category?: string;
-    brand?: string;
+    category__slug?: string;
+    currency?: string;
+    is_active?: boolean;
+    search?: string;
+    ordering?: 'price' | '-price' | 'created_at' | '-created_at' | 'popularity' | '-popularity' | 'title' | '-title';
     min_price?: number;
     max_price?: number;
-    in_stock?: boolean;
-    search?: string;
-    ordering?: 'name' | 'price' | '-price' | 'created_at' | '-created_at';
+    seller?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -52,41 +66,43 @@ export interface PaginatedResponse<T> {
     results: T[];
 }
 
-// API Methods
+// Production API Methods
 export const productsApi = {
+    // Get categories
+    getCategories: () =>
+        api.get<Category[]>('/categories/'),
+
     // Get all products with pagination and filters
     getProducts: (params?: ProductFilters & { page?: number; page_size?: number }) =>
-        api.get<PaginatedResponse<Product>>('/products/', { params }),
+        api.get<PaginatedResponse<Product>>('/products/', {
+            params: {
+                ...params,
+                page_size: params?.page_size || 20,
+            }
+        }),
 
-    // Get single product by ID or slug
+    // Get single product by UUID
     getProduct: (id: string) =>
         api.get<Product>(`/products/${id}/`),
 
-    // Search products
-    searchProducts: (query: string, filters?: Omit<ProductFilters, 'search'>) =>
-        api.get<PaginatedResponse<Product>>('/products/search/', {
-            params: { search: query, ...filters }
+    // Get seller's products
+    getMyProducts: (params?: { page?: number; page_size?: number }) =>
+        api.get<PaginatedResponse<Product>>('/my/', {
+            params: {
+                ...params,
+                page_size: params?.page_size || 20,
+            }
         }),
 
-    // Get products by category
-    getProductsByCategory: (categorySlug: string, filters?: Omit<ProductFilters, 'category'>) =>
-        api.get<PaginatedResponse<Product>>(`/categories/${categorySlug}/products/`, {
-            params: filters
-        }),
+    // Create product (for sellers)
+    createProduct: (data: Partial<Product>) =>
+        api.post<Product>('/products/', data),
 
-    // Get featured products
-    getFeaturedProducts: () =>
-        api.get<Product[]>('/products/featured/'),
+    // Update product (for sellers)
+    updateProduct: (id: string, data: Partial<Product>) =>
+        api.patch<Product>(`/products/${id}/`, data),
 
-    // Get related products
-    getRelatedProducts: (productId: string) =>
-        api.get<Product[]>(`/products/${productId}/related/`),
-
-    // Get product reviews
-    getProductReviews: (productId: string) =>
-        api.get<any[]>(`/products/${productId}/reviews/`),
-
-    // Add product review
-    addProductReview: (productId: string, review: { rating: number; comment: string }) =>
-        api.post(`/products/${productId}/reviews/`, review),
+    // Delete product (for sellers)
+    deleteProduct: (id: string) =>
+        api.delete(`/products/${id}/`),
 };

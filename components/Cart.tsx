@@ -1,20 +1,47 @@
-import { X, Minus, Plus, Trash2 } from 'lucide-react';
+import { X, Minus, Plus, Trash2, Loader2, CheckCircle, ExternalLink, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCart } from '@/contexts/CartContext';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useCreateCheckout } from '@/hooks/usePayments';
 
 export default function Cart() {
   const {
     cartItems,
     updateQuantity,
     removeItem,
+    checkout,
     totalItems,
     subtotal,
     shipping,
     total,
     isCartOpen, // ✅ Get visibility from context
-    closeCart    // ✅ Get close function from context
+    closeCart,    // ✅ Get close function from context
+    isLoading,    // ✅ Get loading state
+    error,        // ✅ Get error state
+    checkoutSuccess, // ✅ Get checkout success state
+    lastOrderId   // ✅ Get last order ID
   } = useCart();
+
+  // ✅ Add payment hooks
+  const createCheckoutMutation = useCreateCheckout();
+
+  // ✅ Add payment handler
+  const handlePayment = async () => {
+    if (!lastOrderId) {
+      console.error('No order ID available for payment');
+      return;
+    }
+
+    try {
+      await createCheckoutMutation.mutateAsync({
+        order_id: lastOrderId
+      });
+    } catch (error) {
+      console.error('Failed to initiate payment:', error);
+    }
+  };
 
   // ✅ Don't render if cart is closed
   if (!isCartOpen) return null;
@@ -38,7 +65,21 @@ export default function Cart() {
         </div>
 
         <ScrollArea className="flex-1 p-6">
-          {cartItems.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading cart...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-destructive mb-4">Failed to load cart</p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            </div>
+          ) : cartItems.length === 0 ? (
             <p className="text-center text-muted-foreground py-12" data-testid="text-empty-cart">
               Your cart is empty
             </p>
@@ -46,11 +87,20 @@ export default function Cart() {
             <div className="space-y-4">
               {cartItems.map((item) => (
                 <div key={`${item.id}-${item.size}-${item.color}`} className="flex gap-4" data-testid={`item-cart-${item.id}`}>
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-20 h-20 object-cover rounded-md"
-                  />
+                  {item.image ? (
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      width={80}
+                      height={80}
+                      className="w-20 h-20 object-cover rounded-md"
+                      sizes="80px"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-muted rounded-md flex items-center justify-center">
+                      <span className="text-xs text-muted-foreground">No image</span>
+                    </div>
+                  )}
                   <div className="flex-1">
                     <h3 className="font-medium text-sm" data-testid={`text-cart-item-name-${item.id}`}>{item.name}</h3>
                     <p className="text-xs text-muted-foreground">Size: {item.size}</p>
@@ -96,31 +146,79 @@ export default function Cart() {
 
         {cartItems.length > 0 && (
           <div className="border-t p-6 space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Subtotal</span>
-                <span data-testid="text-subtotal">${subtotal.toFixed(2)}</span>
+            {/* ✅ Enhanced Success State */}
+            {checkoutSuccess && lastOrderId ? (
+              <div className="text-center py-4">
+                <div className="flex items-center justify-center mb-4">
+                  <CheckCircle className="h-12 w-12 text-green-500" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Order Created Successfully!</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Order #{lastOrderId.slice(0, 8)} has been created.
+                </p>
+                <div className="space-y-2">
+                  <Button
+                    className="w-full"
+                    onClick={handlePayment}
+                    disabled={createCheckoutMutation.isPending}
+                  >
+                    {createCheckoutMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Proceed to Payment
+                      </>
+                    )}
+                  </Button>
+                  <Link href={`/orders/${lastOrderId}`}>
+                    <Button variant="outline" className="w-full">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View Order Details
+                    </Button>
+                  </Link>
+                  <Button variant="ghost" className="w-full" onClick={closeCart}>
+                    Continue Shopping
+                  </Button>
+                </div>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>Shipping</span>
-                <span data-testid="text-shipping">{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
-              </div>
-              <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                <span>Total</span>
-                <span data-testid="text-total">${total.toFixed(2)}</span>
-              </div>
-            </div>
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={() => {
-                console.log('Proceeding to checkout');
-                // Navigate to checkout
-              }}
-              data-testid="button-checkout"
-            >
-              Checkout
-            </Button>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Subtotal</span>
+                    <span data-testid="text-subtotal">${subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Shipping</span>
+                    <span data-testid="text-shipping">{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                    <span>Total</span>
+                    <span data-testid="text-total">${total.toFixed(2)}</span>
+                  </div>
+                </div>
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={checkout}
+                  disabled={isLoading}
+                  data-testid="button-checkout"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Checkout'
+                  )}
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>

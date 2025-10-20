@@ -1,11 +1,11 @@
-// components/ProductCard.tsx - Fix Type Compatibility
+// components/ProductCard.tsx - Production-Ready Version
 import { useState } from 'react';
 import { Heart, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
-import { Product } from '@/lib/api/products'; // Import your actual Product type
+import { Product } from '@/lib/api/products';
 
 interface ProductCardProps {
   product: Product | {
@@ -31,24 +31,22 @@ export default function ProductCard({
   const [imageLoading, setImageLoading] = useState(true);
   const { addToCart } = useCart();
 
-  // ✅ Detect if it's an API product or frontend product
   const isApiProduct = 'title' in product;
 
-  // ✅ Extract data based on product type
   const productId = product.id;
   const productName = isApiProduct ? product.title : product.name;
   const productPrice = product.price;
 
-  // ✅ Handle images for both types
   const primaryImage = isApiProduct
-    ? product.images?.find(img => img.position === 0)?.image || product.images?.[0]?.image || ''
+    ? product.images?.find(img => img.position === 0)?.image ||
+    product.images?.[0]?.image ||
+    '/attached_assets/placeholder.jpg'
     : product.image;
 
   const hoverImage = isApiProduct
     ? product.images?.find(img => img.position === 1)?.image || ''
     : 'hoverImage' in product ? product.hoverImage : '';
 
-  // ✅ Handle variants for both types - Fix the type issue
   const defaultVariant = isApiProduct
     ? product.variants?.find(v => v.is_active) || product.variants?.[0]
     : {
@@ -61,9 +59,8 @@ export default function ProductCard({
     e.preventDefault();
     e.stopPropagation();
 
-    if (!defaultVariant || defaultVariant.stock <= 0) return;
+    if (!defaultVariant || (isApiProduct && defaultVariant.stock <= 0)) return;
 
-    // ✅ Fix variant attributes access
     const variantSize = isApiProduct
       ? (defaultVariant.attributes as any)?.size || 'M'
       : defaultVariant.attributes.size;
@@ -72,41 +69,43 @@ export default function ProductCard({
       ? (defaultVariant.attributes as any)?.color || 'Default'
       : defaultVariant.attributes.color;
 
-    addToCart({
-      id: productId,
-      name: productName,
-      price: isApiProduct && 'price_override' in defaultVariant
-        ? (defaultVariant.price_override || productPrice)
-        : productPrice,
-      image: primaryImage,
-      size: variantSize,
-      color: variantColor,
-      category: isApiProduct
-        ? product.category?.slug || 'general'
-        : 'category' in product ? product.category || 'general' : 'general'
-    });
-
-    console.log(`Added ${productName} to cart`);
+    addToCart(
+      {
+        id: productId,
+        name: productName,
+        price: computedPrice,
+        image: primaryImage,
+        size: variantSize,
+        color: variantColor,
+        category: isApiProduct
+          ? product.category?.slug || 'general'
+          : 'category' in product ? product.category || 'general' : 'general'
+      },
+      { variantId: isApiProduct ? (defaultVariant as any)?.id : undefined, quantity: 1 }
+    );
   };
 
-  // ✅ Format price with currency
+  const toNum = (v: any) => (typeof v === 'number' ? v : parseFloat(String(v || 0)));
+
+  const computedPrice =
+    isApiProduct && 'price_override' in defaultVariant && defaultVariant.price_override != null
+      ? toNum(defaultVariant.price_override)
+      : toNum(productPrice);
+
   const formatPrice = () => {
     const currency = isApiProduct ? product.currency : 'USD';
-    const price = isApiProduct && 'price_override' in defaultVariant
-      ? (defaultVariant.price_override || productPrice)
-      : productPrice;
+    const price = computedPrice
 
     return (
       <span className="text-base md:text-lg font-semibold">
-        {currency} {price.toFixed(2)}
+        {currency} {Number(price).toFixed(2)}
       </span>
     );
   };
 
-  // ✅ Check if product is in stock
   const isInStock = isApiProduct
-    ? (product.total_stock ? product.total_stock > 0 : (defaultVariant ? defaultVariant.stock > 0 : false))
-    : true; // Frontend products are always in stock
+    ? (product.total_stock ? product.total_stock > 0 : (defaultVariant ? (defaultVariant as any).stock > 0 : false))
+    : true;
 
   return (
     <div
@@ -115,26 +114,25 @@ export default function ProductCard({
       onMouseLeave={() => setIsHovered(false)}
       data-testid={`card-product-${productId}`}
     >
-      {/* Mobile-First Image Container */}
+      {/* Image Container */}
       <div className="relative aspect-[2/3] md:aspect-[3/4] overflow-hidden rounded-md bg-muted mb-3">
-        <Link href={`/product/${productId}`} className="absolute inset-0 z-10">
-          <span className="sr-only">View {productName}</span>
-        </Link>
 
-        {/* Main Image with Loading State */}
-        {primaryImage && (
-          <Image
-            src={primaryImage}
-            alt={productName}
-            fill
-            className={`object-cover transition-opacity duration-300 ${isHovered && hoverImage ? 'opacity-0' : 'opacity-100'
-              } ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
-            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            onLoad={() => setImageLoading(false)}
-            priority={priority}
-            quality={85}
-          />
-        )}
+        {/* Click only the image to navigate (not the whole surface) */}
+        <Link href={`/product/${productId}`} className="relative block h-full w-full">
+          <span className="sr-only">View {productName}</span>
+          {primaryImage && (
+            <Image
+              src={primaryImage}
+              alt={productName}
+              fill
+              className={`object-cover transition-opacity duration-300 ${isHovered && hoverImage ? 'opacity-0' : 'opacity-100'} ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              onLoad={() => setImageLoading(false)}
+              priority={priority}
+              quality={85}
+            />
+          )}
+        </Link>
 
         {/* Hover Image */}
         {hoverImage && (
@@ -142,28 +140,18 @@ export default function ProductCard({
             src={hoverImage}
             alt={`${productName} alternate view`}
             fill
-            className={`object-cover transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'
-              }`}
+            className={`object-cover transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
             sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
             quality={85}
           />
         )}
 
         {/* Loading State */}
-        {imageLoading && (
-          <div className="absolute inset-0 bg-muted animate-pulse" />
-        )}
-
-        {/* Stock Status */}
-        {!isInStock && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
-            <span className="text-white font-semibold text-sm">Out of Stock</span>
-          </div>
-        )}
+        {imageLoading && <div className="absolute inset-0 bg-muted animate-pulse" />}
 
         {/* Popularity Badge */}
         {isApiProduct && product.popularity && product.popularity > 100 && (
-          <div className="absolute top-3 left-3 bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-semibold z-20">
+          <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-semibold z-20">
             Popular
           </div>
         )}
@@ -174,21 +162,19 @@ export default function ProductCard({
             e.preventDefault();
             e.stopPropagation();
             onToggleWishlist?.(productId);
-            console.log(`Wishlist toggled for ${productName}`);
           }}
-          className="absolute top-3 right-3 p-2 rounded-full bg-white/80 backdrop-blur-sm hover-elevate z-20 touch-target-sm"
+          className="absolute top-3 left-3 p-2 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white shadow-md hover:shadow-lg transition-all duration-200 z-30"
           data-testid={`button-wishlist-${productId}`}
         >
-          <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current text-destructive' : ''}`} />
+          <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current text-red-500' : 'text-gray-600'}`} />
         </button>
 
-        {/* Add to Cart Button */}
+        {/* Add to Cart Button (bottom centered with extra margin) */}
         {isInStock && (
           <Button
             size="sm"
             onClick={handleAddToCart}
-            className={`absolute bottom-4 left-1/2 -translate-x-1/2 transition-opacity duration-300 z-20 touch-target ${isHovered ? 'opacity-100' : 'opacity-0'
-              }`}
+            className={`absolute bottom-10 left-1/2 -translate-x-1/2 transition-opacity duration-300 z-30 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
             data-testid={`button-add-to-cart-${productId}`}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
@@ -197,7 +183,7 @@ export default function ProductCard({
         )}
       </div>
 
-      {/* Mobile-First Product Info */}
+      {/* Product Info */}
       <div className="space-y-1">
         <Link
           href={`/product/${productId}`}
@@ -207,22 +193,19 @@ export default function ProductCard({
           {productName}
         </Link>
 
-        {/* Price */}
         <div data-testid={`text-product-price-${productId}`}>
           {formatPrice()}
         </div>
 
-        {/* Category */}
         {isApiProduct && product.category && (
           <div className="text-xs text-muted-foreground capitalize">
             {product.category.name}
           </div>
         )}
 
-        {/* Stock Info */}
         {isApiProduct && (
           <div className="text-xs text-muted-foreground">
-            {isInStock ? `${product.total_stock || defaultVariant?.stock || 0} in stock` : 'Out of stock'}
+            {isInStock ? `${product.total_stock || (defaultVariant as any)?.stock || 0} in stock` : 'Out of stock'}
           </div>
         )}
       </div>

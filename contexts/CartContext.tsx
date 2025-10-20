@@ -1,12 +1,14 @@
 "use client";
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { useCart as useCartQuery, useAddToCart, useRemoveFromCart, useCheckout } from '@/hooks/useCart';
+import { createContext, useContext, useState, ReactNode } from "react";
+import { useCart as useCartQuery, useAddToCart, useRemoveFromCart, useCheckout, useUpdateCartItem } from '@/hooks/useCart';
 import { Cart as ApiCart, CartItem as ApiCartItem } from '@/lib/api/cart';
 import { toast } from "@/hooks/use-toast";
 
 // Frontend Cart Item (for backward compatibility)
 export interface CartItem {
   id: string;
+  productId?: string;          // ADD
+  variantId?: string | null;// Product ID (frontend or backend)
   name: string;
   price: number;
   quantity: number;
@@ -18,7 +20,7 @@ export interface CartItem {
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: Omit<CartItem, 'quantity'>) => void;
+  addToCart: (product: Omit<CartItem, 'quantity'>, opts?: { variantId?: string; quantity?: number }) => void;
   updateQuantity: (id: string, newQuantity: number, size?: string, color?: string) => void;
   removeItem: (id: string, size?: string, color?: string) => void;
   clearCart: () => void;
@@ -27,14 +29,11 @@ interface CartContextType {
   subtotal: number;
   shipping: number;
   total: number;
-  // ✅ Add cart visibility state
   isCartOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  // ✅ API state
   isLoading: boolean;
   error: Error | null;
-  // ✅ Add checkout state
   checkoutSuccess: boolean;
   lastOrderId: string | null;
 }
@@ -58,126 +57,108 @@ export const CartProvider = ({ children }: CartProviderProps) => {
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
-  // ✅ API hooks
+  // API hooks
   const { data: apiCart, isLoading, error } = useCartQuery();
   const addToCartMutation = useAddToCart();
+  const updateCartItemMutation = useUpdateCartItem(); 
   const removeFromCartMutation = useRemoveFromCart();
   const checkoutMutation = useCheckout();
 
-  // ✅ Convert API cart items to frontend format
+  // Convert API cart items to frontend format
   const cartItems: CartItem[] = apiCart?.items?.map((item: ApiCartItem) => ({
     id: item.id,
+    productId: item.product,                // ADD
+    variantId: (item as any)?.variant ?? null,
     name: item.product_name,
-    price: item.price_at_time,
+    price: Number(item.price_at_time),
     quantity: item.quantity,
-    size: item.variant_name?.split(' - ')[0] || 'M', // Extract size from variant name
-    color: item.variant_name?.split(' - ')[1] || 'Default', // Extract color from variant name
-    image: '', // Will be populated from product data
-    category: 'general', // Will be populated from product data
+    size: item.variant_name?.split(' - ')[0] || 'M',
+    color: item.variant_name?.split(' - ')[1] || 'Default',
+    image: '',
+    category: 'general',
   })) || [];
 
-  const addToCart = async (product: Omit<CartItem, 'quantity'>) => {
-    try {
-      await addToCartMutation.mutateAsync({
-        product: product.id,
-        quantity: 1,
-        // Note: variant will be determined by backend based on size/color
-      });
+  // Utility: UUID detector for backend products
+  const isUuid = (val: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
 
-      // ✅ Auto-open cart when item is added
+  // Add to cart: single source of truth for API calls
+  const addToCart = async (product: Omit<CartItem, 'quantity'>, opts?: { variantId?: string; quantity?: number }) => {
+    try {
+      if (isUuid(product.id)) {
+        // Backend product: send required payload (product + variant + quantity)
+        await addToCartMutation.mutateAsync({
+          product: product.id,
+          variant: opts?.variantId,
+          quantity: opts?.quantity ?? 1,
+        });
+        toast({ title: "Added to cart", description: product.name });
+      } else {
+        // Static product: skip API (placeholder)
+        console.warn('Skipping API addToCart for static product:', product.id);
+        toast({ title: "Sample product", description: "This item is static and not persisted yet." });
+      }
+
       setIsCartOpen(true);
-    } catch (error) {
-      console.error('Failed to add item to cart:', error);
+    } catch (err) {
+      console.error('Failed to add item to cart:', err);
+      toast({ variant: "destructive", title: "Add to cart failed", description: "Please try again." });
     }
   };
 
-  const updateQuantity = async (id: string, newQuantity: number, size?: string, color?: string) => {
-    if (newQuantity <= 0) {
-      await removeItem(id, size, color);
-    } else {
-      // For now, we'll remove and re-add with new quantity
-      // In a more sophisticated implementation, you'd have an update endpoint
-      try {
-        await removeFromCartMutation.mutateAsync(id);
-        // Re-add with new quantity
-        await addToCartMutation.mutateAsync({
-          product: id,
-          quantity: newQuantity,
-        });
-      } catch (error) {
-        console.error('Failed to update quantity:', error);
-      }
+  // UPDATED: Use PATCH endpoint (absolute quantity)
+  const updateQuantity = async (cartItemId: string, newQuantity: number) => {
+    try {
+      await updateCartItemMutation.mutateAsync({ id: cartItemId, quantity: newQuantity });
+    } catch (err) {
+      console.error('Failed to update quantity:', err);
+      toast({ variant: "destructive", title: "Update failed", description: "Please try again." });
     }
   };
 
   const removeItem = async (id: string, size?: string, color?: string) => {
     try {
       await removeFromCartMutation.mutateAsync(id);
-    } catch (error) {
-      console.error('Failed to remove item from cart:', error);
+    } catch (err) {
+      console.error('Failed to remove item from cart:', err);
     }
   };
 
   const clearCart = () => {
-    // Clear all items by removing them one by one
     cartItems.forEach(item => {
       removeFromCartMutation.mutate(item.id);
     });
   };
 
-  // ✅ Enhanced checkout function with order creation response handling
   const checkout = async () => {
     try {
       const response = await checkoutMutation.mutateAsync();
-      console.log('Order created successfully:', response);
-
-      // ✅ Store order ID for potential redirect
       if (response?.order_id) {
         setLastOrderId(response.order_id);
-        console.log('Order ID:', response.order_id);
       }
-
-      // ✅ Set success state
       setCheckoutSuccess(true);
-
-      // ✅ Close cart after successful checkout
       setIsCartOpen(false);
-
-      // ✅ Optional: Auto-redirect to order details after a delay
-      // setTimeout(() => {
-      //   if (response?.order_id) {
-      //     router.push(`/orders/${response.order_id}`);
-      //   }
-      // }, 2000);
-      // ✅ Success Toast
-      toast({
-        title: "Order placed successfully!",
-        description: "Your order has been created successfully.",
-      })
-    } catch (error) {
-      console.error('Failed to checkout:', error);
+      toast({ title: "Order placed successfully!", description: "Thank you for your purchase." });
+    } catch (err) {
+      console.error('Failed to checkout:', err);
       setCheckoutSuccess(false);
       setLastOrderId(null);
-      // ❌ Error Toast
-      toast({
-        variant: "destructive",
-        title: "Checkout failed",
-        description: "Something went wrong while placing your order. Please try again.",
-      })
+      toast({ variant: "destructive", title: "Checkout failed", description: "Please try again." });
     }
   };
 
-  // ✅ Add cart visibility functions
   const openCart = () => setIsCartOpen(true);
   const closeCart = () => {
     setIsCartOpen(false);
-    // ✅ Reset success state when closing cart
     setCheckoutSuccess(false);
     setLastOrderId(null);
   };
 
   const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const subtotal = apiCart?.total || cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const apiSubtotalRaw = apiCart?.total;
+  const subtotal = apiSubtotalRaw != null
+    ? Number(apiSubtotalRaw)
+    : cartItems.reduce((total, item) => total + (Number(item.price) * item.quantity), 0);
   const shipping = subtotal > 75 ? 0 : 4.99;
   const total = subtotal + shipping;
 
@@ -192,13 +173,13 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     subtotal,
     shipping,
     total,
-    isCartOpen, // ✅ Include cart visibility
+    isCartOpen,
     openCart,
     closeCart,
     isLoading: isLoading || addToCartMutation.isPending || removeFromCartMutation.isPending || checkoutMutation.isPending,
     error: error || addToCartMutation.error || removeFromCartMutation.error || checkoutMutation.error,
-    checkoutSuccess, // ✅ Include checkout success state
-    lastOrderId, // ✅ Include last order ID
+    checkoutSuccess,
+    lastOrderId,
   };
 
   return (

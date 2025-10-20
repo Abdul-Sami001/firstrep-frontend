@@ -27,6 +27,9 @@ export interface AddToCartRequest {
     quantity?: number;
 }
 
+export interface UpdateCartItemRequest {
+    quantity: number;
+}
 export interface CheckoutResponse {
     detail: string;
     order_id: string;
@@ -42,6 +45,9 @@ export const cartApi = {
     addToCart: (data: AddToCartRequest) =>
         api.post<Cart>('/cart/add/', data),
 
+    updateCartItem: (id: string, data: UpdateCartItemRequest) =>
+        api.patch<Cart>(`/cart/items/${id}/`, data),
+    
     // Remove item from cart
     removeFromCart: (itemId: string) =>
         api.delete(`/cart/remove/${itemId}/`),

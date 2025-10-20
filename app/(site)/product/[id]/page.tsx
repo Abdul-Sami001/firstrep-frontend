@@ -1,6 +1,6 @@
-// app/(site)/product/[id]/page.tsx - Production-Ready with Backend Integration
+// app/(site)/product/[id]/page.tsx - Production-ready product details
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,39 +8,101 @@ import { Heart, ShoppingCart, ChevronLeft, ChevronRight, Loader2 } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import ProductCard from '@/components/ProductCard';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useProduct, useProducts } from '@/hooks/useProducts';
 import { useCart } from '@/contexts/CartContext';
 import { ProductVariant } from '@/lib/api/products';
 
 export default function ProductDetailPage() {
-    const params = useParams();
-    const productId = params?.id as string;
+    const { id } = useParams() as { id: string };
 
-    const { data: product, isLoading, error } = useProduct(productId);
+    // Always call hooks in a stable order
+    const { data: product, isLoading: productLoading, error: productError } = useProduct(id);
+
+    const relatedFilters = useMemo(
+        () => ({
+            category__slug: product?.category?.slug,
+            is_active: true,
+            page_size: 8,
+            ordering: '-created_at' as const,
+        }),
+        [product?.category?.slug]
+    );
+    const { data: relatedResp } = useProducts(relatedFilters);
+
+    const relatedProducts = useMemo(() => {
+        const list = Array.isArray(relatedResp) ? relatedResp : relatedResp?.results ?? [];
+        return list.filter((p: any) => p.id !== id).slice(0, 8);
+    }, [relatedResp, id]);
+
     const { addToCart } = useCart();
 
-    // State
+    // Local state
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
     const [isWishlisted, setIsWishlisted] = useState(false);
 
-    // Set default variant when product loads
+    // Default active variant
     useEffect(() => {
-        if (product && product.variants.length > 0) {
-            const activeVariant = product.variants.find(v => v.is_active) || product.variants[0];
-            setSelectedVariant(activeVariant);
+        if (product?.variants?.length) {
+            const active = product.variants.find(v => v.is_active) || product.variants[0];
+            setSelectedVariant(active);
         }
     }, [product]);
 
-    // Loading state
-    if (isLoading) {
+    const toNum = (v: any) => (typeof v === 'number' ? v : parseFloat(String(v || 0)));
+
+    const images = product?.images ?? [];
+    const heroSrc = images[currentImageIndex]?.image || '';
+    const heroAlt = images[currentImageIndex]?.alt_text || product?.title || 'Product image';
+
+    const availableSizes = useMemo(
+        () =>
+            Array.from(
+                new Set(
+                    (product?.variants ?? [])
+                        .filter(v => v.is_active)
+                        .map(v => (v.attributes as any)?.size)
+                        .filter(Boolean)
+                )
+            ),
+        [product?.variants]
+    );
+
+    const availableColors = useMemo(
+        () =>
+            Array.from(
+                new Set(
+                    (product?.variants ?? [])
+                        .filter(v => v.is_active)
+                        .map(v => (v.attributes as any)?.color)
+                        .filter(Boolean)
+                )
+            ),
+        [product?.variants]
+    );
+
+    const handleAddToCart = () => {
+        if (!product || !selectedVariant || selectedVariant.stock <= 0) return;
+
+        const computedPrice =
+            selectedVariant.price_override != null ? toNum(selectedVariant.price_override) : toNum(product.price);
+
+        addToCart(
+            {
+                id: product.id,
+                name: product.title,
+                price: computedPrice,
+                image: heroSrc,
+                size: (selectedVariant.attributes as any)?.size || 'M',
+                color: (selectedVariant.attributes as any)?.color || 'Default',
+                category: product.category?.slug || 'general',
+            },
+            { variantId: selectedVariant.id, quantity: 1 }
+        );
+    };
+
+    if (productLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
@@ -51,8 +113,7 @@ export default function ProductDetailPage() {
         );
     }
 
-    // Error state
-    if (error || !product) {
+    if (productError || !product) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
@@ -66,44 +127,9 @@ export default function ProductDetailPage() {
         );
     }
 
-    const nextImage = () => {
-        setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
-    };
-
-    const prevImage = () => {
-        setCurrentImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
-    };
-
-    const handleAddToCart = () => {
-        if (!selectedVariant || selectedVariant.stock <= 0) return;
-
-        addToCart({
-            id: product.id,
-            name: product.title,
-            price: selectedVariant.price_override || product.price,
-            image: product.images[currentImageIndex]?.image || '',
-            size: selectedVariant.attributes.size || 'M',
-            color: selectedVariant.attributes.color || 'Default',
-            category: product.category?.slug || 'general'
-        });
-
-        console.log('Added to cart:', product.title);
-    };
-
-    // Get available variants grouped by attribute
-    const availableSizes = [...new Set(product.variants.filter(v => v.is_active).map(v => v.attributes.size).filter(Boolean))];
-    const availableColors = [...new Set(product.variants.filter(v => v.is_active).map(v => v.attributes.color).filter(Boolean))];
-
-    // Get related products from same category
-    const { data: relatedProductsData } = useProducts({
-        category__slug: product.category?.slug,
-        page_size: 4
-    });
-    const relatedProducts = relatedProductsData?.results.filter(p => p.id !== product.id) || [];
-
     return (
         <div className="min-h-screen">
-            {/* Mobile-First Breadcrumb */}
+            {/* Breadcrumb */}
             <div className="border-b bg-background">
                 <div className="mobile-container tablet-container desktop-container">
                     <div className="py-3">
@@ -114,7 +140,11 @@ export default function ProductDetailPage() {
                             <span className="mx-2">/</span>
                             {product.category && (
                                 <>
-                                    <Link href={`/Collections/${product.category.slug}`} className="hover:text-foreground capitalize" data-testid="link-collection">
+                                    <Link
+                                        href={`/Collections/${product.category.slug}`}
+                                        className="hover:text-foreground capitalize"
+                                        data-testid="link-collection"
+                                    >
                                         {product.category.name}
                                     </Link>
                                     <span className="mx-2">/</span>
@@ -126,20 +156,20 @@ export default function ProductDetailPage() {
                 </div>
             </div>
 
+            {/* Main */}
             <div className="mobile-container tablet-container desktop-container py-8 md:py-12">
                 <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop">
-
-                    {/* Mobile-First Image Gallery */}
+                    {/* Gallery */}
                     <div className="space-y-4">
                         <div className="relative aspect-[3/4] bg-muted rounded-md overflow-hidden">
-                            {product.images.length > 0 ? (
+                            {heroSrc ? (
                                 <Image
-                                    src={product.images[currentImageIndex]?.image || ''}
-                                    alt={product.images[currentImageIndex]?.alt_text || product.title}
+                                    src={heroSrc}
+                                    alt={heroAlt}
                                     fill
                                     className="object-cover"
                                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 50vw"
-                                    priority={true}
+                                    priority
                                     quality={90}
                                 />
                             ) : (
@@ -148,17 +178,19 @@ export default function ProductDetailPage() {
                                 </div>
                             )}
 
-                            {product.images.length > 1 && (
+                            {images.length > 1 && (
                                 <>
                                     <button
-                                        onClick={prevImage}
+                                        onClick={() =>
+                                            setCurrentImageIndex(prev => (prev - 1 + images.length) % images.length)
+                                        }
                                         className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full hover-elevate touch-target-sm"
                                         data-testid="button-prev-image"
                                     >
                                         <ChevronLeft className="h-5 w-5" />
                                     </button>
                                     <button
-                                        onClick={nextImage}
+                                        onClick={() => setCurrentImageIndex(prev => (prev + 1) % images.length)}
                                         className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full hover-elevate touch-target-sm"
                                         data-testid="button-next-image"
                                     >
@@ -168,12 +200,11 @@ export default function ProductDetailPage() {
                             )}
                         </div>
 
-                        {/* Thumbnail Navigation */}
-                        {product.images.length > 1 && (
+                        {images.length > 1 && (
                             <div className="flex gap-2 overflow-x-auto">
-                                {product.images.map((img, index) => (
+                                {images.map((img, index) => (
                                     <button
-                                        key={index}
+                                        key={img.id ?? index}
                                         onClick={() => setCurrentImageIndex(index)}
                                         className={`flex-shrink-0 aspect-square w-16 rounded-md overflow-hidden border-2 ${currentImageIndex === index ? 'border-primary' : 'border-transparent'
                                             }`}
@@ -192,7 +223,7 @@ export default function ProductDetailPage() {
                         )}
                     </div>
 
-                    {/* Mobile-First Product Info */}
+                    {/* Info */}
                     <div className="space-y-6">
                         <div>
                             <h1 className="text-mobile-h1 md:text-tablet-h1 lg:text-desktop-h1 font-bold mb-2" data-testid="text-product-title">
@@ -202,15 +233,17 @@ export default function ProductDetailPage() {
                             {/* Price */}
                             <div className="mb-4" data-testid="text-product-price">
                                 <span className="text-2xl md:text-3xl font-semibold">
-                                    {product.currency} {(selectedVariant?.price_override || product.price).toFixed(2)}
+                                    {product.currency}{' '}
+                                    {Number(
+                                        selectedVariant?.price_override != null
+                                            ? selectedVariant.price_override
+                                            : product.price
+                                    ).toFixed(2)}
                                 </span>
                             </div>
 
-                            {/* Popularity */}
                             {product.popularity > 0 && (
-                                <div className="text-sm text-muted-foreground mb-4">
-                                    Popularity: {product.popularity}
-                                </div>
+                                <div className="text-sm text-muted-foreground mb-4">Popularity: {product.popularity}</div>
                             )}
                         </div>
 
@@ -218,36 +251,34 @@ export default function ProductDetailPage() {
                             {product.description}
                         </p>
 
-                        {/* Stock Status */}
+                        {/* Stock */}
                         {(!selectedVariant || selectedVariant.stock <= 0) && (
                             <Alert variant="destructive">
-                                <AlertDescription>
-                                    This product is currently out of stock.
-                                </AlertDescription>
+                                <AlertDescription>This product is currently out of stock.</AlertDescription>
                             </Alert>
                         )}
 
-                        {/* Color Selection */}
+                        {/* Color */}
                         {availableColors.length > 1 && (
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Color: {selectedVariant?.attributes.color || availableColors[0]}
+                                    Color: {(selectedVariant?.attributes as any)?.color || availableColors[0]}
                                 </label>
                                 <div className="flex gap-2 flex-wrap">
-                                    {availableColors.map((color) => (
+                                    {availableColors.map(color => (
                                         <button
                                             key={color}
                                             onClick={() => {
-                                                const variant = product.variants.find(v =>
-                                                    v.attributes.color === color && v.is_active
+                                                const variant = product.variants.find(
+                                                    v => (v.attributes as any)?.color === color && v.is_active
                                                 );
                                                 setSelectedVariant(variant || null);
                                             }}
-                                            className={`px-4 py-2 border rounded-md text-sm touch-target ${selectedVariant?.attributes.color === color
+                                            className={`px-4 py-2 border rounded-md text-sm touch-target ${(selectedVariant?.attributes as any)?.color === color
                                                     ? 'border-primary bg-primary/10'
                                                     : 'border-border'
                                                 } hover-elevate`}
-                                            data-testid={`color-${color.toLowerCase().replace(/\s+/g, '-')}`}
+                                            data-testid={`color-${String(color).toLowerCase().replace(/\s+/g, '-')}`}
                                         >
                                             {color}
                                         </button>
@@ -256,15 +287,15 @@ export default function ProductDetailPage() {
                             </div>
                         )}
 
-                        {/* Size Selection */}
+                        {/* Size */}
                         {availableSizes.length > 1 && (
                             <div>
                                 <label className="block text-sm font-medium mb-2">Size</label>
                                 <Select
-                                    value={selectedVariant?.attributes.size || ''}
-                                    onValueChange={(size) => {
-                                        const variant = product.variants.find(v =>
-                                            v.attributes.size === size && v.is_active
+                                    value={(selectedVariant?.attributes as any)?.size || ''}
+                                    onValueChange={size => {
+                                        const variant = product.variants.find(
+                                            v => (v.attributes as any)?.size === size && v.is_active
                                         );
                                         setSelectedVariant(variant || null);
                                     }}
@@ -273,7 +304,7 @@ export default function ProductDetailPage() {
                                         <SelectValue placeholder="Select size" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {availableSizes.map((size) => (
+                                        {availableSizes.map(size => (
                                             <SelectItem key={size} value={size} data-testid={`size-${size}`}>
                                                 {size}
                                             </SelectItem>
@@ -283,7 +314,7 @@ export default function ProductDetailPage() {
                             </div>
                         )}
 
-                        {/* Add to Cart & Wishlist */}
+                        {/* Actions */}
                         <div className="flex gap-3">
                             <Button
                                 size="lg"
@@ -295,13 +326,11 @@ export default function ProductDetailPage() {
                                 <ShoppingCart className="h-5 w-5 mr-2" />
                                 {!selectedVariant || selectedVariant.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                             </Button>
+
                             <Button
                                 size="lg"
                                 variant="outline"
-                                onClick={() => {
-                                    setIsWishlisted(!isWishlisted);
-                                    console.log('Wishlist toggled');
-                                }}
+                                onClick={() => setIsWishlisted(s => !s)}
                                 className="touch-target"
                                 data-testid="button-add-to-wishlist"
                             >
@@ -309,7 +338,7 @@ export default function ProductDetailPage() {
                             </Button>
                         </div>
 
-                        {/* Product Details */}
+                        {/* Details */}
                         <div className="border-t pt-6">
                             <h3 className="font-semibold mb-4">Product Details</h3>
                             <ul className="space-y-2 text-sm text-muted-foreground">
@@ -321,7 +350,7 @@ export default function ProductDetailPage() {
                         </div>
 
                         {/* Specifications */}
-                        {Object.keys(product.specifications).length > 0 && (
+                        {product.specifications && Object.keys(product.specifications).length > 0 && (
                             <div className="border-t pt-6">
                                 <h3 className="font-semibold mb-4">Specifications</h3>
                                 <div className="space-y-2 text-sm text-muted-foreground">
@@ -337,18 +366,15 @@ export default function ProductDetailPage() {
                     </div>
                 </div>
 
-                {/* Related Products */}
+                {/* Related */}
                 {relatedProducts.length > 0 && (
                     <div className="mt-12 md:mt-16 lg:mt-20">
                         <h2 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold mb-8" data-testid="text-related-title">
                             More from {product.category?.name || 'This Category'}
                         </h2>
                         <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop">
-                            {relatedProducts.map((relatedProduct) => (
-                                <ProductCard
-                                    key={relatedProduct.id}
-                                    product={relatedProduct}
-                                />
+                            {relatedProducts.map((rp: any) => (
+                                <ProductCard key={rp.id} product={rp} />
                             ))}
                         </div>
                     </div>

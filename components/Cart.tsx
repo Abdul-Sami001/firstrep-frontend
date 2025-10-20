@@ -105,7 +105,9 @@ export default function Cart() {
                     <h3 className="font-medium text-sm" data-testid={`text-cart-item-name-${item.id}`}>{item.name}</h3>
                     <p className="text-xs text-muted-foreground">Size: {item.size}</p>
                     <p className="text-xs text-muted-foreground">Color: {item.color}</p>
-                    <p className="font-semibold mt-1" data-testid={`text-cart-item-price-${item.id}`}>${item.price.toFixed(2)}</p>
+                    <p className="font-semibold mt-1" data-testid={`text-cart-item-price-${item.id}`}>
+                      ${Number(item.price).toFixed(2)}
+                    </p>
 
                     <div className="flex items-center gap-2 mt-2">
                       <Button
@@ -190,15 +192,15 @@ export default function Cart() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Subtotal</span>
-                    <span data-testid="text-subtotal">${subtotal.toFixed(2)}</span>
+                      <span data-testid="text-subtotal">${Number(subtotal).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Shipping</span>
-                    <span data-testid="text-shipping">{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
+                      <span data-testid="text-shipping">{shipping === 0 ? 'FREE' : `$${Number(shipping).toFixed(2)}`}</span>
                   </div>
                   <div className="flex justify-between font-bold text-lg pt-2 border-t">
                     <span>Total</span>
-                    <span data-testid="text-total">${total.toFixed(2)}</span>
+                      <span data-testid="text-total">${Number(total).toFixed(2)}</span>
                   </div>
                 </div>
                 <Button

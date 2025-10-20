@@ -35,6 +35,18 @@ export const useAddToCart = () => {
     });
 };
 
+// NEW: update cart item quantity (absolute)
+export const useUpdateCartItem = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, quantity }: { id: string; quantity: number }) =>
+            cartApi.updateCartItem(id, { quantity }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CART.ALL });
+        },
+    });
+};
+
 // Remove item from cart
 export const useRemoveFromCart = () => {
     const queryClient = useQueryClient();

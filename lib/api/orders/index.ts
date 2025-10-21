@@ -29,6 +29,11 @@ export interface OrderFilters {
     date_to?: string;
 }
 
+export interface CheckoutResponse {
+    order_id: string;
+    message: string;
+}
+
 // Production API Methods
 export const ordersApi = {
     // Get user's orders

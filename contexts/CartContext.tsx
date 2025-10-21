@@ -24,7 +24,7 @@ interface CartContextType {
   updateQuantity: (id: string, newQuantity: number, size?: string, color?: string) => void;
   removeItem: (id: string, size?: string, color?: string) => void;
   clearCart: () => void;
-  checkout: () => Promise<void>;
+  createOrder: () => Promise<any>;
   totalItems: number;
   subtotal: number;
   shipping: number;
@@ -34,8 +34,6 @@ interface CartContextType {
   closeCart: () => void;
   isLoading: boolean;
   error: Error | null;
-  checkoutSuccess: boolean;
-  lastOrderId: string | null;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -54,8 +52,6 @@ interface CartProviderProps {
 
 export const CartProvider = ({ children }: CartProviderProps) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [checkoutSuccess, setCheckoutSuccess] = useState(false);
-  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
   // API hooks
   const { data: apiCart, isLoading, error } = useCartQuery();
@@ -130,29 +126,18 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     });
   };
 
-  const checkout = async () => {
+  const createOrder = async () => {
     try {
       const response = await checkoutMutation.mutateAsync();
-      if (response?.order_id) {
-        setLastOrderId(response.order_id);
-      }
-      setCheckoutSuccess(true);
-      setIsCartOpen(false);
-      toast({ title: "Order placed successfully!", description: "Thank you for your purchase." });
+      return response;
     } catch (err) {
-      console.error('Failed to checkout:', err);
-      setCheckoutSuccess(false);
-      setLastOrderId(null);
-      toast({ variant: "destructive", title: "Checkout failed", description: "Please try again." });
+      console.error('Failed to create order:', err);
+      throw err;
     }
   };
 
   const openCart = () => setIsCartOpen(true);
-  const closeCart = () => {
-    setIsCartOpen(false);
-    setCheckoutSuccess(false);
-    setLastOrderId(null);
-  };
+  const closeCart = () => setIsCartOpen(false);
 
   const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
   const apiSubtotalRaw = apiCart?.total;
@@ -168,7 +153,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     updateQuantity,
     removeItem,
     clearCart,
-    checkout,
+    createOrder,
     totalItems,
     subtotal,
     shipping,
@@ -178,8 +163,6 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     closeCart,
     isLoading: isLoading || addToCartMutation.isPending || removeFromCartMutation.isPending || checkoutMutation.isPending,
     error: error || addToCartMutation.error || removeFromCartMutation.error || checkoutMutation.error,
-    checkoutSuccess,
-    lastOrderId,
   };
 
   return (

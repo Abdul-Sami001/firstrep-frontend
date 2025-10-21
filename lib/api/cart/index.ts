@@ -35,6 +35,20 @@ export interface CheckoutResponse {
     order_id: string;
 }
 
+export interface CreateCheckoutFromCartRequest {
+    shipping_address: string;
+    city: string;
+    state: string;
+    zip_code: string;
+    country: string;
+}
+
+export interface CreateCheckoutFromCartResponse {
+    checkout_url: string;
+    session_id: string;
+}
+
+
 // Production API Methods
 export const cartApi = {
     // Get current cart (user or guest)
@@ -55,4 +69,8 @@ export const cartApi = {
     // Checkout cart (create order)
     checkout: () =>
         api.post<CheckoutResponse>('/cart/checkout/'),
+
+    createCheckoutSessionFromCart: (data: CreateCheckoutFromCartRequest) =>
+        api.post<CreateCheckoutFromCartResponse>('/cart/create-checkout-session/', data),
+
 };

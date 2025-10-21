@@ -1,6 +1,7 @@
 // app/(site)/orders/[id]/page.tsx - Order Detail Page with Payment Integration
 'use client';
 import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Package, Truck, CreditCard, MapPin, Calendar, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,14 +9,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useOrder } from '@/hooks/useOrders';
 import { usePayment } from '@/hooks/usePayments';
+import { useToast } from '@/hooks/use-toast';
 import OrderStatus from '@/components/OrderStatus';
 import PaymentStatus from '@/components/PaymentStatus';
 
 export default function OrderDetailPage() {
     const params = useParams();
     const orderId = params?.id as string;
+    const { toast } = useToast();
     const { data: order, isLoading, error } = useOrder(orderId);
     const { data: payment, isLoading: paymentLoading } = usePayment(orderId);
+    const [hasShownSuccessToast, setHasShownSuccessToast] = useState(false);
+
+    // Show success toast if redirected from payment success
+    useEffect(() => {
+        const isFromPaymentSuccess = sessionStorage.getItem('fromPaymentSuccess') === 'true';
+        if (isFromPaymentSuccess && !hasShownSuccessToast) {
+            toast({
+                title: "Order confirmed!",
+                description: "Your order has been successfully placed and payment processed.",
+            });
+            setHasShownSuccessToast(true);
+            // Clear the flag
+            sessionStorage.removeItem('fromPaymentSuccess');
+        }
+    }, [toast, hasShownSuccessToast]);
 
     if (isLoading) {
         return (

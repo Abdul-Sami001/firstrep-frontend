@@ -1,31 +1,55 @@
 // app/(site)/payment/success/page.tsx - Payment Success Page
 'use client';
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, Package, CreditCard, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useOrders } from '@/hooks/useOrders';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 export default function PaymentSuccessPage() {
     const searchParams = useSearchParams();
+    const router = useRouter();
+    const { toast } = useToast();
     const sessionId = searchParams.get('session_id');
     const [orderId, setOrderId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [hasShownToast, setHasShownToast] = useState(false);
 
     // Get order details if we have the order ID
     const { data: order } = useOrders();
 
     useEffect(() => {
+        // Show success toast
+        if (!hasShownToast) {
+            toast({
+                title: "Thanks for ordering from us!",
+                description: "Your payment has been processed successfully.",
+            });
+            setHasShownToast(true);
+        }
+
         // In a real implementation, you'd fetch the order ID from the session
         // For now, we'll use the latest order
         if (order && order.length > 0) {
             setOrderId(order[0].id);
         }
         setIsLoading(false);
-    }, [order]);
+
+        // Auto-redirect to order details after 3 seconds
+        const timer = setTimeout(() => {
+            if (order && order.length > 0) {
+                // Set flag to show success toast on order details page
+                sessionStorage.setItem('fromPaymentSuccess', 'true');
+                router.push(`/orders/${order[0].id}`);
+            }
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, [order, router, toast, hasShownToast]);
 
     if (isLoading) {
         return (
@@ -115,7 +139,11 @@ export default function PaymentSuccessPage() {
                     <div className="flex flex-col sm:flex-row gap-4">
                         {orderId && (
                             <Link href={`/orders/${orderId}`} className="flex-1">
-                                <Button className="w-full" size="lg">
+                                <Button 
+                                    className="w-full" 
+                                    size="lg"
+                                    onClick={() => sessionStorage.setItem('fromPaymentSuccess', 'true')}
+                                >
                                     <Package className="h-4 w-4 mr-2" />
                                     View Order Details
                                 </Button>

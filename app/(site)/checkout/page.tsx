@@ -1,62 +1,137 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Lock, ShoppingBag, Truck } from "lucide-react";
+import { CreditCard, Lock, ShoppingBag, Truck, Loader2, AlertCircle } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { useUserProfile, useUpdateProfile } from "@/hooks/useAuth";
+import { useCreateCheckout } from "@/hooks/usePayments";
 import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
+import { cartApi } from '@/lib/api/cart';
+interface AddressForm {
+    address: string;
+    city: string;
+    state: string;
+    zip_code: string;
+    country: string;
+}
 
 export default function Checkout() {
-    const { cartItems, total, subtotal, shipping, clearCart } = useCart();
+    const router = useRouter();
     const { toast } = useToast();
+    const { cartItems, total, subtotal, shipping, createOrder } = useCart();
+    const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile();
+    const updateProfileMutation = useUpdateProfile();
+    const createCheckoutSessionFromCart = cartApi.createCheckoutSessionFromCart;
+    
     const [isProcessing, setIsProcessing] = useState(false);
-
-    console.log('Checkout page loaded - cartItems:', cartItems);
-    console.log('Checkout page loaded - total items:', cartItems.length);
-
-    const [customerInfo, setCustomerInfo] = useState({
-        email: "",
-        firstName: "",
-        lastName: "",
+    const [addressForm, setAddressForm] = useState<AddressForm>({
         address: "",
         city: "",
-        postalCode: "",
+        state: "",
+        zip_code: "",
         country: "UK"
     });
+    const [formErrors, setFormErrors] = useState<Partial<AddressForm>>({});
 
-    const [paymentInfo, setPaymentInfo] = useState({
-        cardNumber: "",
-        expiryDate: "",
-        cvv: "",
-        nameOnCard: ""
-    });
+    // Pre-fill address form from user profile
+    useEffect(() => {
+        if (profile) {
+            setAddressForm({
+                address: profile.address || "",
+                city: profile.city || "",
+                state: profile.state || "",
+                zip_code: profile.zip_code || "",
+                country: profile.country || "UK"
+            });
+        }
+    }, [profile]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const validateForm = (): boolean => {
+        const errors: Partial<AddressForm> = {};
+        
+        if (!addressForm.address.trim()) errors.address = "Address is required";
+        if (!addressForm.city.trim()) errors.city = "City is required";
+        if (!addressForm.state.trim()) errors.state = "State is required";
+        if (!addressForm.zip_code.trim()) errors.zip_code = "Postal code is required";
+        if (!addressForm.country.trim()) errors.country = "Country is required";
+
+        // Basic postal code validation for UK
+        if (addressForm.zip_code && !/^[A-Z]{1,2}[0-9]{1,2}[A-Z]?[0-9][A-Z]{2}$/i.test(addressForm.zip_code)) {
+            errors.zip_code = "Please enter a valid UK postal code";
+        }
+
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleAddressChange = (field: keyof AddressForm, value: string) => {
+        setAddressForm(prev => ({ ...prev, [field]: value }));
+        // Clear error when user starts typing
+        if (formErrors[field]) {
+            setFormErrors(prev => ({ ...prev, [field]: undefined }));
+        }
+    };
+
+    const handlePlaceOrder = async () => {
+        if (!validateForm()) {
+            toast({
+                title: "Please fix the errors",
+                description: "All address fields are required.",
+                variant: "destructive"
+            });
+            return;
+        }
+
         setIsProcessing(true);
 
-        // Simulate payment processing
         try {
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Update user profile with new address if changed
+            const hasAddressChanged = profile && (
+                profile.address !== addressForm.address ||
+                profile.city !== addressForm.city ||
+                profile.state !== addressForm.state ||
+                profile.zip_code !== addressForm.zip_code ||
+                profile.country !== addressForm.country
+            );
 
-            toast({
-                title: "Order confirmed!",
-                description: `Your order of £${total.toFixed(2)} has been successfully processed. You'll receive a confirmation email shortly.`,
+            if (hasAddressChanged) {
+                await updateProfileMutation.mutateAsync({
+                    address: addressForm.address,
+                    city: addressForm.city,
+                    state: addressForm.state,
+                    zip_code: addressForm.zip_code,
+                    country: addressForm.country
+                });
+            }
+
+            // ✅ NEW: Create Stripe checkout session directly from cart
+            const checkoutResponse = await createCheckoutSessionFromCart({
+                shipping_address: addressForm.address,
+                city: addressForm.city,
+                state: addressForm.state,
+                zip_code: addressForm.zip_code,
+                country: addressForm.country,
             });
 
-            // Clear cart after successful order
-            clearCart();
+            // Redirect to Stripe Checkout
+            if (checkoutResponse?.checkout_url) {
+                window.location.href = checkoutResponse.checkout_url;
+            } else {
+                throw new Error("No checkout URL returned from server");
+            }
 
-            // Redirect to home page
-            window.location.href = '/';
-        } catch (error) {
+        } catch (error: any) {
+            console.error('Checkout failed:', error);
             toast({
-                title: "Payment failed",
-                description: "There was an issue processing your payment. Please try again.",
+                title: "Checkout failed",
+                description: error.response?.data?.detail || error.message || "Please try again.",
                 variant: "destructive"
             });
         } finally {
@@ -67,12 +142,12 @@ export default function Checkout() {
     if (cartItems.length === 0) {
         return (
             <div className="min-h-screen bg-background">
-                <div className="container mx-auto px-4 py-8">
+                <div className="mobile-container tablet-container desktop-container py-8">
                     <div className="text-center space-y-4">
                         <ShoppingBag className="h-16 w-16 mx-auto text-muted-foreground" />
-                        <h1 className="text-2xl font-bold">Your cart is empty</h1>
-                        <p className="text-muted-foreground">Add some items to your cart before checking out.</p>
-                        <Button onClick={() => window.location.href = '/shop'}>
+                        <h1 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold">Your cart is empty</h1>
+                        <p className="text-sm md:text-base text-muted-foreground">Add some items to your cart before checking out.</p>
+                        <Button onClick={() => router.push('/shop')}>
                             Continue Shopping
                         </Button>
                     </div>
@@ -83,96 +158,119 @@ export default function Checkout() {
 
     return (
         <div className="min-h-screen bg-background">
-            <div className="container mx-auto px-4 py-8">
+            <div className="mobile-container tablet-container desktop-container py-8">
                 <div className="max-w-6xl mx-auto">
                     <div className="mb-8">
-                        <h1 className="text-3xl font-bold" data-testid="checkout-title">Checkout</h1>
-                        <p className="text-muted-foreground">Complete your order with 1stRep</p>
+                        <h1 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold" data-testid="checkout-title">Checkout</h1>
+                        <p className="text-sm md:text-base text-muted-foreground">Complete your order with 1stRep</p>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop">
                         {/* Checkout Form */}
                         <div className="space-y-6">
-                            {/* Customer Information */}
+                            {/* Shipping Address */}
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <Truck className="h-5 w-5" />
-                                        Delivery Information
+                                        Shipping Address
                                     </CardTitle>
                                     <CardDescription>
                                         Where should we send your order?
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor="firstName">First Name</Label>
-                                            <Input
-                                                id="firstName"
-                                                value={customerInfo.firstName}
-                                                onChange={(e) => setCustomerInfo({ ...customerInfo, firstName: e.target.value })}
-                                                required
-                                                data-testid="input-first-name"
-                                            />
+                                    {profileLoading ? (
+                                        <div className="flex items-center justify-center py-8">
+                                            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                            <span>Loading your address...</span>
                                         </div>
-                                        <div>
-                                            <Label htmlFor="lastName">Last Name</Label>
-                                            <Input
-                                                id="lastName"
-                                                value={customerInfo.lastName}
-                                                onChange={(e) => setCustomerInfo({ ...customerInfo, lastName: e.target.value })}
-                                                required
-                                                data-testid="input-last-name"
-                                            />
+                                    ) : profileError ? (
+                                        <div className="text-center py-8">
+                                            <AlertCircle className="h-8 w-8 mx-auto mb-2 text-destructive" />
+                                            <p className="text-sm text-destructive mb-2">Failed to load your address</p>
+                                            <p className="text-xs text-muted-foreground">Please enter your address manually</p>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <Label htmlFor="address">Address</Label>
+                                                <Input
+                                                    id="address"
+                                                    value={addressForm.address}
+                                                    onChange={(e) => handleAddressChange('address', e.target.value)}
+                                                    required
+                                                    data-testid="input-address"
+                                                    className={formErrors.address ? "border-destructive" : ""}
+                                                />
+                                                {formErrors.address && (
+                                                    <p className="text-xs text-destructive mt-1">{formErrors.address}</p>
+                                                )}
+                                            </div>
 
-                                    <div>
-                                        <Label htmlFor="email">Email</Label>
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            value={customerInfo.email}
-                                            onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-                                            required
-                                            data-testid="input-email"
-                                        />
-                                    </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label htmlFor="city">City</Label>
+                                                    <Input
+                                                        id="city"
+                                                        value={addressForm.city}
+                                                        onChange={(e) => handleAddressChange('city', e.target.value)}
+                                                        required
+                                                        data-testid="input-city"
+                                                        className={formErrors.city ? "border-destructive" : ""}
+                                                    />
+                                                    {formErrors.city && (
+                                                        <p className="text-xs text-destructive mt-1">{formErrors.city}</p>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="state">State/County</Label>
+                                                    <Input
+                                                        id="state"
+                                                        value={addressForm.state}
+                                                        onChange={(e) => handleAddressChange('state', e.target.value)}
+                                                        required
+                                                        data-testid="input-state"
+                                                        className={formErrors.state ? "border-destructive" : ""}
+                                                    />
+                                                    {formErrors.state && (
+                                                        <p className="text-xs text-destructive mt-1">{formErrors.state}</p>
+                                                    )}
+                                                </div>
+                                            </div>
 
-                                    <div>
-                                        <Label htmlFor="address">Address</Label>
-                                        <Input
-                                            id="address"
-                                            value={customerInfo.address}
-                                            onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
-                                            required
-                                            data-testid="input-address"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor="city">City</Label>
-                                            <Input
-                                                id="city"
-                                                value={customerInfo.city}
-                                                onChange={(e) => setCustomerInfo({ ...customerInfo, city: e.target.value })}
-                                                required
-                                                data-testid="input-city"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="postalCode">Postal Code</Label>
-                                            <Input
-                                                id="postalCode"
-                                                value={customerInfo.postalCode}
-                                                onChange={(e) => setCustomerInfo({ ...customerInfo, postalCode: e.target.value })}
-                                                required
-                                                data-testid="input-postal-code"
-                                            />
-                                        </div>
-                                    </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label htmlFor="zip_code">Postal Code</Label>
+                                                    <Input
+                                                        id="zip_code"
+                                                        value={addressForm.zip_code}
+                                                        onChange={(e) => handleAddressChange('zip_code', e.target.value)}
+                                                        required
+                                                        data-testid="input-postal-code"
+                                                        className={formErrors.zip_code ? "border-destructive" : ""}
+                                                    />
+                                                    {formErrors.zip_code && (
+                                                        <p className="text-xs text-destructive mt-1">{formErrors.zip_code}</p>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="country">Country</Label>
+                                                    <Input
+                                                        id="country"
+                                                        value={addressForm.country}
+                                                        onChange={(e) => handleAddressChange('country', e.target.value)}
+                                                        required
+                                                        data-testid="input-country"
+                                                        className={formErrors.country ? "border-destructive" : ""}
+                                                    />
+                                                    {formErrors.country && (
+                                                        <p className="text-xs text-destructive mt-1">{formErrors.country}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </CardContent>
                             </Card>
 
@@ -181,60 +279,19 @@ export default function Checkout() {
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <CreditCard className="h-5 w-5" />
-                                        Payment Information
+                                        Payment
                                     </CardTitle>
                                     <CardDescription className="flex items-center gap-2">
                                         <Lock className="h-4 w-4" />
-                                        Your payment information is secure and encrypted
+                                        Secure payment powered by Stripe
                                     </CardDescription>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div>
-                                        <Label htmlFor="nameOnCard">Name on Card</Label>
-                                        <Input
-                                            id="nameOnCard"
-                                            value={paymentInfo.nameOnCard}
-                                            onChange={(e) => setPaymentInfo({ ...paymentInfo, nameOnCard: e.target.value })}
-                                            required
-                                            data-testid="input-name-on-card"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="cardNumber">Card Number</Label>
-                                        <Input
-                                            id="cardNumber"
-                                            placeholder="1234 5678 9012 3456"
-                                            value={paymentInfo.cardNumber}
-                                            onChange={(e) => setPaymentInfo({ ...paymentInfo, cardNumber: e.target.value })}
-                                            required
-                                            data-testid="input-card-number"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor="expiryDate">Expiry Date</Label>
-                                            <Input
-                                                id="expiryDate"
-                                                placeholder="MM/YY"
-                                                value={paymentInfo.expiryDate}
-                                                onChange={(e) => setPaymentInfo({ ...paymentInfo, expiryDate: e.target.value })}
-                                                required
-                                                data-testid="input-expiry-date"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="cvv">CVV</Label>
-                                            <Input
-                                                id="cvv"
-                                                placeholder="123"
-                                                value={paymentInfo.cvv}
-                                                onChange={(e) => setPaymentInfo({ ...paymentInfo, cvv: e.target.value })}
-                                                required
-                                                data-testid="input-cvv"
-                                            />
-                                        </div>
+                                <CardContent>
+                                    <div className="text-center py-8">
+                                        <CreditCard className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                                        <p className="text-sm text-muted-foreground">
+                                            You'll be redirected to Stripe for secure payment processing
+                                        </p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -251,18 +308,27 @@ export default function Checkout() {
                                     <div className="space-y-3">
                                         {cartItems.map((item) => (
                                             <div key={`${item.id}-${item.size}-${item.color}`} className="flex gap-3" data-testid={`order-item-${item.id}-${item.size}-${item.color}`}>
-                                                <img
-                                                    src={item.image}
-                                                    alt={item.name}
-                                                    className="w-16 h-16 object-cover rounded"
-                                                />
+                                                {item.image ? (
+                                                    <Image
+                                                        src={item.image}
+                                                        alt={item.name}
+                                                        width={64}
+                                                        height={64}
+                                                        className="w-16 h-16 object-cover rounded"
+                                                        sizes="64px"
+                                                    />
+                                                ) : (
+                                                    <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                                                        <span className="text-xs text-muted-foreground">No image</span>
+                                                    </div>
+                                                )}
                                                 <div className="flex-1">
                                                     <h3 className="font-medium text-sm">{item.name}</h3>
                                                     <p className="text-xs text-muted-foreground">
                                                         {item.color} • {item.size} • Qty: {item.quantity}
                                                     </p>
                                                     <p className="text-sm font-semibold">
-                                                        £{(item.price * item.quantity).toFixed(2)}
+                                                        ${(item.price * item.quantity).toFixed(2)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -275,43 +341,48 @@ export default function Checkout() {
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-sm">
                                             <span>Subtotal</span>
-                                            <span>£{subtotal.toFixed(2)}</span>
+                                            <span>${subtotal.toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between text-sm">
                                             <span>Shipping</span>
-                                            <span>{shipping === 0 ? "Free" : `£${shipping.toFixed(2)}`}</span>
+                                            <span>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
                                         </div>
                                         <Separator />
                                         <div className="flex justify-between font-semibold">
                                             <span>Total</span>
-                                            <span data-testid="order-total">£{total.toFixed(2)}</span>
+                                            <span data-testid="order-total">${total.toFixed(2)}</span>
                                         </div>
                                     </div>
 
                                     {subtotal < 75 && (
                                         <Badge variant="secondary" className="w-full justify-center">
-                                            Add £{(75 - subtotal).toFixed(2)} more for free shipping
+                                            Add ${(75 - subtotal).toFixed(2)} more for free shipping
                                         </Badge>
                                     )}
                                 </CardContent>
                             </Card>
 
-                            {/* Complete Order Button */}
-                            <form onSubmit={handleSubmit}>
-                                <Button
-                                    type="submit"
-                                    className="w-full"
-                                    size="lg"
-                                    disabled={isProcessing}
-                                    data-testid="button-complete-order"
-                                >
-                                    {isProcessing ? "Processing..." : `Complete Order - £${total.toFixed(2)}`}
-                                </Button>
-                            </form>
+                            {/* Place Order Button */}
+                            <Button
+                                onClick={handlePlaceOrder}
+                                className="w-full"
+                                size="lg"
+                                disabled={isProcessing || profileLoading}
+                                data-testid="button-place-order"
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    `Place Order - $${total.toFixed(2)}`
+                                )}
+                            </Button>
 
                             <p className="text-xs text-muted-foreground text-center">
-                                By completing your order, you agree to our Terms of Service and Privacy Policy.
-                                Your payment will be processed securely.
+                                By placing your order, you agree to our Terms of Service and Privacy Policy.
+                                Your payment will be processed securely by Stripe.
                             </p>
                         </div>
                     </div>

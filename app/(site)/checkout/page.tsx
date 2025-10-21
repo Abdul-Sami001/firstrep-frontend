@@ -1,3 +1,4 @@
+// app/(site)/checkout/page.tsx
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -10,10 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { CreditCard, Lock, ShoppingBag, Truck, Loader2, AlertCircle } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useUserProfile, useUpdateProfile } from "@/hooks/useAuth";
-import { useCreateCheckout } from "@/hooks/usePayments";
+import { useCheckout } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
-import { cartApi } from '@/lib/api/cart';
+
 interface AddressForm {
     address: string;
     city: string;
@@ -25,11 +26,11 @@ interface AddressForm {
 export default function Checkout() {
     const router = useRouter();
     const { toast } = useToast();
-    const { cartItems, total, subtotal, shipping, createOrder } = useCart();
+    const { cartItems, total, subtotal, shipping } = useCart();
     const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile();
     const updateProfileMutation = useUpdateProfile();
-    const createCheckoutSessionFromCart = cartApi.createCheckoutSessionFromCart;
-    
+    const checkoutMutation = useCheckout();
+
     const [isProcessing, setIsProcessing] = useState(false);
     const [addressForm, setAddressForm] = useState<AddressForm>({
         address: "",
@@ -55,7 +56,7 @@ export default function Checkout() {
 
     const validateForm = (): boolean => {
         const errors: Partial<AddressForm> = {};
-        
+
         if (!addressForm.address.trim()) errors.address = "Address is required";
         if (!addressForm.city.trim()) errors.city = "City is required";
         if (!addressForm.state.trim()) errors.state = "State is required";
@@ -111,13 +112,14 @@ export default function Checkout() {
                 });
             }
 
-            // ✅ NEW: Create Stripe checkout session directly from cart
-            const checkoutResponse = await createCheckoutSessionFromCart({
+            // Create order and Stripe checkout session
+            const checkoutResponse = await checkoutMutation.mutateAsync({
                 shipping_address: addressForm.address,
                 city: addressForm.city,
                 state: addressForm.state,
                 zip_code: addressForm.zip_code,
                 country: addressForm.country,
+                payment_method: 'stripe'
             });
 
             // Redirect to Stripe Checkout
@@ -307,28 +309,17 @@ export default function Checkout() {
                                     {/* Order Items */}
                                     <div className="space-y-3">
                                         {cartItems.map((item) => (
-                                            <div key={`${item.id}-${item.size}-${item.color}`} className="flex gap-3" data-testid={`order-item-${item.id}-${item.size}-${item.color}`}>
-                                                {item.image ? (
-                                                    <Image
-                                                        src={item.image}
-                                                        alt={item.name}
-                                                        width={64}
-                                                        height={64}
-                                                        className="w-16 h-16 object-cover rounded"
-                                                        sizes="64px"
-                                                    />
-                                                ) : (
-                                                    <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
-                                                        <span className="text-xs text-muted-foreground">No image</span>
-                                                    </div>
-                                                )}
+                                            <div key={`${item.id}-${item.variant}`} className="flex gap-3" data-testid={`order-item-${item.id}`}>
+                                                <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                                                    <span className="text-xs text-muted-foreground">Product</span>
+                                                </div>
                                                 <div className="flex-1">
-                                                    <h3 className="font-medium text-sm">{item.name}</h3>
+                                                    <h3 className="font-medium text-sm">{item.product_name}</h3>
                                                     <p className="text-xs text-muted-foreground">
-                                                        {item.color} • {item.size} • Qty: {item.quantity}
+                                                        {item.variant_name && `${item.variant_name} • `}Qty: {item.quantity}
                                                     </p>
                                                     <p className="text-sm font-semibold">
-                                                        ${(item.price * item.quantity).toFixed(2)}
+                                                        ${(item.price_at_time * item.quantity).toFixed(2)}
                                                     </p>
                                                 </div>
                                             </div>

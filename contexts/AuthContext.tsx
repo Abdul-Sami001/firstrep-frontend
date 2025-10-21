@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 localStorage.removeItem('access_token');
             }
         }
-    }, [user, error, isLoading, hasToken]);
+    }, [user, error, isLoading]);
 
     const logout = () => {
         logoutMutation.mutate();

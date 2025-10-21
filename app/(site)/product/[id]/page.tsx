@@ -88,17 +88,11 @@ export default function ProductDetailPage() {
         const computedPrice =
             selectedVariant.price_override != null ? toNum(selectedVariant.price_override) : toNum(product.price);
 
+        // Fix: Pass only the IDs as strings, not objects
         addToCart(
-            {
-                id: product.id,
-                name: product.title,
-                price: computedPrice,
-                image: heroSrc,
-                size: (selectedVariant.attributes as any)?.size || 'M',
-                color: (selectedVariant.attributes as any)?.color || 'Default',
-                category: product.category?.slug || 'general',
-            },
-            { variantId: selectedVariant.id, quantity: 1 }
+            product.id,                    // Just the product ID string
+            selectedVariant.id,            // Just the variant ID string  
+            1                              // quantity
         );
     };
 

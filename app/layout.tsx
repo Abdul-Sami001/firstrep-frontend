@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   }));
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning={true}>
       <body className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground`}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>

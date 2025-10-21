@@ -1,6 +1,6 @@
-// hooks/usePayments.ts - Production-Ready Payments Hooks
+// hooks/usePayments.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { paymentsApi, CreateCheckoutRequest, RefundRequest } from '@/lib/api/payments';
+import { paymentsApi, VerifyPaymentRequest } from '@/lib/api/payments';
 import { QUERY_KEYS } from '@/lib/utils/constants';
 
 // Performance-optimized query options
@@ -19,20 +19,19 @@ export const usePayment = (id: string) => {
     });
 };
 
-// Create checkout session
-export const useCreateCheckout = () => {
+// Verify payment after Stripe checkout
+export const useVerifyPayment = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: paymentsApi.createCheckoutSession,
+        mutationFn: paymentsApi.verifyPayment,
         onSuccess: (data) => {
-            // Redirect to Stripe checkout
-            if (data.checkout_url) {
-                window.location.href = data.checkout_url;
-            }
+            // Invalidate orders queries to show updated order status
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORDERS.DETAIL(data.order_id) });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORDERS.ALL });
         },
         onError: (error) => {
-            console.error('Failed to create checkout session:', error);
+            console.error('Failed to verify payment:', error);
         },
     });
 };

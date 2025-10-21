@@ -1,22 +1,25 @@
-// lib/api/orders/index.ts - Production-Ready Orders API
+// lib/api/orders/index.ts
 import { api } from '../client';
 
-// Backend-Matching Types
+// Backend-Matching Types (Updated to match your API response)
 export interface OrderItem {
-    id: string;
+    id: number; // Changed from string to number
     product: string; // Product ID
     variant?: string | null; // Variant ID
     quantity: number;
-    price: number;
-    subtotal: number;
+    price: string; // Changed to string to match API
+    subtotal: string; // Changed to string to match API
 }
 
 export interface Order {
     id: string;
     user: string; // User ID
-    total: number;
-    vat: number;
+    total: string; // Changed to string to match API
+    vat: string; // Changed to string to match API
     status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+    payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+    payment_method: 'stripe' | 'paypal' | 'cod' | 'bank_transfer';
+    payment_reference?: string;
     created_at: string;
     shipping_address?: string;
     billing_address?: string;
@@ -25,13 +28,9 @@ export interface Order {
 
 export interface OrderFilters {
     status?: string;
+    payment_status?: string;
     date_from?: string;
     date_to?: string;
-}
-
-export interface CheckoutResponse {
-    order_id: string;
-    message: string;
 }
 
 // Production API Methods
@@ -46,7 +45,7 @@ export const ordersApi = {
     getOrder: (id: string) =>
         api.get<Order>(`/orders/${id}/`),
 
-    // Cancel order (if you add this endpoint later)
+    // Cancel order
     cancelOrder: (id: string) =>
         api.post(`/orders/${id}/cancel/`),
 };

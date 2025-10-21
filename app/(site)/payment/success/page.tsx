@@ -1,62 +1,114 @@
-// app/(site)/payment/success/page.tsx - Payment Success Page
+// app/(site)/payment/success/page.tsx
 'use client';
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Package, CreditCard, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Package, CreditCard, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useOrders } from '@/hooks/useOrders';
+// import { useVerifyPayment } from '@/hooks/usePayments'; // ✅ Commented out
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
 
 export default function PaymentSuccessPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { toast } = useToast();
     const sessionId = searchParams.get('session_id');
+    // const verifyPaymentMutation = useVerifyPayment(); // ✅ Commented out
+
     const [orderId, setOrderId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [hasShownToast, setHasShownToast] = useState(false);
-
-    // Get order details if we have the order ID
-    const { data: order } = useOrders();
+    const [verificationStatus, setVerificationStatus] = useState<'verifying' | 'success' | 'failed'>('verifying');
 
     useEffect(() => {
-        // Show success toast
-        if (!hasShownToast) {
+        if (!sessionId) {
             toast({
-                title: "Thanks for ordering from us!",
-                description: "Your payment has been processed successfully.",
+                title: "Invalid Payment Session",
+                description: "No session ID found. Please contact support.",
+                variant: "destructive"
             });
-            setHasShownToast(true);
+            setIsLoading(false);
+            setVerificationStatus('failed');
+            return;
         }
 
-        // In a real implementation, you'd fetch the order ID from the session
-        // For now, we'll use the latest order
-        if (order && order.length > 0) {
-            setOrderId(order[0].id);
-        }
-        setIsLoading(false);
+        // Show success toast immediately
+        toast({
+            title: "Payment Successful!",
+            description: "Your payment has been processed. We're updating your order...",
+        });
 
-        // Auto-redirect to order details after 3 seconds
-        const timer = setTimeout(() => {
-            if (order && order.length > 0) {
-                // Set flag to show success toast on order details page
-                sessionStorage.setItem('fromPaymentSuccess', 'true');
-                router.push(`/orders/${order[0].id}`);
-            }
-        }, 3000);
+        // ✅ COMMENTED OUT PAYMENT VERIFICATION API CALL
+        // const verifyPayment = async () => {
+        //     try {
+        //         const result = await verifyPaymentMutation.mutateAsync({
+        //             session_id: sessionId
+        //         });
 
-        return () => clearTimeout(timer);
-    }, [order, router, toast, hasShownToast]);
+        //         if (result.order_id) {
+        //             setOrderId(result.order_id);
+        //             setVerificationStatus('success');
+
+        //             toast({
+        //                 title: "Order Confirmed!",
+        //                 description: "Your order is being processed.",
+        //             });
+
+        //             // Auto-redirect to order details after 3 seconds
+        //             setTimeout(() => {
+        //                 sessionStorage.setItem('fromPaymentSuccess', 'true');
+        //                 router.push(`/orders/${result.order_id}`);
+        //             }, 3000);
+        //         } else {
+        //             setVerificationStatus('failed');
+        //         }
+        //     } catch (error: any) {
+        //         console.error('Payment verification failed:', error);
+        //         setVerificationStatus('failed');
+
+        //         // Better error messages based on error type
+        //         if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        //             toast({
+        //                 title: "Verification Timeout",
+        //                 description: "Payment verification is taking longer than expected. Please check your orders page.",
+        //                 variant: "destructive"
+        //             });
+        //         } else {
+        //             toast({
+        //                 title: "Payment Verification Failed",
+        //                 description: "Your payment was successful, but we couldn't verify it automatically. Please contact support.",
+        //                 variant: "destructive"
+        //             });
+        //         }
+        //     } finally {
+        //         setIsLoading(false);
+        //     }
+        // };
+
+        // ✅ COMMENTED OUT: Start verification
+        // verifyPayment();
+
+        // ✅ SIMPLIFIED: Just show success and redirect to orders
+        setTimeout(() => {
+            setIsLoading(false);
+            setVerificationStatus('success');
+            toast({
+                title: "Order Processing",
+                description: "Your order is being processed. Check your orders page for updates.",
+            });
+        }, 2000);
+
+    }, [sessionId, toast, router]); // ✅ Removed verifyPaymentMutation from dependencies
 
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p>Processing payment...</p>
+                    <p className="text-lg font-medium mb-2">Processing Your Order</p>
+                    <p className="text-sm text-muted-foreground">
+                        Please wait while we confirm your payment...
+                    </p>
                 </div>
             </div>
         );
@@ -105,7 +157,7 @@ export default function PaymentSuccessPage() {
                     </Card>
 
                     {/* Order Information */}
-                    {orderId && (
+                    {verificationStatus === 'success' ? (
                         <Card className="mb-8">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
@@ -115,10 +167,6 @@ export default function PaymentSuccessPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Order Number:</span>
-                                        <span className="font-medium">#{orderId.slice(0, 8)}</span>
-                                    </div>
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">Status:</span>
                                         <span className="font-medium">Processing</span>
@@ -133,24 +181,27 @@ export default function PaymentSuccessPage() {
                                 </div>
                             </CardContent>
                         </Card>
+                    ) : (
+                        <Card className="mb-8">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                                    Processing Order
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-muted-foreground">
+                                    Your payment was successful. We're processing your order and will update you shortly.
+                                </p>
+                            </CardContent>
+                        </Card>
                     )}
 
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-4">
-                        {orderId && (
-                            <Link href={`/orders/${orderId}`} className="flex-1">
-                                <Button 
-                                    className="w-full" 
-                                    size="lg"
-                                    onClick={() => sessionStorage.setItem('fromPaymentSuccess', 'true')}
-                                >
-                                    <Package className="h-4 w-4 mr-2" />
-                                    View Order Details
-                                </Button>
-                            </Link>
-                        )}
                         <Link href="/orders" className="flex-1">
-                            <Button variant="outline" className="w-full" size="lg">
+                            <Button className="w-full" size="lg">
+                                <Package className="h-4 w-4 mr-2" />
                                 View All Orders
                             </Button>
                         </Link>

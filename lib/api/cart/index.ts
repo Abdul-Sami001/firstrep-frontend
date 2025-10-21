@@ -1,7 +1,7 @@
-// lib/api/cart/index.ts - Production-Ready Cart API
+// lib/api/cart/index.ts
 import { api } from '../client';
 
-// Backend-Matching Types
+// Backend-Matching Types (based on your API response)
 export interface CartItem {
     id: string;
     product: string; // Product ID
@@ -30,24 +30,21 @@ export interface AddToCartRequest {
 export interface UpdateCartItemRequest {
     quantity: number;
 }
-export interface CheckoutResponse {
-    detail: string;
-    order_id: string;
-}
 
-export interface CreateCheckoutFromCartRequest {
+export interface CheckoutRequest {
     shipping_address: string;
     city: string;
     state: string;
     zip_code: string;
     country: string;
+    payment_method: 'stripe' | 'paypal' | 'cod' | 'bank_transfer';
 }
 
-export interface CreateCheckoutFromCartResponse {
+export interface CheckoutResponse {
+    order_id: string;
     checkout_url: string;
-    session_id: string;
+    message: string;
 }
-
 
 // Production API Methods
 export const cartApi = {
@@ -59,18 +56,15 @@ export const cartApi = {
     addToCart: (data: AddToCartRequest) =>
         api.post<Cart>('/cart/add/', data),
 
+    // Update cart item quantity (using your PATCH endpoint)
     updateCartItem: (id: string, data: UpdateCartItemRequest) =>
         api.patch<Cart>(`/cart/items/${id}/`, data),
-    
+
     // Remove item from cart
     removeFromCart: (itemId: string) =>
         api.delete(`/cart/remove/${itemId}/`),
 
-    // Checkout cart (create order)
-    checkout: () =>
-        api.post<CheckoutResponse>('/cart/checkout/'),
-
-    createCheckoutSessionFromCart: (data: CreateCheckoutFromCartRequest) =>
-        api.post<CreateCheckoutFromCartResponse>('/cart/create-checkout-session/', data),
-
+    // Checkout cart (creates order and Stripe session)
+    checkout: (data: CheckoutRequest) =>
+        api.post<CheckoutResponse>('/cart/checkout/', data),
 };

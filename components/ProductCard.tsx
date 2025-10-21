@@ -69,22 +69,13 @@ export default function ProductCard({
       ? (defaultVariant.attributes as any)?.color || 'Default'
       : defaultVariant.attributes.color;
 
+    // Fix: Pass only the IDs as strings, not objects
     addToCart(
-      {
-        id: productId,
-        name: productName,
-        price: computedPrice,
-        image: primaryImage,
-        size: variantSize,
-        color: variantColor,
-        category: isApiProduct
-          ? product.category?.slug || 'general'
-          : 'category' in product ? product.category || 'general' : 'general'
-      },
-      { variantId: isApiProduct ? (defaultVariant as any)?.id : undefined, quantity: 1 }
+      productId,                     // Just the product ID string
+      isApiProduct ? (defaultVariant as any)?.id : undefined,  // Just the variant ID string
+      1                              // quantity
     );
   };
-
   const toNum = (v: any) => (typeof v === 'number' ? v : parseFloat(String(v || 0)));
 
   const computedPrice =

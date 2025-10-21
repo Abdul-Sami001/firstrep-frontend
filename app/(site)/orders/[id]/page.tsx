@@ -1,30 +1,36 @@
-// app/(site)/orders/[id]/page.tsx - Order Detail Page with Payment Integration
+// app/(site)/orders/[id]/page.tsx
 'use client';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Package, Truck, CreditCard, MapPin, Calendar, User, Loader2 } from 'lucide-react';
+import { ArrowLeft, Package, Truck, CreditCard, MapPin, Calendar, User, Loader2, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useOrder } from '@/hooks/useOrders';
-import { usePayment } from '@/hooks/usePayments';
 import { useToast } from '@/hooks/use-toast';
-import OrderStatus from '@/components/OrderStatus';
-import PaymentStatus from '@/components/PaymentStatus';
 
 export default function OrderDetailPage() {
     const params = useParams();
     const orderId = params?.id as string;
     const { toast } = useToast();
     const { data: order, isLoading, error } = useOrder(orderId);
-    const { data: payment, isLoading: paymentLoading } = usePayment(orderId);
     const [hasShownSuccessToast, setHasShownSuccessToast] = useState(false);
+
+    // Helper function to handle string prices
+    const computedPrice = (price: any): number => {
+        if (typeof price === 'number') return price;
+        if (typeof price === 'string') {
+            const parsed = parseFloat(price);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+        return 0;
+    };
 
     // Show success toast if redirected from payment success
     useEffect(() => {
         const isFromPaymentSuccess = sessionStorage.getItem('fromPaymentSuccess') === 'true';
-        if (isFromPaymentSuccess && !hasShownSuccessToast) {
+        if (isFromPaymentSuccess && !hasShownSuccessToast && order) {
             toast({
                 title: "Order confirmed!",
                 description: "Your order has been successfully placed and payment processed.",
@@ -33,54 +39,87 @@ export default function OrderDetailPage() {
             // Clear the flag
             sessionStorage.removeItem('fromPaymentSuccess');
         }
-    }, [toast, hasShownSuccessToast]);
+    }, [toast, hasShownSuccessToast, order]);
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+            case 'processing': return 'bg-blue-100 text-blue-800 border-blue-200';
+            case 'shipped': return 'bg-purple-100 text-purple-800 border-purple-200';
+            case 'delivered': return 'bg-green-100 text-green-800 border-green-200';
+            case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+            default: return 'bg-gray-100 text-gray-800 border-gray-200';
+        }
+    };
+
+    const getPaymentStatusColor = (status: string) => {
+        switch (status) {
+            case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+            case 'paid': return 'bg-green-100 text-green-800 border-green-200';
+            case 'failed': return 'bg-red-100 text-red-800 border-red-200';
+            case 'refunded': return 'bg-gray-100 text-gray-800 border-gray-200';
+            default: return 'bg-gray-100 text-gray-800 border-gray-200';
+        }
+    };
+
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'pending': return Clock;
+            case 'processing': return Package;
+            case 'shipped': return Truck;
+            case 'delivered': return CheckCircle;
+            case 'cancelled': return XCircle;
+            default: return AlertCircle;
+        }
+    };
 
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p>Loading order details...</p>
+                    <p className="text-lg font-medium">Loading order details...</p>
                 </div>
             </div>
         );
     }
 
-    if (error || !order) {
+    if (error) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <h1 className="text-4xl font-bold mb-4">Order Not Found</h1>
+                    <AlertCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                    <h1 className="text-2xl font-bold mb-4">Error Loading Order</h1>
+                    <p className="text-muted-foreground mb-8">There was a problem loading your order.</p>
+                    <Button onClick={() => window.location.reload()}>
+                        Try Again
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    if (!order) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                    <h1 className="text-2xl font-bold mb-4">Order Not Found</h1>
                     <p className="text-muted-foreground mb-8">The order you're looking for doesn't exist.</p>
                     <Link href="/orders">
-                        <Button>Back to Orders</Button>
+                        <Button>View All Orders</Button>
                     </Link>
                 </div>
             </div>
         );
     }
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    };
-
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-        }).format(amount);
-    };
+    const StatusIcon = getStatusIcon(order.status);
 
     return (
         <div className="min-h-screen">
-            {/* Header */}
-            <div className="border-b bg-background">
+            {/* Enhanced Header */}
+            <div className="border-b bg-gradient-to-r from-background to-muted/20">
                 <div className="mobile-container tablet-container desktop-container">
                     <div className="py-6">
                         <div className="flex items-center gap-4 mb-4">
@@ -89,15 +128,13 @@ export default function OrderDetailPage() {
                                     <ArrowLeft className="h-4 w-4" />
                                 </Button>
                             </Link>
-                            <h1 className="text-mobile-h1 md:text-tablet-h1 lg:text-desktop-h1 font-bold">
-                                Order #{order.id.slice(0, 8)}
-                            </h1>
-                        </div>
-                        <div className="flex items-center gap-4 flex-wrap">
-                            <OrderStatus status={order.status} />
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Calendar className="h-4 w-4" />
-                                <span>Placed on {formatDate(order.created_at)}</span>
+                            <div className="flex-1">
+                                <h1 className="text-mobile-h1 md:text-tablet-h1 lg:text-desktop-h1 font-bold">
+                                    Order Details
+                                </h1>
+                                <p className="text-sm text-muted-foreground">
+                                    Order #{order.id.slice(0, 8).toUpperCase()}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -105,179 +142,118 @@ export default function OrderDetailPage() {
             </div>
 
             <div className="mobile-container tablet-container desktop-container py-8 md:py-12">
-                <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop">
+                <div className="max-w-4xl mx-auto space-y-6">
+                    {/* Order Status */}
+                    <Card className="border-l-4 border-l-primary">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <StatusIcon className="h-5 w-5" />
+                                Order Status
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center gap-4">
+                                <Badge className={`${getStatusColor(order.status)} border`}>
+                                    <StatusIcon className="h-3 w-3 mr-1" />
+                                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                </Badge>
+                                <Badge className={`${getPaymentStatusColor(order.payment_status)} border`}>
+                                    Payment: {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
+                                </Badge>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Order Information */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Calendar className="h-5 w-5" />
+                                Order Information
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Order Number:</span>
+                                        <span className="font-medium">#{order.id.slice(0, 8).toUpperCase()}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Order Date:</span>
+                                        <span className="font-medium">
+                                            {new Date(order.created_at).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Total Amount:</span>
+                                        <span className="font-medium">${computedPrice(order.total).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Payment Method:</span>
+                                        <span className="font-medium flex items-center gap-1">
+                                            <CreditCard className="h-4 w-4" />
+                                            {order.payment_method.charAt(0).toUpperCase() + order.payment_method.slice(1)}
+                                        </span>
+                                    </div>
+                                    {order.payment_reference && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Payment Reference:</span>
+                                            <span className="font-mono text-sm">{order.payment_reference}</span>
+                                        </div>
+                                    )}
+                                    {computedPrice(order.vat) !== 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">VAT:</span>
+                                            <span className="font-medium">${computedPrice(order.vat).toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Shipping Address */}
+                    {order.shipping_address && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <MapPin className="h-5 w-5" />
+                                    Shipping Address
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="whitespace-pre-line">{order.shipping_address}</p>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* Order Items */}
-                    <div className="md:col-span-2">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Package className="h-5 w-5" />
-                                    Order Items
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    {order.items.map((item) => (
-                                        <div key={item.id} className="flex justify-between items-center py-3 border-b last:border-b-0">
-                                            <div>
-                                                <h4 className="font-medium">Item #{item.product.slice(0, 8)}</h4>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Quantity: {item.quantity}
-                                                </p>
-                                                {item.variant && (
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Variant: #{item.variant.slice(0, 8)}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="font-medium">{formatCurrency(item.price)}</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Subtotal: {formatCurrency(item.subtotal)}
-                                                </p>
-                                            </div>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Package className="h-5 w-5" />
+                                Order Items
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {order.items.map((item) => (
+                                    <div key={item.id} className="flex justify-between items-center p-4 bg-muted/50 rounded-lg">
+                                        <div className="flex-1">
+                                            <p className="font-medium">Product #{item.product.slice(0, 8).toUpperCase()}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                Quantity: {item.quantity} • ${computedPrice(item.price).toFixed(2)} each
+                                            </p>
                                         </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Order Summary & Payment Info */}
-                    <div className="space-y-6">
-                        {/* Order Summary */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <CreditCard className="h-5 w-5" />
-                                    Order Summary
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span>Subtotal</span>
-                                        <span>{formatCurrency(order.total - order.vat)}</span>
+                                        <span className="font-medium">${computedPrice(item.subtotal).toFixed(2)}</span>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span>VAT (20%)</span>
-                                        <span>{formatCurrency(order.vat)}</span>
-                                    </div>
-                                    <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                                        <span>Total</span>
-                                        <span>{formatCurrency(order.total)}</span>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Payment Information */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <CreditCard className="h-5 w-5" />
-                                    Payment Information
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {paymentLoading ? (
-                                    <div className="flex items-center justify-center py-4">
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                        <span className="text-sm text-muted-foreground">Loading payment info...</span>
-                                    </div>
-                                ) : payment ? (
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Payment Status:</span>
-                                            <PaymentStatus status={payment.status} />
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Amount:</span>
-                                            <span className="font-medium">{formatCurrency(payment.amount)}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Currency:</span>
-                                            <span className="font-medium">{payment.currency}</span>
-                                        </div>
-                                        {payment.stripe_id && (
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Transaction ID:</span>
-                                                <span className="font-medium text-sm font-mono">{payment.stripe_id}</span>
-                                            </div>
-                                        )}
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Payment Date:</span>
-                                            <span className="font-medium text-sm">{formatDate(payment.created_at)}</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <p className="text-muted-foreground text-center py-4">No payment information available</p>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* Shipping Address */}
-                        {order.shipping_address && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <MapPin className="h-5 w-5" />
-                                        Shipping Address
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground whitespace-pre-line">
-                                        {order.shipping_address}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {/* Billing Address */}
-                        {order.billing_address && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <CreditCard className="h-5 w-5" />
-                                        Billing Address
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground whitespace-pre-line">
-                                        {order.billing_address}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {/* Order Actions */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Order Actions</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <Link href="/orders" className="block">
-                                    <Button variant="outline" className="w-full">
-                                        <ArrowLeft className="h-4 w-4 mr-2" />
-                                        Back to Orders
-                                    </Button>
-                                </Link>
-                                {order.status === 'delivered' && (
-                                    <Button variant="outline" className="w-full">
-                                        <Package className="h-4 w-4 mr-2" />
-                                        Track Package
-                                    </Button>
-                                )}
-                                {order.status === 'shipped' && (
-                                    <Button variant="outline" className="w-full">
-                                        <Truck className="h-4 w-4 mr-2" />
-                                        Track Shipment
-                                    </Button>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </div>

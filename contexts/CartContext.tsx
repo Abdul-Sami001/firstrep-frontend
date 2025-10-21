@@ -1,30 +1,16 @@
-"use client";
-import { createContext, useContext, useState, ReactNode } from "react";
-import { useCart as useCartQuery, useAddToCart, useRemoveFromCart, useCheckout, useUpdateCartItem } from '@/hooks/useCart';
-import { Cart as ApiCart, CartItem as ApiCartItem } from '@/lib/api/cart';
-import { toast } from "@/hooks/use-toast";
-
-// Frontend Cart Item (for backward compatibility)
-export interface CartItem {
-  id: string;
-  productId?: string;          // ADD
-  variantId?: string | null;// Product ID (frontend or backend)
-  name: string;
-  price: number;
-  quantity: number;
-  size: string;
-  color: string;
-  image: string;
-  category: string;
-}
+// contexts/CartContext.tsx
+'use client';
+import React, { createContext, useContext, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { cartApi, CartItem } from '@/lib/api/cart';
+import { QUERY_KEYS } from '@/lib/utils/constants';
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: Omit<CartItem, 'quantity'>, opts?: { variantId?: string; quantity?: number }) => void;
-  updateQuantity: (id: string, newQuantity: number, size?: string, color?: string) => void;
-  removeItem: (id: string, size?: string, color?: string) => void;
+  addToCart: (productId: string, variantId?: string, quantity?: number) => void;
+  updateQuantity: (itemId: string, quantity: number, size?: string, color?: string) => void;
+  removeItem: (itemId: string, size?: string, color?: string) => void;
   clearCart: () => void;
-  createOrder: () => Promise<any>;
   totalItems: number;
   subtotal: number;
   shipping: number;
@@ -33,7 +19,7 @@ interface CartContextType {
   openCart: () => void;
   closeCart: () => void;
   isLoading: boolean;
-  error: Error | null;
+  error: any;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -47,103 +33,136 @@ export const useCart = () => {
 };
 
 interface CartProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export const CartProvider = ({ children }: CartProviderProps) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const queryClient = useQueryClient();
 
-  // API hooks
-  const { data: apiCart, isLoading, error } = useCartQuery();
-  const addToCartMutation = useAddToCart();
-  const updateCartItemMutation = useUpdateCartItem(); 
-  const removeFromCartMutation = useRemoveFromCart();
-  const checkoutMutation = useCheckout();
+  // Get cart data
+  const { data: apiCart, isLoading, error } = useQuery({
+    queryKey: QUERY_KEYS.CART.ALL,
+    queryFn: cartApi.getCart,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-  // Convert API cart items to frontend format
-  const cartItems: CartItem[] = apiCart?.items?.map((item: ApiCartItem) => ({
-    id: item.id,
-    productId: item.product,                // ADD
-    variantId: (item as any)?.variant ?? null,
-    name: item.product_name,
-    price: Number(item.price_at_time),
-    quantity: item.quantity,
-    size: item.variant_name?.split(' - ')[0] || 'M',
-    color: item.variant_name?.split(' - ')[1] || 'Default',
-    image: '',
-    category: 'general',
-  })) || [];
+  // Add to cart mutation
+  const addToCartMutation = useMutation({
+    mutationFn: cartApi.addToCart,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CART.ALL });
+    },
+    onError: (error) => {
+      console.error('Failed to add to cart:', error);
+    },
+  });
 
-  // Utility: UUID detector for backend products
-  const isUuid = (val: string) =>
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
+  // Remove from cart mutation
+  const removeFromCartMutation = useMutation({
+    mutationFn: cartApi.removeFromCart,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CART.ALL });
+    },
+    onError: (error) => {
+      console.error('Failed to remove from cart:', error);
+    },
+  });
 
-  // Add to cart: single source of truth for API calls
-  const addToCart = async (product: Omit<CartItem, 'quantity'>, opts?: { variantId?: string; quantity?: number }) => {
-    try {
-      if (isUuid(product.id)) {
-        // Backend product: send required payload (product + variant + quantity)
-        await addToCartMutation.mutateAsync({
-          product: product.id,
-          variant: opts?.variantId,
-          quantity: opts?.quantity ?? 1,
+  // ✅ OPTIMISTIC UPDATE: Update cart item mutation
+  const updateCartItemMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { quantity: number } }) =>
+      cartApi.updateCartItem(id, data),
+    onMutate: async ({ id, data }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.CART.ALL });
+
+      // Snapshot previous value
+      const previousCart = queryClient.getQueryData(QUERY_KEYS.CART.ALL);
+
+      // Optimistically update
+      queryClient.setQueryData(QUERY_KEYS.CART.ALL, (old: any) => {
+        if (!old) return old;
+
+        const updatedItems = old.items.map((item: any) => {
+          if (item.id === id) {
+            const newSubtotal = Number(item.price_at_time) * data.quantity;
+            return {
+              ...item,
+              quantity: data.quantity,
+              subtotal: newSubtotal
+            };
+          }
+          return item;
         });
-        toast({ title: "Added to cart", description: product.name });
-      } else {
-        // Static product: skip API (placeholder)
-        console.warn('Skipping API addToCart for static product:', product.id);
-        toast({ title: "Sample product", description: "This item is static and not persisted yet." });
+
+        // Recalculate cart total
+        const newCartTotal = updatedItems.reduce((total: number, item: any) => total + Number(item.subtotal), 0);
+
+        return {
+          ...old,
+          items: updatedItems,
+          total: newCartTotal
+        };
+      });
+
+      return { previousCart };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousCart) {
+        queryClient.setQueryData(QUERY_KEYS.CART.ALL, context.previousCart);
       }
+    },
+    onSettled: () => {
+      // ✅ Don't invalidate queries - optimistic updates handle it
+    },
+  });
 
-      setIsCartOpen(true);
-    } catch (err) {
-      console.error('Failed to add item to cart:', err);
-      toast({ variant: "destructive", title: "Add to cart failed", description: "Please try again." });
-    }
-  };
-
-  // UPDATED: Use PATCH endpoint (absolute quantity)
-  const updateQuantity = async (cartItemId: string, newQuantity: number) => {
-    try {
-      await updateCartItemMutation.mutateAsync({ id: cartItemId, quantity: newQuantity });
-    } catch (err) {
-      console.error('Failed to update quantity:', err);
-      toast({ variant: "destructive", title: "Update failed", description: "Please try again." });
-    }
-  };
-
-  const removeItem = async (id: string, size?: string, color?: string) => {
-    try {
-      await removeFromCartMutation.mutateAsync(id);
-    } catch (err) {
-      console.error('Failed to remove item from cart:', err);
-    }
-  };
-
-  const clearCart = () => {
-    cartItems.forEach(item => {
-      removeFromCartMutation.mutate(item.id);
+  const addToCart = (productId: string, variantId?: string, quantity: number = 1) => {
+    addToCartMutation.mutate({
+      product: productId,
+      variant: variantId,
+      quantity,
     });
   };
 
-  const createOrder = async () => {
-    try {
-      const response = await checkoutMutation.mutateAsync();
-      return response;
-    } catch (err) {
-      console.error('Failed to create order:', err);
-      throw err;
+  // ✅ OPTIMISTIC UPDATE: Direct quantity update
+  const updateQuantity = (itemId: string, quantity: number, size?: string, color?: string) => {
+    if (quantity <= 0) {
+      removeItem(itemId, size, color);
+      return;
     }
+    updateCartItemMutation.mutate({ id: itemId, data: { quantity } });
+  };
+
+  const removeItem = (itemId: string, size?: string, color?: string) => {
+    removeFromCartMutation.mutate(itemId);
+  };
+
+  const clearCart = () => {
+    apiCart?.items.forEach(item => {
+      removeFromCartMutation.mutate(item.id);
+    });
   };
 
   const openCart = () => setIsCartOpen(true);
   const closeCart = () => setIsCartOpen(false);
 
+  // Transform API data to match cart component expectations
+  const cartItems = (apiCart?.items || []).map(item => ({
+    ...item,
+    name: item.product_name,
+    price: item.price_at_time,
+    size: item.variant_name || 'M',
+    color: 'Default',
+  }));
+
   const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
   const apiSubtotalRaw = apiCart?.total;
   const subtotal = apiSubtotalRaw != null
     ? Number(apiSubtotalRaw)
-    : cartItems.reduce((total, item) => total + (Number(item.price) * item.quantity), 0);
+    : cartItems.reduce((total, item) => total + (Number(item.price_at_time) * item.quantity), 0);
   const shipping = subtotal > 75 ? 0 : 4.99;
   const total = subtotal + shipping;
 
@@ -153,7 +172,6 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     updateQuantity,
     removeItem,
     clearCart,
-    createOrder,
     totalItems,
     subtotal,
     shipping,
@@ -161,8 +179,8 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     isCartOpen,
     openCart,
     closeCart,
-    isLoading: isLoading || addToCartMutation.isPending || removeFromCartMutation.isPending || checkoutMutation.isPending,
-    error: error || addToCartMutation.error || removeFromCartMutation.error || checkoutMutation.error,
+    isLoading: isLoading || addToCartMutation.isPending || removeFromCartMutation.isPending, // ✅ Removed updateCartItemMutation.isPending
+    error: error || addToCartMutation.error || removeFromCartMutation.error || updateCartItemMutation.error,
   };
 
   return (

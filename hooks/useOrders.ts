@@ -1,4 +1,4 @@
-// hooks/useOrders.ts - Production-Ready Orders Hooks
+// hooks/useOrders.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi, OrderFilters } from '@/lib/api/orders';
 import { QUERY_KEYS } from '@/lib/utils/constants';
@@ -31,7 +31,7 @@ export const useOrder = (id: string) => {
     });
 };
 
-// Cancel order (for future implementation)
+// Cancel order
 export const useCancelOrder = () => {
     const queryClient = useQueryClient();
 

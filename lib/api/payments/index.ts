@@ -1,4 +1,4 @@
-// lib/api/payments/index.ts - Production-Ready Payments API
+// lib/api/payments/index.ts
 import { api } from '../client';
 
 // Backend-Matching Types
@@ -14,36 +14,28 @@ export interface Payment {
     metadata?: Record<string, any>;
 }
 
-export interface CreateCheckoutRequest {
-    order_id: string;
-}
-
-export interface CreateCheckoutResponse {
-    checkout_url: string;
+export interface VerifyPaymentRequest {
     session_id: string;
 }
 
-export interface RefundRequest {
-    payment_id: string;
-    amount?: number; // Optional partial refund
-}
-
-export interface RefundResponse {
-    detail: string;
-    refund: any; // Stripe refund object
+export interface VerifyPaymentResponse {
+    order_id: string;
+    payment_status: string;
+    order_status: string;
+    message: string;
 }
 
 // Production API Methods
 export const paymentsApi = {
-    // Create Stripe checkout session
-    createCheckoutSession: (data: CreateCheckoutRequest) =>
-        api.post<CreateCheckoutResponse>('/payments/create-checkout-session/', data),
+    // Verify payment after Stripe checkout
+    verifyPayment: (data: VerifyPaymentRequest) =>
+        api.post<VerifyPaymentResponse>('/payments/verify-payment/', data),
 
     // Get payment details
     getPayment: (id: string) =>
         api.get<Payment>(`/payments/payments/${id}/`),
 
     // Create refund (admin only)
-    createRefund: (data: RefundRequest) =>
-        api.post<RefundResponse>('/payments/refund/', data),
+    createRefund: (data: { payment_id: string; amount?: number }) =>
+        api.post('/payments/refund/', data),
 };

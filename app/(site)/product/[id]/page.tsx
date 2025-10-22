@@ -10,14 +10,24 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import ProductCard from '@/components/ProductCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useProduct, useProducts } from '@/hooks/useProducts';
+import { useProductRatingStats, useProductReviews } from '@/hooks/useReviews';
 import { useCart } from '@/contexts/CartContext';
 import { ProductVariant } from '@/lib/api/products';
+import RatingSummary from '@/components/RatingSummary';
+import WishlistButton from '@/components/WishlistButton';
 
 export default function ProductDetailPage() {
     const { id } = useParams() as { id: string };
 
     // Always call hooks in a stable order
     const { data: product, isLoading: productLoading, error: productError } = useProduct(id);
+    const { data: ratingStats } = useProductRatingStats(id);
+    const { data: recentReviews, isLoading: reviewsLoading, error: reviewsError } = useProductReviews(id, { page_size: 3 });
+
+    // Debug logging
+    console.log('ProductDetailPage - recentReviews:', recentReviews);
+    console.log('ProductDetailPage - reviewsLoading:', reviewsLoading);
+    console.log('ProductDetailPage - reviewsError:', reviewsError);
 
     const relatedFilters = useMemo(
         () => ({
@@ -236,6 +246,18 @@ export default function ProductDetailPage() {
                                 </span>
                             </div>
 
+                            {/* Rating Summary */}
+                            {ratingStats && ratingStats.review_count > 0 && (
+                                <div className="mb-4">
+                                    <RatingSummary 
+                                        stats={ratingStats}
+                                        productId={id}
+                                        showDistribution={false}
+                                        showReviewsLink={true}
+                                    />
+                                </div>
+                            )}
+
                             {product.popularity > 0 && (
                                 <div className="text-sm text-muted-foreground mb-4">Popularity: {product.popularity}</div>
                             )}
@@ -321,15 +343,13 @@ export default function ProductDetailPage() {
                                 {!selectedVariant || selectedVariant.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                             </Button>
 
-                            <Button
+                            <WishlistButton
+                                productId={product.id}
+                                variantId={selectedVariant?.id}
                                 size="lg"
                                 variant="outline"
-                                onClick={() => setIsWishlisted(s => !s)}
-                                className="touch-target"
                                 data-testid="button-add-to-wishlist"
-                            >
-                                <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-current text-destructive' : ''}`} />
-                            </Button>
+                            />
                         </div>
 
                         {/* Details */}
@@ -357,6 +377,72 @@ export default function ProductDetailPage() {
                                 </div>
                             </div>
                         )}
+
+                        {/* Recent Reviews */}
+                        {reviewsLoading ? (
+                            <div className="border-t pt-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-semibold">Recent Reviews</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    {Array.from({ length: 3 }).map((_, i) => (
+                                        <div key={i} className="animate-pulse">
+                                            <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                                            <div className="h-3 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : recentReviews && recentReviews.results && recentReviews.results.length > 0 ? (
+                            <div className="border-t pt-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-semibold">Recent Reviews</h3>
+                                    <Link 
+                                        href={`/product/${id}/reviews`}
+                                        className="text-sm text-primary hover:text-primary/80 transition-colors"
+                                    >
+                                        See all reviews →
+                                    </Link>
+                                </div>
+                                <div className="space-y-4">
+                                    {recentReviews.results.slice(0, 3).map((review) => (
+                                        <div key={review.id} className="border rounded-lg p-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="flex items-center gap-1">
+                                                    {Array.from({ length: 5 }).map((_, i) => (
+                                                        <span 
+                                                            key={i}
+                                                            className={`text-sm ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                                                        >
+                                                            ★
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                                <span className="text-sm font-medium">
+                                                    {review.user_name || 'Anonymous'}
+                                                </span>
+                                                {review.is_verified_purchase && (
+                                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                                        Verified Purchase
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <h4 className="font-medium text-sm mb-1">{review.title}</h4>
+                                            <p className="text-sm text-muted-foreground line-clamp-3">
+                                                {review.content}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : reviewsError ? (
+                            <div className="border-t pt-6">
+                                <div className="text-center text-muted-foreground">
+                                    <p>Unable to load reviews</p>
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
 

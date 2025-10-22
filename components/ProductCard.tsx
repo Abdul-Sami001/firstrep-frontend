@@ -1,11 +1,13 @@
 // components/ProductCard.tsx - Production-Ready Version
 import { useState } from 'react';
-import { Heart, ShoppingCart } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { Product } from '@/lib/api/products';
+import RatingStars from './RatingStars';
+import WishlistButton from './WishlistButton';
 
 interface ProductCardProps {
   product: Product | {
@@ -16,15 +18,11 @@ interface ProductCardProps {
     hoverImage?: string;
     category?: string;
   };
-  onToggleWishlist?: (id: string) => void;
-  isWishlisted?: boolean;
   priority?: boolean;
 }
 
 export default function ProductCard({
   product,
-  onToggleWishlist,
-  isWishlisted = false,
   priority = false
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -148,17 +146,15 @@ export default function ProductCard({
         )}
 
         {/* Wishlist Button */}
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onToggleWishlist?.(productId);
-          }}
-          className="absolute top-3 left-3 p-2 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white shadow-md hover:shadow-lg transition-all duration-200 z-30"
-          data-testid={`button-wishlist-${productId}`}
-        >
-          <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current text-red-500' : 'text-gray-600'}`} />
-        </button>
+        <div className="absolute top-3 left-3 z-30">
+          <WishlistButton 
+            productId={productId}
+            variantId={isApiProduct ? (defaultVariant as any)?.id : undefined}
+            size="sm"
+            variant="outline"
+            data-testid={`button-wishlist-${productId}`}
+          />
+        </div>
 
         {/* Add to Cart Button (bottom centered with extra margin) */}
         {isInStock && (
@@ -187,6 +183,20 @@ export default function ProductCard({
         <div data-testid={`text-product-price-${productId}`}>
           {formatPrice()}
         </div>
+
+        {/* Rating Display */}
+        {isApiProduct && product.average_rating && product.average_rating > 0 && (
+          <div className="flex items-center gap-2">
+            <RatingStars 
+              rating={product.average_rating} 
+              size="sm" 
+              data-testid={`rating-stars-${productId}`}
+            />
+            <span className="text-xs text-muted-foreground">
+              ({product.review_count || 0})
+            </span>
+          </div>
+        )}
 
         {isApiProduct && product.category && (
           <div className="text-xs text-muted-foreground capitalize">

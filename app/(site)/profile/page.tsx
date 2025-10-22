@@ -9,14 +9,21 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile, useUpdateProfile } from '@/hooks/useAuth';
-import { User, Mail, Phone, MapPin, Calendar, Save, ArrowLeft } from 'lucide-react';
+import { useWishlist } from '@/contexts/WishlistContext';
+import { useMyReviews } from '@/hooks/useReviews';
+import { User, Mail, Phone, MapPin, Calendar, Save, ArrowLeft, Heart, Star, ExternalLink } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import WishlistItem from '@/components/WishlistItem';
+import ReviewCard from '@/components/ReviewCard';
+import Link from 'next/link';
 
 export default function ProfilePage() {
     const router = useRouter();
     const { user } = useAuth();
     const { data: profile, isLoading: profileLoading } = useUserProfile();
     const updateProfileMutation = useUpdateProfile();
+    const { wishlistItems, totalItems: wishlistTotal } = useWishlist();
+    const { data: myReviews } = useMyReviews({ page_size: 5 });
 
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
@@ -353,6 +360,129 @@ export default function ProfilePage() {
                             </CardContent>
                         </Card>
                     </div>
+                </div>
+
+                {/* Wishlist Section */}
+                <div className="mt-8">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                                        <Heart className="h-5 w-5" />
+                                        My Wishlist
+                                    </CardTitle>
+                                    <CardDescription className="text-sm">
+                                        Items you've saved for later
+                                    </CardDescription>
+                                </div>
+                                <Link href="/wishlist">
+                                    <Button variant="outline" size="sm" className="gap-2">
+                                        View All
+                                        <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                </Link>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {wishlistTotal === 0 ? (
+                                <div className="text-center py-8">
+                                    <Heart className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                        Your wishlist is empty
+                                    </h3>
+                                    <p className="text-gray-500 mb-4">
+                                        Start adding items you love to your wishlist.
+                                    </p>
+                                    <Link href="/shop">
+                                        <Button>Start Shopping</Button>
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {wishlistItems.slice(0, 3).map((item) => (
+                                        <WishlistItem
+                                            key={item.id}
+                                            item={item}
+                                            data-testid={`profile-wishlist-item-${item.id}`}
+                                        />
+                                    ))}
+                                    {wishlistTotal > 3 && (
+                                        <div className="text-center pt-4">
+                                            <Link href="/wishlist">
+                                                <Button variant="outline">
+                                                    View {wishlistTotal - 3} more items
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Reviews Section */}
+                <div className="mt-8">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                                        <Star className="h-5 w-5" />
+                                        My Reviews
+                                    </CardTitle>
+                                    <CardDescription className="text-sm">
+                                        Reviews you've written
+                                    </CardDescription>
+                                </div>
+                                {myReviews && myReviews.results.length > 0 && (
+                                    <Link href="/profile/reviews">
+                                        <Button variant="outline" size="sm" className="gap-2">
+                                            View All
+                                            <ExternalLink className="h-4 w-4" />
+                                        </Button>
+                                    </Link>
+                                )}
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {!myReviews || myReviews.results.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <Star className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                        No reviews yet
+                                    </h3>
+                                    <p className="text-gray-500 mb-4">
+                                        Share your experience by writing reviews for products you've purchased.
+                                    </p>
+                                    <Link href="/shop">
+                                        <Button>Browse Products</Button>
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {myReviews.results.slice(0, 3).map((review) => (
+                                        <ReviewCard
+                                            key={review.id}
+                                            review={review}
+                                            showActions={false}
+                                            data-testid={`profile-review-${review.id}`}
+                                        />
+                                    ))}
+                                    {myReviews.results.length > 3 && (
+                                        <div className="text-center pt-4">
+                                            <Link href="/profile/reviews">
+                                                <Button variant="outline">
+                                                    View {myReviews.results.length - 3} more reviews
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </div>

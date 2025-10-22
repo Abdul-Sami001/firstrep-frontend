@@ -46,6 +46,11 @@ export interface Product {
     images: ProductImage[];
     // Computed fields
     total_stock?: number;
+    // Rating fields (added for reviews integration)
+    average_rating?: number;
+    review_count?: number;
+    verified_review_count?: number;
+    rating_distribution?: Record<string, number>;
 }
 
 export interface ProductFilters {

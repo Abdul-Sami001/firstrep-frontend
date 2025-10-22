@@ -12,7 +12,7 @@ declare module 'axios' {
 
 // Performance-optimized configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-const API_TIMEOUT = 1000; // Reduced to 5s for better UX
+const API_TIMEOUT = 10000; // Reduced to 5s for better UX
 
 // Create axios instance with performance monitoring
 const apiClient: AxiosInstance = axios.create({

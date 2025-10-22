@@ -73,4 +73,17 @@ export const QUERY_KEYS = {
         PROFILE: ['user', 'profile'] as const,
         CURRENT: ['user', 'current'] as const,
     },
+    REVIEWS: {
+        ALL: ['reviews'] as const,
+        LIST: (filters?: any) => ['reviews', 'list', filters] as const,
+        DETAIL: (id: string) => ['reviews', 'detail', id] as const,
+        PRODUCT: (productId: string, filters?: any) => ['reviews', 'product', productId, filters] as const,
+        MY: () => ['reviews', 'my'] as const,
+        STATS: (productId: string) => ['reviews', 'stats', productId] as const,
+    },
+    WISHLIST: {
+        ALL: ['wishlist'] as const,
+        ITEMS: ['wishlist', 'items'] as const,
+        CHECK: (productId: string) => ['wishlist', 'check', productId] as const,
+    },
 } as const;

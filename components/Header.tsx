@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/ThemeProvider';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { useUserProfile } from '@/hooks/useAuth';
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ export default function Header() {
   const { setTheme } = useTheme();
   const { totalItems, openCart } = useCart();
   const { user, isAuthenticated, logout } = useAuth();
+  const { totalItems: wishlistItems } = useWishlist();
 
   // Get user profile for additional info
   const { data: profile } = useUserProfile();
@@ -163,17 +165,26 @@ export default function Header() {
               </Button>
             )}
 
-            {/* Wishlist - Always Visible */}
+            
+
+            {/* Cart - Mobile Optimized */}
+            {/* Wishlist Button */}
             <Button
               variant="ghost"
               size="icon"
-              className="touch-target-sm"
-              data-testid="button-wishlist"
+              className="relative touch-target-sm"
+              asChild
             >
-              <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Link href="/wishlist" data-testid="button-wishlist">
+                <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
+                {wishlistItems > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center" data-testid="text-wishlist-count">
+                    {wishlistItems > 99 ? '99+' : wishlistItems}
+                  </span>
+                )}
+              </Link>
             </Button>
 
-            {/* Cart - Mobile Optimized */}
             <Button
               variant="ghost"
               size="icon"

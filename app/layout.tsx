@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { WishlistProvider } from "@/contexts/WishlistContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -53,14 +54,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <ThemeProvider>
               <TooltipProvider>
                 <CartProvider>
-                  <PromoBanner />
-                  <Header />
-                  <main>
-                    {children}
-                  </main>
-                  <Footer />
-                  <Cart />
-                  <Toaster />
+                  <WishlistProvider>
+                    <PromoBanner />
+                    <Header />
+                    <main>
+                      {children}
+                    </main>
+                    <Footer />
+                    <Cart />
+                    <Toaster />
+                  </WishlistProvider>
                 </CartProvider>
               </TooltipProvider>
             </ThemeProvider>

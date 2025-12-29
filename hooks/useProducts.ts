@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { productsApi, Product, ProductFilters } from '@/lib/api/products';
 import { QUERY_KEYS } from '@/lib/utils/constants';
+import { isExpectedError, logError } from '@/lib/utils/errors';
 
 // Performance-optimized query options
 const DEFAULT_STALE_TIME = 5 * 60 * 1000; // 5 minutes
@@ -10,21 +11,78 @@ const DEFAULT_CACHE_TIME = 10 * 60 * 1000; // 10 minutes
 export const useCategories = () => {
     return useQuery({
         queryKey: QUERY_KEYS.PRODUCTS.CATEGORIES,
-        queryFn: productsApi.getCategories,
+        queryFn: async () => {
+            try {
+                const result = await productsApi.getCategories();
+                
+                // Categories endpoint returns paginated response: { next, previous, results: [...] }
+                // Extract the results array
+                if (result && typeof result === 'object' && 'results' in result) {
+                    const results = (result as any).results;
+                    if (Array.isArray(results)) {
+                        return results;
+                    }
+                }
+                
+                // Fallback: if it's already an array (shouldn't happen, but handle gracefully)
+                if (Array.isArray(result)) {
+                    return result;
+                }
+                
+                // Return empty array if no valid data
+                return [];
+            } catch (error) {
+                // Categories is a public endpoint - 401 here is a real error
+                // Log and re-throw to let React Query handle it properly
+                logError(error, 'useCategories');
+                throw error; // Re-throw so React Query can handle error state
+            }
+        },
         staleTime: 30 * 60 * 1000, // 30 minutes
         gcTime: 60 * 60 * 1000, // 1 hour
-        retry: 2,
+        retry: (failureCount, error) => {
+            // Categories is public - retry on network errors, not on 4xx
+            if (error && typeof error === 'object' && 'response' in error) {
+                const status = (error as any).response?.status;
+                // Don't retry on client errors (4xx) except 408, 429
+                if (status >= 400 && status < 500 && ![408, 429].includes(status)) {
+                    return false;
+                }
+            }
+            return failureCount < 2;
+        },
+        retryDelay: 1000,
     });
 };
 
 export const useProducts = (filters?: ProductFilters & { page?: number; page_size?: number }) => {
     return useQuery({
         queryKey: QUERY_KEYS.PRODUCTS.LIST(filters),
-        queryFn: () => productsApi.getProducts(filters),
+        queryFn: async () => {
+            try {
+                return await productsApi.getProducts(filters);
+            } catch (error) {
+                // Products is a public endpoint - 401 here is a real error
+                // Log and re-throw to let React Query handle it properly
+                logError(error, 'useProducts');
+                throw error;
+            }
+        },
         staleTime: DEFAULT_STALE_TIME,
         gcTime: DEFAULT_CACHE_TIME,
         refetchOnWindowFocus: false,
-        retry: 2,
+        retry: (failureCount, error) => {
+            // Products is public - retry on network errors, not on 4xx
+            if (error && typeof error === 'object' && 'response' in error) {
+                const status = (error as any).response?.status;
+                // Don't retry on client errors (4xx) except 408, 429
+                if (status >= 400 && status < 500 && ![408, 429].includes(status)) {
+                    return false;
+                }
+            }
+            return failureCount < 2;
+        },
+        retryDelay: 1000,
     });
 };
 
@@ -45,11 +103,28 @@ export const useInfiniteProducts = (filters?: ProductFilters) => {
 export const useProduct = (id: string) => {
     return useQuery({
         queryKey: QUERY_KEYS.PRODUCTS.DETAIL(id),
-        queryFn: () => productsApi.getProduct(id),
+        queryFn: async () => {
+            try {
+                return await productsApi.getProduct(id);
+            } catch (error) {
+                // Product detail is a public endpoint - 401 here is a real error
+                logError(error, 'useProduct');
+                throw error;
+            }
+        },
         enabled: !!id,
         staleTime: 10 * 60 * 1000, // 10 minutes for product details
         gcTime: 15 * 60 * 1000,
-        retry: 2,
+        retry: (failureCount, error) => {
+            // Product detail is public - retry on network errors, not on 4xx
+            if (error && typeof error === 'object' && 'response' in error) {
+                const status = (error as any).response?.status;
+                if (status >= 400 && status < 500 && ![408, 429].includes(status)) {
+                    return false;
+                }
+            }
+            return failureCount < 2;
+        },
     });
 };
 

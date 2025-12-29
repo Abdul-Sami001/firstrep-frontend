@@ -173,34 +173,16 @@ export const reviewsApi = {
             }
         }),
 
-    // Get product reviews
-    getProductReviews: async (productId: string, params?: Omit<ReviewFilters, 'product'> & { page?: number; page_size?: number }) => {
-        console.log('Fetching product reviews for:', productId, 'with params:', params);
-        try {
-            const result = await api.get<PaginatedReviews>(`/reviews/products/${productId}/`, {
-                params: {
-                    ...params,
-                    page_size: params?.page_size || 20,
-                }
-            });
-            console.log('Product reviews API response:', result);
-            return result;
-        } catch (error) {
-            console.error('Product reviews API error:', error);
-            throw error;
-        }
-    },
+    // Get product reviews (public - works for anonymous users)
+    getProductReviews: (productId: string, params?: Omit<ReviewFilters, 'product'> & { page?: number; page_size?: number }) =>
+        api.get<PaginatedReviews>(`/reviews/products/${productId}/`, {
+            params: {
+                ...params,
+                page_size: params?.page_size || 20,
+            }
+        }),
 
-    // Get product rating statistics
-    getProductRatingStats: async (productId: string) => {
-        console.log('Fetching rating stats for:', productId);
-        try {
-            const result = await api.get<RatingStats>(`/products/${productId}/rating-stats/`);
-            console.log('Rating stats API response:', result);
-            return result;
-        } catch (error) {
-            console.error('Rating stats API error:', error);
-            throw error;
-        }
-    },
+    // Get product rating statistics (public - works for anonymous users)
+    getProductRatingStats: (productId: string) =>
+        api.get<RatingStats>(`/products/${productId}/rating-stats/`),
 };

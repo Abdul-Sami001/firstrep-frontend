@@ -1,5 +1,7 @@
-// lib/api/client.ts - Fixed version
+// lib/api/client.ts - Production-ready with industry-standard error handling
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { UnauthorizedError, NetworkError, logError } from '@/lib/utils/errors';
+import { isPublicEndpoint, isProtectedEndpoint, isGuestCapableEndpoint } from '@/lib/utils/api-endpoints';
 
 // Extend Axios types to include metadata
 declare module 'axios' {
@@ -43,39 +45,72 @@ apiClient.interceptors.request.use(
 // Response interceptor with performance monitoring
 apiClient.interceptors.response.use(
     (response: AxiosResponse) => {
-        // Track performance
-        const duration = Date.now() - (response.config.metadata?.startTime || Date.now());
-        if (duration > 500) {
-            console.warn(`Slow API call: ${response.config.url} took ${duration}ms`);
+        // Track performance (only in development)
+        if (process.env.NODE_ENV === 'development') {
+            const duration = Date.now() - (response.config.metadata?.startTime || Date.now());
+            if (duration > 500) {
+                console.warn(`Slow API call: ${response.config.url} took ${duration}ms`);
+            }
         }
         return response;
     },
     async (error) => {
         const originalRequest = error.config;
+        const requestUrl = originalRequest?.url || '';
+        // Normalize URL - handle both absolute and relative URLs
+        const normalizedUrl = requestUrl.startsWith('http') 
+            ? requestUrl 
+            : requestUrl.startsWith('/')
+            ? `${API_BASE_URL}${requestUrl}`
+            : `${API_BASE_URL}/${requestUrl}`;
 
-        // Handle 401 unauthorized - try to refresh token
+        // Handle 401 unauthorized - try to refresh token for authenticated requests
         if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true;
+            // Only attempt token refresh for protected endpoints
+            // Public endpoints shouldn't need auth, so 401 is a real error
+            if (isProtectedEndpoint(normalizedUrl) || isGuestCapableEndpoint(normalizedUrl)) {
+                originalRequest._retry = true;
 
-            try {
-                const refreshResponse = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {}, {
-                    withCredentials: true,
-                });
+                try {
+                    const refreshResponse = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {}, {
+                        withCredentials: true,
+                    });
 
-                const { access } = refreshResponse.data;
-                if (typeof window !== 'undefined') {
-                    localStorage.setItem('access_token', access);
+                    const { access } = refreshResponse.data;
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('access_token', access);
+                    }
+
+                    originalRequest.headers.Authorization = `Bearer ${access}`;
+                    return apiClient(originalRequest);
+                } catch (refreshError) {
+                    // Clear invalid token
+                    if (typeof window !== 'undefined') {
+                        localStorage.removeItem('access_token');
+                    }
+                    
+                    // For protected endpoints, 401 is expected for unauthenticated users
+                    return Promise.reject(
+                        new UnauthorizedError('Authentication required', error.response)
+                    );
                 }
-
-                originalRequest.headers.Authorization = `Bearer ${access}`;
-                return apiClient(originalRequest);
-            } catch (refreshError) {
-                if (typeof window !== 'undefined') {
-                    localStorage.removeItem('access_token');
-                }
-                return Promise.reject(refreshError);
+            } else {
+                // Public endpoint returned 401 - this is a real error, not expected
+                logError(error, 'API Client - Public Endpoint 401');
+                return Promise.reject(
+                    new UnauthorizedError('Unexpected authentication error on public endpoint', error.response)
+                );
             }
         }
+
+        // Handle network errors
+        if (!error.response) {
+            logError(new NetworkError(error.message), 'API Client');
+            return Promise.reject(new NetworkError(error.message));
+        }
+
+        // Log all errors (expected errors will be filtered by logError function)
+        logError(error, 'API Client');
 
         return Promise.reject(error);
     }

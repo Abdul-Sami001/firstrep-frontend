@@ -9,7 +9,9 @@ export const metadata: Metadata = {
     description:
         "Discover premium performance wear designed for athletes who never settle for ordinary. Shop t-shirts, hoodies, sports bras, and more at 1stRep.",
     icons: {
-        icon: "/favicon.ico",
+        icon: "/logo.png",
+        shortcut: "/logo.png",
+        apple: "/logo.png",
     },
 };
 

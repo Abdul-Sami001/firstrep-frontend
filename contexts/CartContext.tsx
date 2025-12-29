@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartApi, CartItem } from '@/lib/api/cart';
 import { QUERY_KEYS } from '@/lib/utils/constants';
+import { logError } from '@/lib/utils/errors';
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -40,11 +41,30 @@ export const CartProvider = ({ children }: CartProviderProps) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  // Get cart data
+  // Get cart data - Cart is public (session-based for guests)
   const { data: apiCart, isLoading, error } = useQuery({
     queryKey: QUERY_KEYS.CART.ALL,
-    queryFn: cartApi.getCart,
+    queryFn: async () => {
+      try {
+        return await cartApi.getCart();
+      } catch (err) {
+        // Cart is public - 401 here is a real error, log it
+        logError(err, 'CartContext');
+        // Return empty cart structure to prevent UI crashes
+        return { id: '', items: [], total: 0, user: null, session_key: null };
+      }
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: (failureCount, error) => {
+      // Cart is public - retry on network errors, not on 4xx
+      if (error && typeof error === 'object' && 'response' in error) {
+        const status = (error as any).response?.status;
+        if (status >= 400 && status < 500 && ![408, 429].includes(status)) {
+          return false;
+        }
+      }
+      return failureCount < 2;
+    },
   });
 
   // Add to cart mutation
@@ -54,7 +74,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CART.ALL });
     },
     onError: (error) => {
-      console.error('Failed to add to cart:', error);
+      logError(error, 'AddToCart');
     },
   });
 
@@ -65,7 +85,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CART.ALL });
     },
     onError: (error) => {
-      console.error('Failed to remove from cart:', error);
+      logError(error, 'RemoveFromCart');
     },
   });
 

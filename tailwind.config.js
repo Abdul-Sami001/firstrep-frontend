@@ -174,6 +174,7 @@ module.exports = {
         sans: ["Inter", "var(--font-sans)"],
         serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
+        poppins: ["var(--font-poppins)", "sans-serif"],
       },
       // Mobile-First Grid System
       gridTemplateColumns: {
@@ -223,6 +224,10 @@ module.exports = {
           "0%": { transform: "scale(0.95)", opacity: "0" },
           "100%": { transform: "scale(1)", opacity: "1" },
         },
+        "promo-scroll": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
       },
       // Mobile-First Animations
       animation: {
@@ -231,6 +236,7 @@ module.exports = {
         "fade-in": "fade-in 0.3s ease-out",
         "slide-up": "slide-up 0.3s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
+        "promo-scroll": "promo-scroll 30s linear infinite",
       },
       // Mobile-First Transitions
       transitionDuration: {

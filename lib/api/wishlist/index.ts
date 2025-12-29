@@ -1,5 +1,6 @@
 // lib/api/wishlist/index.ts - Wishlist API Module
 import { api } from '../client';
+import { UnauthorizedError } from '@/lib/utils/errors';
 
 // Backend-Matching Types (based on your Django models)
 export interface WishlistItem {
@@ -39,9 +40,20 @@ export interface WishlistCheckResponse {
 export const wishlistApi = {
     // Get current user's or guest's wishlist
     getWishlist: async () => {
-        const response = await api.get<Wishlist[]>('/wishlist/');
-        // Backend returns array with single wishlist, extract it
-        return response[0] || null;
+        try {
+            const response = await api.get<Wishlist | Wishlist[]>('/wishlist/');
+            // Handle both array and single object responses
+            if (Array.isArray(response)) {
+                return response[0] || null;
+            }
+            return response || null;
+        } catch (error: any) {
+            // Re-throw as proper error type for consistent handling
+            if (error?.response?.status === 401) {
+                throw new UnauthorizedError('Wishlist requires authentication', error.response);
+            }
+            throw error;
+        }
     },
 
     // Add item to wishlist

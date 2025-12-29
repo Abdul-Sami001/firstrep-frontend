@@ -2,12 +2,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reviewsApi, Review, ReviewFilters, CreateReviewRequest, UpdateReviewRequest, RatingStats } from '@/lib/api/reviews';
 import { QUERY_KEYS } from '@/lib/utils/constants';
+import { logError } from '@/lib/utils/errors';
 
 // Performance-optimized query options
 const DEFAULT_STALE_TIME = 3 * 60 * 1000; // 3 minutes
 const STATS_STALE_TIME = 5 * 60 * 1000; // 5 minutes
 
-// Get product reviews with pagination and filters
+// Get product reviews with pagination and filters (public endpoint)
 export const useProductReviews = (productId: string, filters?: ReviewFilters & { page?: number; page_size?: number }) => {
     return useQuery({
         queryKey: QUERY_KEYS.REVIEWS.PRODUCT(productId, filters),
@@ -15,7 +16,16 @@ export const useProductReviews = (productId: string, filters?: ReviewFilters & {
         enabled: !!productId,
         staleTime: DEFAULT_STALE_TIME,
         gcTime: 10 * 60 * 1000, // 10 minutes
-        retry: 2,
+        retry: (failureCount, error) => {
+            // Reviews are public - retry on network errors, not on 4xx
+            if (error && typeof error === 'object' && 'response' in error) {
+                const status = (error as any).response?.status;
+                if (status >= 400 && status < 500 && ![408, 429].includes(status)) {
+                    return false;
+                }
+            }
+            return failureCount < 2;
+        },
     });
 };
 
@@ -42,7 +52,7 @@ export const useMyReviews = (params?: { page?: number; page_size?: number }) => 
     });
 };
 
-// Get product rating statistics (cached)
+// Get product rating statistics (cached, public endpoint)
 export const useProductRatingStats = (productId: string) => {
     return useQuery({
         queryKey: QUERY_KEYS.REVIEWS.STATS(productId),
@@ -50,7 +60,16 @@ export const useProductRatingStats = (productId: string) => {
         enabled: !!productId,
         staleTime: STATS_STALE_TIME,
         gcTime: 15 * 60 * 1000, // 15 minutes
-        retry: 2,
+        retry: (failureCount, error) => {
+            // Rating stats are public - retry on network errors, not on 4xx
+            if (error && typeof error === 'object' && 'response' in error) {
+                const status = (error as any).response?.status;
+                if (status >= 400 && status < 500 && ![408, 429].includes(status)) {
+                    return false;
+                }
+            }
+            return failureCount < 2;
+        },
     });
 };
 
@@ -77,7 +96,7 @@ export const useCreateReview = () => {
             });
         },
         onError: (error) => {
-            console.error('Failed to create review:', error);
+            logError(error, 'CreateReview');
         },
     });
 };
@@ -105,7 +124,7 @@ export const useUpdateReview = () => {
             });
         },
         onError: (error) => {
-            console.error('Failed to update review:', error);
+            logError(error, 'UpdateReview');
         },
     });
 };
@@ -131,7 +150,7 @@ export const useDeleteReview = () => {
             });
         },
         onError: (error) => {
-            console.error('Failed to delete review:', error);
+            logError(error, 'DeleteReview');
         },
     });
 };

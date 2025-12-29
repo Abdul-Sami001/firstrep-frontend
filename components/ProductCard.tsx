@@ -31,22 +31,22 @@ export default function ProductCard({
 
   const isApiProduct = 'title' in product;
 
-  const productId = product.id;
-  const productName = isApiProduct ? product.title : product.name;
-  const productPrice = product.price;
+  const productId = product?.id || '';
+  const productName = isApiProduct ? product?.title || '' : product?.name || '';
+  const productPrice = product?.price || 0;
 
   const primaryImage = isApiProduct
-    ? product.images?.find(img => img.position === 0)?.image ||
-    product.images?.[0]?.image ||
+    ? product?.images?.find(img => img?.position === 0)?.image ||
+    product?.images?.[0]?.image ||
     '/attached_assets/placeholder.jpg'
-    : product.image;
+    : product?.image || '/attached_assets/placeholder.jpg';
 
   const hoverImage = isApiProduct
-    ? product.images?.find(img => img.position === 1)?.image || ''
-    : 'hoverImage' in product ? product.hoverImage : '';
+    ? product?.images?.find(img => img?.position === 1)?.image || ''
+    : 'hoverImage' in product ? (product as any)?.hoverImage : '';
 
   const defaultVariant = isApiProduct
-    ? product.variants?.find(v => v.is_active) || product.variants?.[0]
+    ? product?.variants?.find(v => v?.is_active) || product?.variants?.[0]
     : {
       attributes: { size: 'M', color: 'Default' },
       stock: 10,
@@ -57,15 +57,7 @@ export default function ProductCard({
     e.preventDefault();
     e.stopPropagation();
 
-    if (!defaultVariant || (isApiProduct && defaultVariant.stock <= 0)) return;
-
-    const variantSize = isApiProduct
-      ? (defaultVariant.attributes as any)?.size || 'M'
-      : defaultVariant.attributes.size;
-
-    const variantColor = isApiProduct
-      ? (defaultVariant.attributes as any)?.color || 'Default'
-      : defaultVariant.attributes.color;
+    if (!defaultVariant || (isApiProduct && (defaultVariant as any)?.stock <= 0)) return;
 
     // Fix: Pass only the IDs as strings, not objects
     addToCart(
@@ -82,18 +74,18 @@ export default function ProductCard({
       : toNum(productPrice);
 
   const formatPrice = () => {
-    const currency = isApiProduct ? product.currency : 'USD';
+    const currency = isApiProduct ? product?.currency || 'USD' : 'USD';
     const price = computedPrice
 
     return (
-      <span className="text-base md:text-lg font-semibold">
+      <span className="text-base md:text-lg font-semibold text-white">
         {currency} {Number(price).toFixed(2)}
       </span>
     );
   };
 
   const isInStock = isApiProduct
-    ? (product.total_stock ? product.total_stock > 0 : (defaultVariant ? (defaultVariant as any).stock > 0 : false))
+    ? (product?.total_stock ? product.total_stock > 0 : (defaultVariant ? (defaultVariant as any)?.stock > 0 : false))
     : true;
 
   return (
@@ -139,7 +131,7 @@ export default function ProductCard({
         {imageLoading && <div className="absolute inset-0 bg-muted animate-pulse" />}
 
         {/* Popularity Badge */}
-        {isApiProduct && product.popularity && product.popularity > 100 && (
+        {isApiProduct && product?.popularity && product.popularity > 100 && (
           <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-semibold z-20">
             Popular
           </div>
@@ -174,39 +166,39 @@ export default function ProductCard({
       <div className="space-y-1">
         <Link
           href={`/product/${productId}`}
-          className="text-sm md:text-base font-medium cursor-pointer hover:text-primary transition-colors"
+          className="text-sm md:text-base font-medium cursor-pointer text-white hover:text-gray-300 transition-colors"
           data-testid={`text-product-name-${productId}`}
         >
           {productName}
         </Link>
 
-        <div data-testid={`text-product-price-${productId}`}>
+        <div className="text-white" data-testid={`text-product-price-${productId}`}>
           {formatPrice()}
         </div>
 
         {/* Rating Display */}
-        {isApiProduct && product.average_rating && product.average_rating > 0 && (
+        {isApiProduct && product?.average_rating && product.average_rating > 0 && (
           <div className="flex items-center gap-2">
             <RatingStars 
               rating={product.average_rating} 
               size="sm" 
               data-testid={`rating-stars-${productId}`}
             />
-            <span className="text-xs text-muted-foreground">
-              ({product.review_count || 0})
+            <span className="text-xs text-gray-400">
+              ({product?.review_count || 0})
             </span>
           </div>
         )}
 
-        {isApiProduct && product.category && (
-          <div className="text-xs text-muted-foreground capitalize">
-            {product.category.name}
+        {isApiProduct && product?.category && (
+          <div className="text-xs text-gray-400 capitalize">
+            {product.category?.name || ''}
           </div>
         )}
 
         {isApiProduct && (
-          <div className="text-xs text-muted-foreground">
-            {isInStock ? `${product.total_stock || (defaultVariant as any)?.stock || 0} in stock` : 'Out of stock'}
+          <div className="text-xs text-gray-400">
+            {isInStock ? `${product?.total_stock || (defaultVariant as any)?.stock || 0} in stock` : 'Out of stock'}
           </div>
         )}
       </div>

@@ -24,11 +24,6 @@ export default function ProductDetailPage() {
     const { data: ratingStats } = useProductRatingStats(id);
     const { data: recentReviews, isLoading: reviewsLoading, error: reviewsError } = useProductReviews(id, { page_size: 3 });
 
-    // Debug logging
-    console.log('ProductDetailPage - recentReviews:', recentReviews);
-    console.log('ProductDetailPage - reviewsLoading:', reviewsLoading);
-    console.log('ProductDetailPage - reviewsError:', reviewsError);
-
     const relatedFilters = useMemo(
         () => ({
             category__slug: product?.category?.slug,
@@ -55,8 +50,8 @@ export default function ProductDetailPage() {
     // Default active variant
     useEffect(() => {
         if (product?.variants?.length) {
-            const active = product.variants.find(v => v.is_active) || product.variants[0];
-            setSelectedVariant(active);
+            const active = product.variants.find(v => v?.is_active) || product.variants?.[0];
+            setSelectedVariant(active || null);
         }
     }, [product]);
 
@@ -93,15 +88,15 @@ export default function ProductDetailPage() {
     );
 
     const handleAddToCart = () => {
-        if (!product || !selectedVariant || selectedVariant.stock <= 0) return;
+        if (!product || !selectedVariant || (selectedVariant?.stock ?? 0) <= 0) return;
 
         const computedPrice =
-            selectedVariant.price_override != null ? toNum(selectedVariant.price_override) : toNum(product.price);
+            selectedVariant?.price_override != null ? toNum(selectedVariant.price_override) : toNum(product?.price || 0);
 
         // Fix: Pass only the IDs as strings, not objects
         addToCart(
-            product.id,                    // Just the product ID string
-            selectedVariant.id,            // Just the variant ID string  
+            product?.id || '',                    // Just the product ID string
+            selectedVariant?.id || '',            // Just the variant ID string  
             1                              // quantity
         );
     };
@@ -142,19 +137,19 @@ export default function ProductDetailPage() {
                                 Home
                             </Link>
                             <span className="mx-2">/</span>
-                            {product.category && (
+                            {product?.category && (
                                 <>
                                     <Link
-                                        href={`/Collections/${product.category.slug}`}
+                                        href={`/Collections/${product.category?.slug || ''}`}
                                         className="hover:text-foreground capitalize"
                                         data-testid="link-collection"
                                     >
-                                        {product.category.name}
+                                        {product.category?.name || ''}
                                     </Link>
                                     <span className="mx-2">/</span>
                                 </>
                             )}
-                            <span data-testid="text-product-name">{product.title}</span>
+                            <span data-testid="text-product-name">{product?.title || ''}</span>
                         </div>
                     </div>
                 </div>
@@ -231,17 +226,17 @@ export default function ProductDetailPage() {
                     <div className="space-y-6">
                         <div>
                             <h1 className="text-mobile-h1 md:text-tablet-h1 lg:text-desktop-h1 font-bold mb-2" data-testid="text-product-title">
-                                {product.title}
+                                {product?.title || ''}
                             </h1>
 
                             {/* Price */}
                             <div className="mb-4" data-testid="text-product-price">
                                 <span className="text-2xl md:text-3xl font-semibold">
-                                    {product.currency}{' '}
+                                    {product?.currency || 'USD'}{' '}
                                     {Number(
                                         selectedVariant?.price_override != null
                                             ? selectedVariant.price_override
-                                            : product.price
+                                            : product?.price || 0
                                     ).toFixed(2)}
                                 </span>
                             </div>
@@ -258,17 +253,17 @@ export default function ProductDetailPage() {
                                 </div>
                             )}
 
-                            {product.popularity > 0 && (
+                            {product?.popularity && product.popularity > 0 && (
                                 <div className="text-sm text-muted-foreground mb-4">Popularity: {product.popularity}</div>
                             )}
                         </div>
 
                         <p className="text-sm md:text-base text-muted-foreground" data-testid="text-product-description">
-                            {product.description}
+                            {product?.description || ''}
                         </p>
 
                         {/* Stock */}
-                        {(!selectedVariant || selectedVariant.stock <= 0) && (
+                        {(!selectedVariant || (selectedVariant?.stock ?? 0) <= 0) && (
                             <Alert variant="destructive">
                                 <AlertDescription>This product is currently out of stock.</AlertDescription>
                             </Alert>
@@ -285,7 +280,7 @@ export default function ProductDetailPage() {
                                         <button
                                             key={color}
                                             onClick={() => {
-                                                const variant = product.variants.find(
+                                                const variant = product?.variants?.find(
                                                     v => (v.attributes as any)?.color === color && v.is_active
                                                 );
                                                 setSelectedVariant(variant || null);
@@ -310,8 +305,8 @@ export default function ProductDetailPage() {
                                 <Select
                                     value={(selectedVariant?.attributes as any)?.size || ''}
                                     onValueChange={size => {
-                                        const variant = product.variants.find(
-                                            v => (v.attributes as any)?.size === size && v.is_active
+                                        const variant = product?.variants?.find(
+                                            v => (v?.attributes as any)?.size === size && v?.is_active
                                         );
                                         setSelectedVariant(variant || null);
                                     }}
@@ -336,15 +331,15 @@ export default function ProductDetailPage() {
                                 size="lg"
                                 className="flex-1 touch-target"
                                 onClick={handleAddToCart}
-                                disabled={!selectedVariant || selectedVariant.stock <= 0}
+                                disabled={!selectedVariant || (selectedVariant?.stock ?? 0) <= 0}
                                 data-testid="button-add-to-cart"
                             >
                                 <ShoppingCart className="h-5 w-5 mr-2" />
-                                {!selectedVariant || selectedVariant.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                                {!selectedVariant || (selectedVariant?.stock ?? 0) <= 0 ? 'Out of Stock' : 'Add to Cart'}
                             </Button>
 
                             <WishlistButton
-                                productId={product.id}
+                                productId={product?.id || ''}
                                 variantId={selectedVariant?.id}
                                 size="lg"
                                 variant="outline"
@@ -356,15 +351,15 @@ export default function ProductDetailPage() {
                         <div className="border-t pt-6">
                             <h3 className="font-semibold mb-4">Product Details</h3>
                             <ul className="space-y-2 text-sm text-muted-foreground">
-                                {product.category && <li>• Category: {product.category.name}</li>}
+                                {product?.category && <li>• Category: {product.category?.name || ''}</li>}
                                 <li>• SKU: {selectedVariant?.sku || 'N/A'}</li>
                                 <li>• Stock: {selectedVariant?.stock || 0} available</li>
-                                <li>• Currency: {product.currency}</li>
+                                <li>• Currency: {product?.currency || 'USD'}</li>
                             </ul>
                         </div>
 
                         {/* Specifications */}
-                        {product.specifications && Object.keys(product.specifications).length > 0 && (
+                        {product?.specifications && Object.keys(product.specifications).length > 0 && (
                             <div className="border-t pt-6">
                                 <h3 className="font-semibold mb-4">Specifications</h3>
                                 <div className="space-y-2 text-sm text-muted-foreground">

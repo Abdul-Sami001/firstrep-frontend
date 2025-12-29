@@ -12,18 +12,41 @@ export default function PromoBanner() {
     setIsMounted(true);
   }, []);
 
-  if (!isVisible || !isMounted) return null;
+  // Render placeholder on server to match client structure
+  if (!isMounted) {
+    return (
+      <div className="bg-primary text-primary-foreground py-2 px-4 text-sm relative overflow-hidden" suppressHydrationWarning>
+        <div className="flex items-center justify-center">
+          <div className="flex whitespace-nowrap opacity-0">
+            <span className="inline-block mr-8">Loading...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isVisible) return null;
+
+  const promoText = "Holiday Magic - Start of 2026 will see our brand new product line. Claim 15% discount on your first order when you register with us.";
 
   return (
-    <div className="bg-primary text-primary-foreground text-center py-2 px-4 text-sm relative">
-      <p data-testid="text-promo">
-        Free shipping on orders over $100 | New Collection: Spring Summer 2025
-      </p>
+    <div className="bg-primary text-primary-foreground py-2 px-4 text-sm relative overflow-hidden" suppressHydrationWarning>
+      <div className="flex items-center justify-center">
+        <div className="flex animate-promo-scroll whitespace-nowrap">
+          {/* Repeat text multiple times for seamless scroll */}
+          {[...Array(4)].map((_, i) => (
+            <span key={i} className="inline-block mr-8">
+              {promoText} •
+            </span>
+          ))}
+        </div>
+      </div>
       <button
         onClick={() => setIsVisible(false)}
-        className="absolute right-4 top-1/2 -translate-y-1/2"
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 touch-target-sm hover:opacity-80 transition-opacity"
         data-testid="button-close-promo"
-        suppressHydrationWarning={true}
+        suppressHydrationWarning
+        aria-label="Close promo banner"
       >
         <X className="h-4 w-4" />
       </button>

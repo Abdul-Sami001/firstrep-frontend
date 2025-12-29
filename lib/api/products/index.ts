@@ -7,6 +7,7 @@ export interface Category {
     name: string;
     slug: string;
     parent?: string | null;
+    children?: Category[]; // Nested categories
 }
 
 export interface ProductVariant {
@@ -73,9 +74,9 @@ export interface PaginatedResponse<T> {
 
 // Production API Methods
 export const productsApi = {
-    // Get categories
+    // Get categories (returns paginated response)
     getCategories: () =>
-        api.get<Category[]>('/categories/'),
+        api.get<PaginatedResponse<Category>>('/categories/'),
 
     // Get all products with pagination and filters
     getProducts: (params?: ProductFilters & { page?: number; page_size?: number }) =>

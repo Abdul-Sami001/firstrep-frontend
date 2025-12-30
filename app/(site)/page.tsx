@@ -1,10 +1,13 @@
 // app/(site)/page.tsx - Redesigned to match reference site with dark theme
 'use client';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { useCategories, useProducts } from '@/hooks/useProducts';
 import CategoryShowcase from '@/components/CategoryShowcase';
 import ProductCarousel from '@/components/ProductCarousel';
 import CategorySectionSkeleton from '@/components/CategorySectionSkeleton';
 import GenderSelector from '@/components/GenderSelector';
+import { Button } from '@/components/ui/button';
 
 // Category badge types matching reference site
 const CATEGORY_BADGES: Record<string, string> = {
@@ -160,6 +163,18 @@ function CategoryShowcaseWithProducts({
               isLoading={productsLoading}
               error={productsError}
             />
+            {/* View All Button */}
+            <div className="mt-8 md:mt-12 flex justify-center">
+              <Link href={`/shop-clean?category=${encodeURIComponent(category.name)}`}>
+                <Button
+                  variant="outline"
+                  className="uppercase font-semibold border-white/20 text-white hover:bg-white hover:text-black transition-all duration-300 px-8 md:px-10 py-6 md:py-7 text-sm md:text-base"
+                >
+                  View All {category.name}
+                  <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </section>
       )}

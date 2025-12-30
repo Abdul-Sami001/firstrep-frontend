@@ -110,7 +110,7 @@ export default function ResellerPortalPage() {
             and get back to you within 2-3 business days.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/reseller/login">
+            <Link href="/ResellerLogin">
               <Button className="bg-[#3c83f6] hover:bg-[#2563eb] text-white">
                 <Building2 className="mr-2 h-4 w-4" />
                 Apply Now

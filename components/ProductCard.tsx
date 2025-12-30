@@ -96,7 +96,7 @@ export default function ProductCard({
       data-testid={`card-product-${productId}`}
     >
       {/* Image Container */}
-      <div className="relative aspect-[2/3] md:aspect-[3/4] overflow-hidden rounded-md bg-muted mb-3">
+      <div className="relative aspect-[2/3] md:aspect-[3/4] overflow-hidden rounded-md bg-gray-900 mb-3">
 
         {/* Click only the image to navigate (not the whole surface) */}
         <Link href={`/product/${productId}`} className="relative block h-full w-full">
@@ -132,7 +132,7 @@ export default function ProductCard({
 
         {/* Popularity Badge */}
         {isApiProduct && product?.popularity && product.popularity > 100 && (
-          <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-semibold z-20">
+          <div className="absolute top-3 right-3 bg-gradient-to-r from-[#00bfff] to-[#0ea5e9] text-white px-2.5 py-1 rounded-md text-xs font-semibold z-20 shadow-lg shadow-[#00bfff]/30">
             Popular
           </div>
         )}
@@ -148,17 +148,27 @@ export default function ProductCard({
           />
         </div>
 
-        {/* Add to Cart Button (bottom centered with extra margin) */}
+        {/* Gradient Overlay at Bottom for Button */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none z-20" />
+        
+        {/* Add to Cart Button - Always Visible */}
         {isInStock && (
-          <Button
-            size="sm"
+          <button
             onClick={handleAddToCart}
-            className={`absolute bottom-10 left-1/2 -translate-x-1/2 transition-opacity duration-300 z-30 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#00bfff] hover:bg-[#0099cc] text-white font-medium text-xs md:text-sm px-5 py-2.5 rounded-full shadow-lg shadow-[#00bfff]/30 hover:shadow-[#00bfff]/50 transition-all duration-300 border-0 flex items-center justify-center gap-2 z-30 hover:scale-105 active:scale-95 backdrop-blur-md"
             data-testid={`button-add-to-cart-${productId}`}
           >
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            Add to Cart
-          </Button>
+            <ShoppingCart className="h-4 w-4" />
+            <span className="hidden sm:inline">Add to Cart</span>
+            <span className="sm:hidden">Add</span>
+          </button>
+        )}
+        
+        {/* Out of Stock Badge */}
+        {!isInStock && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-900/95 backdrop-blur-md text-gray-400 text-xs md:text-sm px-5 py-2.5 rounded-full border border-gray-700 z-30">
+            Out of Stock
+          </div>
         )}
       </div>
 

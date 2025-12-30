@@ -24,7 +24,7 @@ const sizeClasses = {
 const buttonSizeClasses = {
     sm: 'h-8 w-8 p-0',
     md: 'h-10 w-10 p-0',
-    lg: 'h-12 w-12 p-0',
+    lg: 'h-12 w-12 p-0', // Default, can be overridden by className
 };
 
 export default function WishlistButton({
@@ -87,8 +87,9 @@ export default function WishlistButton({
             onClick={handleToggle}
             disabled={isLoading}
             className={cn(
-                buttonSizeClasses[size],
-                'transition-all duration-200 hover:scale-110',
+                // Only apply default size classes if className doesn't override height/width
+                !className?.includes('h-') && !className?.includes('w-') && buttonSizeClasses[size],
+                'transition-all duration-200 hover:scale-110 flex items-center justify-center',
                 isWishlisted && 'bg-red-50 border-red-200 hover:bg-red-100',
                 className
             )}

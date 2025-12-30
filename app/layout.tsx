@@ -54,7 +54,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} bg-background text-foreground`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} bg-[#000000] text-white`}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <ThemeProvider>

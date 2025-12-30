@@ -61,31 +61,45 @@ export default function ProductDetailPage() {
     const heroSrc = images[currentImageIndex]?.image || '';
     const heroAlt = images[currentImageIndex]?.alt_text || product?.title || 'Product image';
 
-    const availableSizes = useMemo(
-        () =>
-            Array.from(
-                new Set(
-                    (product?.variants ?? [])
-                        .filter(v => v.is_active)
-                        .map(v => (v.attributes as any)?.size)
-                        .filter(Boolean)
-                )
-            ),
-        [product?.variants]
-    );
+    // Get available sizes based on selected color (if any)
+    const availableSizes = useMemo(() => {
+        const currentColor = (selectedVariant?.attributes as any)?.color;
+        const variants = (product?.variants ?? []).filter(v => {
+            if (!v.is_active) return false;
+            if (currentColor) {
+                return (v.attributes as any)?.color === currentColor;
+            }
+            return true;
+        });
+        
+        return Array.from(
+            new Set(
+                variants
+                    .map(v => (v.attributes as any)?.size)
+                    .filter(Boolean)
+            )
+        );
+    }, [product?.variants, selectedVariant]);
 
-    const availableColors = useMemo(
-        () =>
-            Array.from(
-                new Set(
-                    (product?.variants ?? [])
-                        .filter(v => v.is_active)
-                        .map(v => (v.attributes as any)?.color)
-                        .filter(Boolean)
-                )
-            ),
-        [product?.variants]
-    );
+    // Get available colors based on selected size (if any)
+    const availableColors = useMemo(() => {
+        const currentSize = (selectedVariant?.attributes as any)?.size;
+        const variants = (product?.variants ?? []).filter(v => {
+            if (!v.is_active) return false;
+            if (currentSize) {
+                return (v.attributes as any)?.size === currentSize;
+            }
+            return true;
+        });
+        
+        return Array.from(
+            new Set(
+                variants
+                    .map(v => (v.attributes as any)?.color)
+                    .filter(Boolean)
+            )
+        );
+    }, [product?.variants, selectedVariant]);
 
     const handleAddToCart = () => {
         if (!product || !selectedVariant || (selectedVariant?.stock ?? 0) <= 0) return;
@@ -103,10 +117,10 @@ export default function ProductDetailPage() {
 
     if (productLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p>Loading product...</p>
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-white" />
+                    <p className="text-gray-300">Loading product...</p>
                 </div>
             </div>
         );
@@ -114,12 +128,12 @@ export default function ProductDetailPage() {
 
     if (productError || !product) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
                 <div className="text-center">
-                    <h1 className="text-4xl font-bold mb-4">Product Not Found</h1>
-                    <p className="text-muted-foreground mb-8">The product you're looking for doesn't exist.</p>
+                    <h1 className="text-4xl font-bold mb-4 text-white">Product Not Found</h1>
+                    <p className="text-gray-300 mb-8">The product you're looking for doesn't exist.</p>
                     <Link href="/">
-                        <Button>Return Home</Button>
+                        <Button className="bg-[#3c83f6] hover:bg-[#2563eb] text-white">Return Home</Button>
                     </Link>
                 </div>
             </div>
@@ -127,40 +141,40 @@ export default function ProductDetailPage() {
     }
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-[#000000]">
             {/* Breadcrumb */}
-            <div className="border-b bg-background">
+            <div className="border-b border-gray-800 bg-[#000000]">
                 <div className="mobile-container tablet-container desktop-container">
-                    <div className="py-3">
-                        <div className="text-sm text-muted-foreground">
-                            <Link href="/" className="hover:text-foreground transition-colors" data-testid="link-home">
+                    <div className="py-3 md:py-4">
+                        <div className="text-sm md:text-base text-gray-300">
+                            <Link href="/" className="hover:text-white transition-colors" data-testid="link-home">
                                 Home
                             </Link>
-                            <span className="mx-2">/</span>
+                            <span className="mx-2 text-gray-500">/</span>
                             {product?.category && (
                                 <>
                                     <Link
-                                        href={`/Collections/${product.category?.slug || ''}`}
-                                        className="hover:text-foreground capitalize"
+                                        href={`/shop-clean?category=${encodeURIComponent(product.category?.name || '')}`}
+                                        className="hover:text-white transition-colors capitalize"
                                         data-testid="link-collection"
                                     >
                                         {product.category?.name || ''}
                                     </Link>
-                                    <span className="mx-2">/</span>
+                                    <span className="mx-2 text-gray-500">/</span>
                                 </>
                             )}
-                            <span data-testid="text-product-name">{product?.title || ''}</span>
+                            <span className="text-white" data-testid="text-product-name">{product?.title || ''}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Main */}
-            <div className="mobile-container tablet-container desktop-container py-8 md:py-12">
-                <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop">
+            <div className="mobile-container tablet-container desktop-container py-8 md:py-12 lg:py-16">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16">
                     {/* Gallery */}
                     <div className="space-y-4">
-                        <div className="relative aspect-[3/4] bg-muted rounded-md overflow-hidden">
+                        <div className="relative aspect-[3/4] bg-gray-900 rounded-lg overflow-hidden">
                             {heroSrc ? (
                                 <Image
                                     src={heroSrc}
@@ -172,8 +186,8 @@ export default function ProductDetailPage() {
                                     quality={90}
                                 />
                             ) : (
-                                <div className="w-full h-full bg-muted flex items-center justify-center">
-                                    <span className="text-muted-foreground">No image available</span>
+                                <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+                                    <span className="text-gray-500">No image available</span>
                                 </div>
                             )}
 
@@ -183,14 +197,14 @@ export default function ProductDetailPage() {
                                         onClick={() =>
                                             setCurrentImageIndex(prev => (prev - 1 + images.length) % images.length)
                                         }
-                                        className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full hover-elevate touch-target-sm"
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 text-white transition-colors touch-target-sm z-10"
                                         data-testid="button-prev-image"
                                     >
                                         <ChevronLeft className="h-5 w-5" />
                                     </button>
                                     <button
                                         onClick={() => setCurrentImageIndex(prev => (prev + 1) % images.length)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full hover-elevate touch-target-sm"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 text-white transition-colors touch-target-sm z-10"
                                         data-testid="button-next-image"
                                     >
                                         <ChevronRight className="h-5 w-5" />
@@ -200,20 +214,23 @@ export default function ProductDetailPage() {
                         </div>
 
                         {images.length > 1 && (
-                            <div className="flex gap-2 overflow-x-auto">
+                            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
                                 {images.map((img, index) => (
                                     <button
                                         key={img.id ?? index}
                                         onClick={() => setCurrentImageIndex(index)}
-                                        className={`flex-shrink-0 aspect-square w-16 rounded-md overflow-hidden border-2 ${currentImageIndex === index ? 'border-primary' : 'border-transparent'
-                                            }`}
+                                        className={`flex-shrink-0 aspect-square w-16 md:w-20 rounded-md overflow-hidden border-2 transition-colors ${
+                                            currentImageIndex === index 
+                                                ? 'border-[#3c83f6]' 
+                                                : 'border-gray-700 hover:border-gray-600'
+                                        }`}
                                         data-testid={`thumbnail-${index}`}
                                     >
                                         <Image
                                             src={img.image}
                                             alt={img.alt_text || `${product.title} view ${index + 1}`}
-                                            width={64}
-                                            height={64}
+                                            width={80}
+                                            height={80}
                                             className="w-full h-full object-cover"
                                         />
                                     </button>
@@ -223,15 +240,15 @@ export default function ProductDetailPage() {
                     </div>
 
                     {/* Info */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 md:space-y-8">
                         <div>
-                            <h1 className="text-mobile-h1 md:text-tablet-h1 lg:text-desktop-h1 font-bold mb-2" data-testid="text-product-title">
+                            <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-4 md:mb-6 leading-tight" data-testid="text-product-title">
                                 {product?.title || ''}
                             </h1>
 
                             {/* Price */}
-                            <div className="mb-4" data-testid="text-product-price">
-                                <span className="text-2xl md:text-3xl font-semibold">
+                            <div className="mb-4 md:mb-6" data-testid="text-product-price">
+                                <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
                                     {product?.currency || 'USD'}{' '}
                                     {Number(
                                         selectedVariant?.price_override != null
@@ -243,130 +260,184 @@ export default function ProductDetailPage() {
 
                             {/* Rating Summary */}
                             {ratingStats && ratingStats.review_count > 0 && (
-                                <div className="mb-4">
+                                <div className="mb-4 md:mb-6">
                                     <RatingSummary 
                                         stats={ratingStats}
                                         productId={id}
                                         showDistribution={false}
                                         showReviewsLink={true}
+                                        className="text-white"
                                     />
                                 </div>
                             )}
 
-                            {product?.popularity && product.popularity > 0 && (
-                                <div className="text-sm text-muted-foreground mb-4">Popularity: {product.popularity}</div>
-                            )}
                         </div>
 
-                        <p className="text-sm md:text-base text-muted-foreground" data-testid="text-product-description">
+                        <p className="text-base md:text-lg text-gray-300 leading-relaxed" data-testid="text-product-description">
                             {product?.description || ''}
                         </p>
 
                         {/* Stock */}
                         {(!selectedVariant || (selectedVariant?.stock ?? 0) <= 0) && (
-                            <Alert variant="destructive">
-                                <AlertDescription>This product is currently out of stock.</AlertDescription>
+                            <Alert variant="destructive" className="bg-red-900/20 border-red-800">
+                                <AlertDescription className="text-red-300">This product is currently out of stock.</AlertDescription>
                             </Alert>
                         )}
 
                         {/* Color */}
-                        {availableColors.length > 1 && (
+                        {availableColors.length > 0 && (
                             <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Color: {(selectedVariant?.attributes as any)?.color || availableColors[0]}
+                                <label className="block text-sm md:text-base font-semibold text-white mb-3">
+                                    Color: <span className="text-gray-300 font-normal">{(selectedVariant?.attributes as any)?.color || availableColors[0]}</span>
                                 </label>
-                                <div className="flex gap-2 flex-wrap">
-                                    {availableColors.map(color => (
-                                        <button
-                                            key={color}
-                                            onClick={() => {
-                                                const variant = product?.variants?.find(
-                                                    v => (v.attributes as any)?.color === color && v.is_active
-                                                );
-                                                setSelectedVariant(variant || null);
-                                            }}
-                                            className={`px-4 py-2 border rounded-md text-sm touch-target ${(selectedVariant?.attributes as any)?.color === color
-                                                    ? 'border-primary bg-primary/10'
-                                                    : 'border-border'
-                                                } hover-elevate`}
-                                            data-testid={`color-${String(color).toLowerCase().replace(/\s+/g, '-')}`}
-                                        >
-                                            {color}
-                                        </button>
-                                    ))}
+                                <div className="flex gap-2 md:gap-3 flex-wrap">
+                                    {availableColors.map(color => {
+                                        // Find variant with this color and current size (if size is selected)
+                                        const currentSize = (selectedVariant?.attributes as any)?.size;
+                                        const variant = product?.variants?.find(
+                                            v => {
+                                                const variantColor = (v.attributes as any)?.color;
+                                                const variantSize = (v.attributes as any)?.size;
+                                                return variantColor === color && 
+                                                       v.is_active &&
+                                                       (!currentSize || variantSize === currentSize);
+                                            }
+                                        );
+                                        const isSelected = (selectedVariant?.attributes as any)?.color === color;
+                                        const isOutOfStock = !variant || (variant?.stock ?? 0) <= 0;
+                                        
+                                        return (
+                                            <button
+                                                key={color}
+                                                onClick={() => {
+                                                    if (variant && !isOutOfStock) {
+                                                        setSelectedVariant(variant);
+                                                    }
+                                                }}
+                                                disabled={isOutOfStock}
+                                                className={`px-4 py-2 md:px-5 md:py-2.5 border rounded-md text-sm md:text-base font-medium touch-target transition-all ${
+                                                    isSelected
+                                                        ? 'border-[#3c83f6] bg-[#3c83f6]/20 text-white'
+                                                        : isOutOfStock
+                                                        ? 'border-gray-700 text-gray-600 cursor-not-allowed opacity-50'
+                                                        : 'border-gray-700 text-gray-300 hover:border-gray-600 hover:text-white bg-gray-900/50'
+                                                }`}
+                                                data-testid={`color-${String(color).toLowerCase().replace(/\s+/g, '-')}`}
+                                            >
+                                                {color}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
 
                         {/* Size */}
-                        {availableSizes.length > 1 && (
+                        {availableSizes.length > 0 && (
                             <div>
-                                <label className="block text-sm font-medium mb-2">Size</label>
-                                <Select
-                                    value={(selectedVariant?.attributes as any)?.size || ''}
-                                    onValueChange={size => {
+                                <label className="block text-sm md:text-base font-semibold text-white mb-3">
+                                    Size: <span className="text-gray-300 font-normal">{(selectedVariant?.attributes as any)?.size || 'Select a size'}</span>
+                                </label>
+                                <div className="flex gap-2 md:gap-3 flex-wrap">
+                                    {availableSizes.map(size => {
+                                        // Find variant with this size and current color (if color selected)
+                                        const currentColor = (selectedVariant?.attributes as any)?.color;
                                         const variant = product?.variants?.find(
-                                            v => (v?.attributes as any)?.size === size && v?.is_active
+                                            v => {
+                                                const variantColor = (v.attributes as any)?.color;
+                                                const variantSize = (v.attributes as any)?.size;
+                                                return variantSize === size && 
+                                                       v.is_active &&
+                                                       (!currentColor || variantColor === currentColor);
+                                            }
                                         );
-                                        setSelectedVariant(variant || null);
-                                    }}
-                                >
-                                    <SelectTrigger data-testid="select-size">
-                                        <SelectValue placeholder="Select size" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {availableSizes.map(size => (
-                                            <SelectItem key={size} value={size} data-testid={`size-${size}`}>
+                                        const isSelected = (selectedVariant?.attributes as any)?.size === size;
+                                        const isOutOfStock = !variant || (variant?.stock ?? 0) <= 0;
+                                        
+                                        return (
+                                            <button
+                                                key={size}
+                                                onClick={() => {
+                                                    if (!isOutOfStock && variant) {
+                                                        setSelectedVariant(variant);
+                                                    }
+                                                }}
+                                                disabled={isOutOfStock}
+                                                className={`px-4 py-2 md:px-5 md:py-2.5 border rounded-md text-sm md:text-base font-medium touch-target transition-all min-w-[50px] ${
+                                                    isSelected
+                                                        ? 'border-[#3c83f6] bg-[#3c83f6]/20 text-white'
+                                                        : isOutOfStock
+                                                        ? 'border-gray-700 text-gray-600 cursor-not-allowed opacity-50'
+                                                        : 'border-gray-700 text-gray-300 hover:border-gray-600 hover:text-white bg-gray-900/50'
+                                                }`}
+                                                data-testid={`size-${size}`}
+                                            >
                                                 {size}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
 
                         {/* Actions */}
-                        <div className="flex gap-3">
-                            <Button
-                                size="lg"
-                                className="flex-1 touch-target"
+                        <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                            <button
+                                className="flex-1 touch-target bg-[#00bfff] bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] hover:bg-[#0099cc] text-white font-semibold uppercase text-sm md:text-base py-6 md:py-7 px-6 md:px-8 h-auto shadow-lg shadow-[#00bfff]/50 hover:shadow-xl hover:shadow-[#00bfff]/60 transition-all duration-300 border-0 rounded-md flex items-center justify-center gap-2 disabled:bg-gray-800 disabled:text-gray-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00bfff] focus-visible:ring-offset-2 focus-visible:ring-offset-black relative overflow-hidden group"
                                 onClick={handleAddToCart}
                                 disabled={!selectedVariant || (selectedVariant?.stock ?? 0) <= 0}
                                 data-testid="button-add-to-cart"
                             >
-                                <ShoppingCart className="h-5 w-5 mr-2" />
-                                {!selectedVariant || (selectedVariant?.stock ?? 0) <= 0 ? 'Out of Stock' : 'Add to Cart'}
-                            </Button>
+                                {/* Shine effect overlay */}
+                                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+                                <ShoppingCart className="h-5 w-5 relative z-10" />
+                                <span className="relative z-10">{!selectedVariant || (selectedVariant?.stock ?? 0) <= 0 ? 'Out of Stock' : 'Add to Cart'}</span>
+                            </button>
 
                             <WishlistButton
                                 productId={product?.id || ''}
                                 variantId={selectedVariant?.id}
                                 size="lg"
                                 variant="outline"
+                                className="border-white/20 text-white hover:bg-white hover:text-black h-[56px] md:h-[64px] w-[56px] md:w-[64px] p-0 flex items-center justify-center shrink-0"
                                 data-testid="button-add-to-wishlist"
                             />
                         </div>
 
                         {/* Details */}
-                        <div className="border-t pt-6">
-                            <h3 className="font-semibold mb-4">Product Details</h3>
-                            <ul className="space-y-2 text-sm text-muted-foreground">
-                                {product?.category && <li>• Category: {product.category?.name || ''}</li>}
-                                <li>• SKU: {selectedVariant?.sku || 'N/A'}</li>
-                                <li>• Stock: {selectedVariant?.stock || 0} available</li>
-                                <li>• Currency: {product?.currency || 'USD'}</li>
+                        <div className="border-t border-gray-800 pt-6 md:pt-8">
+                            <h3 className="font-semibold text-lg md:text-xl text-white mb-4 md:mb-6">Product Details</h3>
+                            <ul className="space-y-2 md:space-y-3 text-sm md:text-base text-gray-300">
+                                {product?.category && (
+                                    <li className="flex items-center gap-2">
+                                        <span className="text-gray-500">•</span>
+                                        <span>Category: <span className="text-white">{product.category?.name || ''}</span></span>
+                                    </li>
+                                )}
+                                <li className="flex items-center gap-2">
+                                    <span className="text-gray-500">•</span>
+                                    <span>SKU: <span className="text-white">{selectedVariant?.sku || 'N/A'}</span></span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="text-gray-500">•</span>
+                                    <span>Stock: <span className="text-white">{selectedVariant?.stock || 0} available</span></span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="text-gray-500">•</span>
+                                    <span>Currency: <span className="text-white">{product?.currency || 'USD'}</span></span>
+                                </li>
                             </ul>
                         </div>
 
                         {/* Specifications */}
                         {product?.specifications && Object.keys(product.specifications).length > 0 && (
-                            <div className="border-t pt-6">
-                                <h3 className="font-semibold mb-4">Specifications</h3>
-                                <div className="space-y-2 text-sm text-muted-foreground">
+                            <div className="border-t border-gray-800 pt-6 md:pt-8">
+                                <h3 className="font-semibold text-lg md:text-xl text-white mb-4 md:mb-6">Specifications</h3>
+                                <div className="space-y-2 md:space-y-3 text-sm md:text-base">
                                     {Object.entries(product.specifications).map(([key, value]) => (
-                                        <div key={key} className="flex justify-between">
-                                            <span className="capitalize">{key.replace(/_/g, ' ')}:</span>
-                                            <span>{String(value)}</span>
+                                        <div key={key} className="flex justify-between items-start gap-4">
+                                            <span className="capitalize text-gray-300">{key.replace(/_/g, ' ')}:</span>
+                                            <span className="text-white text-right">{String(value)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -375,56 +446,56 @@ export default function ProductDetailPage() {
 
                         {/* Recent Reviews */}
                         {reviewsLoading ? (
-                            <div className="border-t pt-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="font-semibold">Recent Reviews</h3>
+                            <div className="border-t border-gray-800 pt-6 md:pt-8">
+                                <div className="flex items-center justify-between mb-4 md:mb-6">
+                                    <h3 className="font-semibold text-lg md:text-xl text-white">Recent Reviews</h3>
                                 </div>
                                 <div className="space-y-4">
                                     {Array.from({ length: 3 }).map((_, i) => (
-                                        <div key={i} className="animate-pulse">
-                                            <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-                                            <div className="h-3 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                        <div key={i} className="animate-pulse bg-gray-900/50 rounded-lg p-4 md:p-6">
+                                            <div className="h-4 bg-gray-800 rounded w-1/4 mb-2"></div>
+                                            <div className="h-3 bg-gray-800 rounded w-3/4 mb-2"></div>
+                                            <div className="h-3 bg-gray-800 rounded w-1/2"></div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         ) : recentReviews && recentReviews.results && recentReviews.results.length > 0 ? (
-                            <div className="border-t pt-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="font-semibold">Recent Reviews</h3>
+                            <div className="border-t border-gray-800 pt-6 md:pt-8">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 md:mb-6">
+                                    <h3 className="font-semibold text-lg md:text-xl text-white">Recent Reviews</h3>
                                     <Link 
                                         href={`/product/${id}/reviews`}
-                                        className="text-sm text-primary hover:text-primary/80 transition-colors"
+                                        className="text-sm md:text-base text-[#3c83f6] hover:text-white transition-colors font-medium"
                                     >
                                         See all reviews →
                                     </Link>
                                 </div>
-                                <div className="space-y-4">
+                                <div className="space-y-4 md:space-y-6">
                                     {recentReviews.results.slice(0, 3).map((review) => (
-                                        <div key={review.id} className="border rounded-lg p-4">
-                                            <div className="flex items-center gap-2 mb-2">
+                                        <div key={review.id} className="border border-gray-800 bg-gray-900/30 rounded-lg p-4 md:p-6">
+                                            <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3">
                                                 <div className="flex items-center gap-1">
                                                     {Array.from({ length: 5 }).map((_, i) => (
                                                         <span 
                                                             key={i}
-                                                            className={`text-sm ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                                                            className={`text-sm md:text-base ${i < review.rating ? 'text-yellow-400' : 'text-gray-600'}`}
                                                         >
                                                             ★
                                                         </span>
                                                     ))}
                                                 </div>
-                                                <span className="text-sm font-medium">
+                                                <span className="text-sm md:text-base font-medium text-white">
                                                     {review.user_name || 'Anonymous'}
                                                 </span>
                                                 {review.is_verified_purchase && (
-                                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                                    <span className="text-xs md:text-sm bg-green-900/30 text-green-400 border border-green-800 px-2 py-1 rounded">
                                                         Verified Purchase
                                                     </span>
                                                 )}
                                             </div>
-                                            <h4 className="font-medium text-sm mb-1">{review.title}</h4>
-                                            <p className="text-sm text-muted-foreground line-clamp-3">
+                                            <h4 className="font-semibold text-base md:text-lg text-white mb-2">{review.title}</h4>
+                                            <p className="text-sm md:text-base text-gray-300 line-clamp-3 leading-relaxed">
                                                 {review.content}
                                             </p>
                                         </div>
@@ -432,8 +503,8 @@ export default function ProductDetailPage() {
                                 </div>
                             </div>
                         ) : reviewsError ? (
-                            <div className="border-t pt-6">
-                                <div className="text-center text-muted-foreground">
+                            <div className="border-t border-gray-800 pt-6 md:pt-8">
+                                <div className="text-center text-gray-400">
                                     <p>Unable to load reviews</p>
                                 </div>
                             </div>
@@ -444,10 +515,10 @@ export default function ProductDetailPage() {
                 {/* Related */}
                 {relatedProducts.length > 0 && (
                     <div className="mt-12 md:mt-16 lg:mt-20">
-                        <h2 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold mb-8" data-testid="text-related-title">
+                        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-8 md:mb-12" data-testid="text-related-title">
                             More from {product.category?.name || 'This Category'}
                         </h2>
-                        <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                             {relatedProducts.map((rp: any) => (
                                 <ProductCard key={rp.id} product={rp} />
                             ))}

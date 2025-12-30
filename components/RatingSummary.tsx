@@ -50,7 +50,7 @@ export default function RatingSummary({
             {/* Main Rating Display */}
             <div className="flex items-center gap-4">
                 <div className="text-center">
-                    <div className="text-3xl font-bold text-foreground">
+                    <div className="text-3xl font-bold text-white">
                         {formatRating(average_rating)}
                     </div>
                     <RatingStars 
@@ -58,25 +58,25 @@ export default function RatingSummary({
                         size="md" 
                         data-testid="rating-stars-summary"
                     />
-                    <div className="text-sm text-muted-foreground mt-1">
+                    <div className="text-sm text-gray-400 mt-1">
                         {getRatingText(average_rating)}
                     </div>
                 </div>
 
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium">
+                        <span className="text-sm font-medium text-white">
                             {review_count} review{review_count !== 1 ? 's' : ''}
                         </span>
                         {verified_count > 0 && (
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-xs bg-[#3c83f6]/20 text-[#3c83f6] border border-[#3c83f6]/30">
                                 {verified_count} verified
                             </Badge>
                         )}
                     </div>
                     
                     {verifiedPercentage > 0 && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-gray-400">
                             {verifiedPercentage}% verified purchases
                         </div>
                     )}
@@ -86,7 +86,7 @@ export default function RatingSummary({
             {/* Rating Distribution */}
             {showDistribution && rating_distribution && (
                 <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Rating Breakdown</h4>
+                    <h4 className="text-sm font-medium text-white">Rating Breakdown</h4>
                     <div className="space-y-1">
                         {[5, 4, 3, 2, 1].map((star) => {
                             const count = rating_distribution[star.toString()] || 0;
@@ -96,15 +96,15 @@ export default function RatingSummary({
 
                             return (
                                 <div key={star} className="flex items-center gap-2 text-sm">
-                                    <span className="w-4 text-right">{star}</span>
+                                    <span className="w-4 text-right text-white">{star}</span>
                                     <RatingStars rating={1} size="sm" maxRating={1} />
-                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                    <div className="flex-1 bg-gray-800 rounded-full h-2">
                                         <div 
                                             className="bg-yellow-400 h-2 rounded-full transition-all duration-300"
                                             style={{ width: `${percentage}%` }}
                                         />
                                     </div>
-                                    <span className="w-8 text-right text-muted-foreground">
+                                    <span className="w-8 text-right text-gray-400">
                                         {count}
                                     </span>
                                 </div>
@@ -116,10 +116,10 @@ export default function RatingSummary({
 
             {/* Reviews Link */}
             {showReviewsLink && review_count > 0 && (
-                <div className="pt-2 border-t">
+                <div className="pt-2 border-t border-gray-800">
                     <Link 
                         href={`/product/${productId}/reviews`}
-                        className="text-sm text-primary hover:text-primary/80 transition-colors"
+                        className="text-sm text-[#3c83f6] hover:text-white transition-colors font-medium"
                         data-testid="link-see-all-reviews"
                     >
                         See all {review_count} review{review_count !== 1 ? 's' : ''} →

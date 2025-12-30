@@ -1,8 +1,7 @@
-// app/(site)/CustomerLogin/page.tsx - Complete with Forgot Password
+// app/(site)/CustomerLogin/page.tsx - Redesigned to match reference site
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -108,45 +107,165 @@ export default function CustomerLogin() {
     const isLoading = loginMutation.isPending || registerMutation.isPending || passwordResetMutation.isPending;
 
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-            <div className="w-full max-w-md space-y-6">
-                {/* Header */}
-                <div className="text-center space-y-4">
-                    <div className="text-3xl font-bold tracking-tight" data-testid="auth-title">
-                        1strep
+        <div className="min-h-screen bg-[#000000] flex">
+            {/* Left Panel - Background Image with Content */}
+            <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+                {/* Background Image - You can replace this with actual image URL */}
+                <div 
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40"
+                    style={{
+                        backgroundImage: `url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2070')`
+                    }}
+                />
+                {/* Dark Overlay */}
+                <div className="absolute inset-0 bg-black/60" />
+                
+                {/* Content */}
+                <div className="relative z-10 flex flex-col justify-start p-12 xl:p-16 h-full">
+                    {/* Main Content - Aligned with right side form header */}
+                    <div className="space-y-8 w-full">
+                        <div>
+                            <h1 className="text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold text-white mb-4 leading-tight">
+                                Elevate Your<br />Performance
+                            </h1>
+                            <p className="text-lg text-gray-300 max-w-md">
+                                Join thousands of athletes who trust 1stRep for premium activewear that delivers results.
+                            </p>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/10">
+                            <div>
+                                <div className="text-3xl xl:text-4xl font-bold text-white mb-1">50K+</div>
+                                <div className="text-sm text-gray-400">Active Members</div>
+                            </div>
+                            <div>
+                                <div className="text-3xl xl:text-4xl font-bold text-white mb-1">100+</div>
+                                <div className="text-sm text-gray-400">Products</div>
+                            </div>
+                            <div>
+                                <div className="text-3xl xl:text-4xl font-bold text-white mb-1">4.9★</div>
+                                <div className="text-sm text-gray-400">Rating</div>
+                            </div>
+                        </div>
+
+                        {/* Testimonial */}
+                        <div className="pt-8 border-t border-white/10">
+                            <p className="text-lg text-white italic mb-2">
+                                "The best activewear I've ever owned. Quality and performance unmatched."
+                            </p>
+                            <p className="text-sm text-gray-400">- Sarah M., Professional Athlete</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-3xl font-bold" data-testid="auth-title">
+                </div>
+            </div>
+
+            {/* Right Panel - Login/Register Form */}
+            <div className="w-full lg:w-1/2 flex flex-col justify-start p-6 md:p-8 lg:p-12 xl:p-16 bg-[#000000]">
+                <div className="w-full max-w-md space-y-8">
+                    {/* Form Header */}
+                    <div className="space-y-2">
+                        <h2 className="text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold text-white">
                             {showForgotPassword
                                 ? "Reset Password"
                                 : isLogin
                                     ? "Welcome Back"
                                     : "Create Account"
                             }
-                        </h1>
-                        <p className="text-muted-foreground mt-2">
+                        </h2>
+                        <p className="text-gray-400">
                             {showForgotPassword
                                 ? "Enter your email to receive a password reset link"
                                 : isLogin
-                                    ? "Sign in to your 1stRep account"
+                                    ? "Sign in to access your account"
                                     : "Join the 1stRep community"
                             }
                         </p>
                     </div>
-                </div>
 
-                {/* Auth Form */}
-                <Card className="p-6">
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Social Login Buttons - Only show on login/register, not forgot password */}
+                    {!showForgotPassword && (
+                        <>
+                            <div className="space-y-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full h-12 bg-white hover:bg-gray-100 text-gray-900 border-gray-300 font-medium"
+                                    onClick={() => {
+                                        // TODO: Implement Google OAuth
+                                        toast({
+                                            title: "Coming Soon",
+                                            description: "Google login will be available soon.",
+                                        });
+                                    }}
+                                >
+                                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                    </svg>
+                                    Continue with Google
+                                </Button>
+
+                                <div className="flex gap-3">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="flex-1 h-12 bg-black hover:bg-gray-900 text-white border-gray-700 font-medium"
+                                        onClick={() => {
+                                            // TODO: Implement X/Twitter OAuth
+                                            toast({
+                                                title: "Coming Soon",
+                                                description: "X login will be available soon.",
+                                            });
+                                        }}
+                                    >
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                        </svg>
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="flex-1 h-12 bg-black hover:bg-gray-900 text-white border-gray-700 font-medium"
+                                        onClick={() => {
+                                            // TODO: Implement Apple OAuth
+                                            toast({
+                                                title: "Coming Soon",
+                                                description: "Apple login will be available soon.",
+                                            });
+                                        }}
+                                    >
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                                        </svg>
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="relative">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t border-gray-700"></div>
+                                </div>
+                                <div className="relative flex justify-center text-sm">
+                                    <span className="px-4 bg-[#000000] text-gray-400">Or continue with email</span>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Auth Form */}
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         {error && (
-                            <Alert variant="destructive">
-                                <AlertDescription>{error}</AlertDescription>
+                            <Alert variant="destructive" className="bg-red-900/20 border-red-800">
+                                <AlertDescription className="text-red-300">{error}</AlertDescription>
                             </Alert>
                         )}
 
                         {success && (
-                            <Alert className="border-green-200 bg-green-50 text-green-800">
-                                <AlertDescription>{success}</AlertDescription>
+                            <Alert className="bg-green-900/20 border-green-800">
+                                <AlertDescription className="text-green-300">{success}</AlertDescription>
                             </Alert>
                         )}
 
@@ -161,7 +280,7 @@ export default function CustomerLogin() {
                                         setError("");
                                         setSuccess("");
                                     }}
-                                    className="p-0 h-auto text-sm"
+                                    className="p-0 h-auto text-sm text-gray-400 hover:text-white"
                                 >
                                     <ArrowLeft className="mr-2 h-4 w-4" />
                                     Back to Login
@@ -173,15 +292,15 @@ export default function CustomerLogin() {
                         {!isLogin && !showForgotPassword && (
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="firstName">First Name</Label>
+                                    <Label htmlFor="firstName" className="text-gray-300">First Name</Label>
                                     <div className="relative">
-                                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                                         <Input
                                             id="firstName"
                                             name="firstName"
                                             type="text"
                                             placeholder="John"
-                                            className="pl-10"
+                                            className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff]"
                                             value={formData.firstName}
                                             onChange={handleInputChange}
                                             required={!isLogin}
@@ -190,15 +309,15 @@ export default function CustomerLogin() {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="lastName">Last Name</Label>
+                                    <Label htmlFor="lastName" className="text-gray-300">Last Name</Label>
                                     <div className="relative">
-                                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                                         <Input
                                             id="lastName"
                                             name="lastName"
                                             type="text"
                                             placeholder="Doe"
-                                            className="pl-10"
+                                            className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff]"
                                             value={formData.lastName}
                                             onChange={handleInputChange}
                                             required={!isLogin}
@@ -211,15 +330,15 @@ export default function CustomerLogin() {
 
                         {/* Email */}
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email Address</Label>
+                            <Label htmlFor="email" className="text-gray-300">Email Address</Label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                                 <Input
                                     id="email"
                                     name="email"
                                     type="email"
                                     placeholder="your@email.com"
-                                    className="pl-10"
+                                    className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff]"
                                     value={formData.email}
                                     onChange={handleInputChange}
                                     required
@@ -231,34 +350,50 @@ export default function CustomerLogin() {
                         {/* Password (Login and Registration only) */}
                         {!showForgotPassword && (
                             <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password" className="text-gray-300">Password</Label>
+                                    {isLogin && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="p-0 h-auto text-xs text-gray-400 hover:text-white"
+                                            onClick={() => {
+                                                setShowForgotPassword(true);
+                                                setError("");
+                                                setSuccess("");
+                                            }}
+                                            data-testid="button-forgot-password"
+                                        >
+                                            Forgot Password?
+                                        </Button>
+                                    )}
+                                </div>
                                 <div className="relative">
-                                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
                                     <Input
                                         id="password"
                                         name="password"
                                         type={showPassword ? 'text' : 'password'}
                                         placeholder="Enter your password"
-                                        className="pl-10 pr-10"
+                                        className="pl-10 pr-10 h-12 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff]"
                                         value={formData.password}
                                         onChange={handleInputChange}
                                         required={!showForgotPassword}
                                         minLength={6}
                                         data-testid="input-password"
                                     />
-                                    <Button
+                                    <button
                                         type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 h-auto p-1 hover:bg-transparent"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center text-gray-500 hover:text-gray-300 transition-colors"
                                         onClick={() => setShowPassword(!showPassword)}
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
                                     >
                                         {showPassword ? (
                                             <EyeOff className="h-4 w-4" />
                                         ) : (
                                             <Eye className="h-4 w-4" />
                                         )}
-                                    </Button>
+                                    </button>
                                 </div>
                             </div>
                         )}
@@ -266,15 +401,15 @@ export default function CustomerLogin() {
                         {/* Confirm Password (Registration only) */}
                         {!isLogin && !showForgotPassword && (
                             <div className="space-y-2">
-                                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                                <Label htmlFor="confirmPassword" className="text-gray-300">Confirm Password</Label>
                                 <div className="relative">
-                                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                                     <Input
                                         id="confirmPassword"
                                         name="confirmPassword"
                                         type="password"
                                         placeholder="Confirm your password"
-                                        className="pl-10"
+                                        className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff]"
                                         value={formData.confirmPassword}
                                         onChange={handleInputChange}
                                         required={!isLogin}
@@ -288,7 +423,7 @@ export default function CustomerLogin() {
                         {/* Submit Button */}
                         <Button
                             type="submit"
-                            className="w-full h-12 text-base font-semibold"
+                            className="w-full h-12 bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white font-semibold uppercase text-sm shadow-lg shadow-[#00bfff]/30 hover:shadow-[#00bfff]/40 transition-all duration-300 border-0"
                             disabled={isLoading}
                             data-testid="button-submit"
                         >
@@ -307,32 +442,14 @@ export default function CustomerLogin() {
                         </Button>
                     </form>
 
-                    {/* Forgot Password Link (Login only) */}
-                    {isLogin && !showForgotPassword && (
-                        <div className="mt-4 text-center">
-                            <Button
-                                variant="ghost"
-                                className="p-0 h-auto text-sm text-muted-foreground"
-                                onClick={() => {
-                                    setShowForgotPassword(true);
-                                    setError("");
-                                    setSuccess("");
-                                }}
-                                data-testid="button-forgot-password"
-                            >
-                                Forgot your password?
-                            </Button>
-                        </div>
-                    )}
-
                     {/* Toggle Mode */}
                     {!showForgotPassword && (
-                        <div className="mt-6 text-center">
-                            <p className="text-sm text-muted-foreground">
-                                {isLogin ? "Don't have an account?" : "Already have an account?"}
+                        <div className="text-center">
+                            <p className="text-sm text-gray-400">
+                                {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
                                 <Button
                                     variant="ghost"
-                                    className="ml-1 p-0 h-auto"
+                                    className="p-0 h-auto text-sm text-[#00bfff] hover:text-white underline"
                                     onClick={() => {
                                         setIsLogin(!isLogin);
                                         setError("");
@@ -353,35 +470,23 @@ export default function CustomerLogin() {
                         </div>
                     )}
 
-                    {/* Reseller Link */}
-                    <div className="mt-4 text-center">
-                        <p className="text-xs text-muted-foreground">
-                            Looking for wholesale pricing?
-                            <Button
-                                variant="ghost"
-                                className="ml-1 p-0 text-xs h-auto"
-                                onClick={() => router.push("/reseller")}
-                                data-testid="link-reseller"
-                            >
-                                Apply for Reseller Account
-                            </Button>
-                        </p>
-                    </div>
-                </Card>
-
-                {/* Benefits */}
-                <Card className="p-4 bg-primary/5 border-primary/20">
-                    <div className="space-y-2">
-                        <h3 className="font-semibold text-primary">Account Benefits</h3>
-                        <ul className="text-sm text-muted-foreground space-y-1">
-                            <li>• Track your orders and delivery status</li>
-                            <li>• Save your favorite items for later</li>
-                            <li>• Faster checkout with saved details</li>
-                            <li>• Exclusive member offers and discounts</li>
-                            <li>• Early access to new product launches</li>
-                        </ul>
-                    </div>
-                </Card>
+                    {/* B2B Link */}
+                    {!showForgotPassword && (
+                        <div className="text-center pt-4 border-t border-gray-800">
+                            <p className="text-sm text-gray-400">
+                                Looking to grow your business?{" "}
+                                <Button
+                                    variant="ghost"
+                                    className="p-0 h-auto text-sm text-[#00bfff] hover:text-white underline"
+                                    onClick={() => router.push("/ResellerLogin")}
+                                    data-testid="link-reseller"
+                                >
+                                    Join Our B2B Platform
+                                </Button>
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

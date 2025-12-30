@@ -1,5 +1,5 @@
 // components/Header.tsx - Fixed Mobile-First Responsive Design
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ShoppingCart, Search, Menu, X, Heart, User, LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -10,6 +10,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useUserProfile } from '@/hooks/useAuth';
+import { SearchDialog } from '@/components/SearchDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 export default function Header() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { setTheme } = useTheme();
   const { totalItems, openCart } = useCart();
   const { user, isAuthenticated, logout } = useAuth();
@@ -33,7 +35,7 @@ export default function Header() {
   const navigationItems = [
     { name: 'ACTIVE RANGE', href: '/shop-clean', id: null },
     { name: '1R COLLECTION', href: '/1r-collection', id: null },
-    { name: 'RESELLERS', href: '/reseller/login', id: null },
+    { name: 'RESELLERS', href: '/ResellerLogin', id: null },
     { name: 'ABOUT US', href: '/about', id: null },
   ];
 
@@ -43,10 +45,36 @@ export default function Header() {
     }
   };
 
+  const handleResellerClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    // Check if reseller is logged in (check for reseller_token in localStorage)
+    const resellerToken = typeof window !== 'undefined' ? localStorage.getItem('reseller_token') : null;
+    if (resellerToken) {
+      // Already logged in as reseller, go to dashboard
+      router.push('/ResellerDashboard');
+    } else {
+      // Not logged in, go to login page
+      router.push('/ResellerLogin');
+    }
+  };
+
   const handleLogout = () => {
     logout();
     router.push('/');
   };
+
+  // Keyboard shortcut for search (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[#000000] border-b border-gray-800">
@@ -87,19 +115,35 @@ export default function Header() {
           {/* Center: Desktop Navigation - Centered */}
           <div className="hidden lg:flex flex-1 items-center justify-center h-full">
             <nav className="flex items-center justify-center gap-6 xl:gap-8 h-full" data-testid="nav-desktop">
-              {navigationItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="text-sm font-semibold tracking-wide uppercase text-white hover:opacity-80 transition-opacity touch-target flex items-center font-poppins"
-                  data-testid={`link-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
-                  onClick={() => {
-                    if (item.id) setTheme(item.id);
-                  }}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {navigationItems.map((item) => {
+                // Special handling for RESELLERS link
+                if (item.name === 'RESELLERS') {
+                  return (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      onClick={handleResellerClick}
+                      className="text-sm font-semibold tracking-wide uppercase text-white hover:opacity-80 transition-opacity touch-target flex items-center font-poppins cursor-pointer"
+                      data-testid={`link-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      {item.name}
+                    </a>
+                  );
+                }
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="text-sm font-semibold tracking-wide uppercase text-white hover:opacity-80 transition-opacity touch-target flex items-center font-poppins"
+                    data-testid={`link-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    onClick={() => {
+                      if (item.id) setTheme(item.id);
+                    }}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
             </nav>
           </div>
 
@@ -111,6 +155,7 @@ export default function Header() {
               size="icon"
               className="hidden sm:flex touch-target-sm text-white hover:bg-gray-800 hover:text-white"
               data-testid="button-search"
+              onClick={() => setSearchOpen(true)}
               suppressHydrationWarning
             >
               <Search className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -217,20 +262,40 @@ export default function Header() {
         {mobileMenuOpen && (
           <nav className="lg:hidden py-4 border-t border-gray-800" data-testid="nav-mobile">
             <div className="space-y-2">
-              {navigationItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="block w-full text-left px-4 py-3 text-sm font-medium uppercase text-white hover:bg-gray-800 transition-colors touch-target"
-                  data-testid={`link-mobile-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
-                  onClick={() => {
-                    if (item.id) setTheme(item.id);
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {navigationItems.map((item) => {
+                // Special handling for RESELLERS link
+                if (item.name === 'RESELLERS') {
+                  return (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleResellerClick(e);
+                        setMobileMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-3 text-sm font-medium uppercase text-white hover:bg-gray-800 transition-colors touch-target cursor-pointer"
+                      data-testid={`link-mobile-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      {item.name}
+                    </a>
+                  );
+                }
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="block w-full text-left px-4 py-3 text-sm font-medium uppercase text-white hover:bg-gray-800 transition-colors touch-target"
+                    data-testid={`link-mobile-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    onClick={() => {
+                      if (item.id) setTheme(item.id);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
 
               {/* Mobile Search - Full Width */}
               <div className="px-4 py-2">
@@ -239,7 +304,7 @@ export default function Header() {
                   className="w-full justify-start touch-target border-gray-700 text-white hover:bg-gray-800 hover:text-white"
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    // Handle search
+                    setSearchOpen(true);
                   }}
                 >
                   <Search className="mr-2 h-4 w-4" />
@@ -250,6 +315,9 @@ export default function Header() {
           </nav>
         )}
       </div>
+
+      {/* Search Dialog */}
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </header>
   );
 }

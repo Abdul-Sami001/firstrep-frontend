@@ -364,4 +364,31 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Background image animations for reseller page */
+  @keyframes zoomIn {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(1.1);
+    }
+  }
+
+  @keyframes gradientShift {
+    from {
+      opacity: 0.8;
+    }
+    to {
+      opacity: 0.9;
+    }
+  }
+
+  .animate-zoom-in {
+    animation: zoomIn 20s ease-in-out infinite alternate;
+  }
+
+  .animate-gradient-shift {
+    animation: gradientShift 15s ease-in-out infinite alternate;
+  }
 }

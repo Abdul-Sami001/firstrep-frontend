@@ -15,7 +15,7 @@ export default function PromoBanner() {
   // Render placeholder on server to match client structure
   if (!isMounted) {
     return (
-      <div className="bg-primary text-primary-foreground py-2 px-4 text-sm relative overflow-hidden" suppressHydrationWarning>
+      <div className="bg-[#000000] text-white py-2 px-4 text-sm relative overflow-hidden" suppressHydrationWarning>
         <div className="flex items-center justify-center">
           <div className="flex whitespace-nowrap opacity-0">
             <span className="inline-block mr-8">Loading...</span>
@@ -30,7 +30,7 @@ export default function PromoBanner() {
   const promoText = "Holiday Magic - Start of 2026 will see our brand new product line. Claim 15% discount on your first order when you register with us.";
 
   return (
-    <div className="bg-primary text-primary-foreground py-2 px-4 text-sm relative overflow-hidden" suppressHydrationWarning>
+    <div className="bg-[#000000] text-white py-2 px-4 text-sm relative overflow-hidden border-b border-gray-800" suppressHydrationWarning>
       <div className="flex items-center justify-center">
         <div className="flex animate-promo-scroll whitespace-nowrap">
           {/* Repeat text multiple times for seamless scroll */}
@@ -43,7 +43,7 @@ export default function PromoBanner() {
       </div>
       <button
         onClick={() => setIsVisible(false)}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 touch-target-sm hover:opacity-80 transition-opacity"
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 touch-target-sm hover:opacity-80 transition-opacity text-white"
         data-testid="button-close-promo"
         suppressHydrationWarning
         aria-label="Close promo banner"

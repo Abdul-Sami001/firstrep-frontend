@@ -20,11 +20,11 @@ export default function ProductGridSkeleton({
     <div className={`grid ${gridCols.mobile} ${gridCols.tablet} ${gridCols.desktop} gap-4 md:gap-6`}>
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="space-y-3">
-          <Skeleton className="aspect-[2/3] w-full rounded-md" />
+          <Skeleton className="aspect-[2/3] w-full rounded-md bg-gray-800" />
           <div className="space-y-2">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-5 w-1/2" />
-            <Skeleton className="h-3 w-1/4" />
+            <Skeleton className="h-4 w-3/4 bg-gray-800" />
+            <Skeleton className="h-5 w-1/2 bg-gray-800" />
+            <Skeleton className="h-3 w-1/4 bg-gray-800" />
           </div>
         </div>
       ))}

@@ -1,14 +1,9 @@
 // app/(site)/contact-support/page.tsx - Accessibility / Contact Support Page
-import type { Metadata } from 'next';
+'use client';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Mail, MessageCircle, Phone, HelpCircle } from 'lucide-react';
 import StaticPageLayout from '@/components/StaticPageLayout';
-
-export const metadata: Metadata = {
-  title: 'Contact Support',
-  description: 'Get in touch with 1stRep customer support. We\'re here to help with any questions or concerns.',
-};
 
 export default function ContactSupportPage() {
   return (

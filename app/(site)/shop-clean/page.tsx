@@ -195,7 +195,8 @@ function ShopPageContent() {
   };
 
   // Get hero image from first product or category
-  const heroImage = products?.[0]?.images?.[0]?.image || selectedCategory?.image;
+  // Priority: 1. category.image (new API field), 2. first product image (fallback)
+  const heroImage = selectedCategory?.image || products?.[0]?.images?.[0]?.image;
 
   return (
     <div className="min-h-screen bg-[#000000]">

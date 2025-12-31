@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, Package, Truck, CreditCard, MapPin, Calendar, User, Loader2, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -241,14 +242,51 @@ export default function OrderDetailPage() {
                         <CardContent>
                             <div className="space-y-4">
                                 {order.items.map((item) => (
-                                    <div key={item.id} className="flex justify-between items-center p-4 bg-muted/50 rounded-lg">
-                                        <div className="flex-1">
-                                            <p className="font-medium">Product #{item.product.slice(0, 8).toUpperCase()}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                Quantity: {item.quantity} • ${computedPrice(item.price).toFixed(2)} each
+                                    <div key={item.id} className="flex gap-4 items-center p-4 bg-muted/50 rounded-lg">
+                                        {/* Product Image - Using new API field */}
+                                        {item.product_image ? (
+                                            <div className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border border-border">
+                                                <Image
+                                                    src={item.product_image}
+                                                    alt={item.product_name || `Product ${item.product.slice(0, 8)}`}
+                                                    width={80}
+                                                    height={80}
+                                                    className="w-full h-full object-cover"
+                                                    sizes="80px"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="w-20 h-20 flex-shrink-0 bg-muted rounded-md flex items-center justify-center border border-border">
+                                                <Package className="h-6 w-6 text-muted-foreground" />
+                                            </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            {/* Product Name - Using new API field */}
+                                            <p className="font-medium text-base mb-1">
+                                                {item.product_name || `Product #${item.product.slice(0, 8).toUpperCase()}`}
                                             </p>
+                                            <div className="text-sm text-muted-foreground space-y-1">
+                                                <div>
+                                                    Quantity: {item.quantity} • ${computedPrice(item.price).toFixed(2)} each
+                                                </div>
+                                                {/* Size and Color - Using new API fields */}
+                                                {(item.size || item.color) && (
+                                                    <div className="flex gap-3 flex-wrap">
+                                                        {item.size && (
+                                                            <span>Size: <span className="font-medium text-foreground">{item.size}</span></span>
+                                                        )}
+                                                        {item.color && (
+                                                            <span>Color: <span className="font-medium text-foreground">{item.color}</span></span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* Variant SKU - Using new API field */}
+                                                {item.variant_sku && (
+                                                    <div className="text-xs font-mono text-muted-foreground">SKU: {item.variant_sku}</div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <span className="font-medium">${computedPrice(item.subtotal).toFixed(2)}</span>
+                                        <span className="font-semibold text-lg flex-shrink-0">${computedPrice(item.subtotal).toFixed(2)}</span>
                                     </div>
                                 ))}
                             </div>

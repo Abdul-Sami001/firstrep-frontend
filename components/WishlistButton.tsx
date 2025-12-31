@@ -56,7 +56,7 @@ export default function WishlistButton({
         return (
             <Button
                 variant={variant}
-                size={size}
+                size={size === "md" ? "default" : size}
                 onClick={handleToggle}
                 disabled={isLoading}
                 className={cn(
@@ -83,7 +83,7 @@ export default function WishlistButton({
     return (
         <Button
             variant={variant}
-            size={size}
+            size={size === "md" ? "default" : size}
             onClick={handleToggle}
             disabled={isLoading}
             className={cn(

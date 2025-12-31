@@ -89,9 +89,9 @@ export default function RatingSummary({
                     <h4 className="text-sm font-medium text-white">Rating Breakdown</h4>
                     <div className="space-y-1">
                         {[5, 4, 3, 2, 1].map((star) => {
-                            const count = rating_distribution[star.toString()] || 0;
-                            const percentage = review_count > 0 
-                                ? Math.round((count / review_count) * 100) 
+                            const count = rating_distribution[star.toString() as keyof typeof rating_distribution] || 0;
+                            const percentage = review_count > 0
+                                ? Math.round((count / review_count) * 100)
                                 : 0;
 
                             return (

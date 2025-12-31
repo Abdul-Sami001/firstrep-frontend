@@ -170,8 +170,8 @@ function CategoryShowcaseWithProducts({
 
   const products = Array.isArray(productsData) ? productsData : productsData?.results || [];
   
-  // Get category image from first product if available
-  const categoryImage = products?.[0]?.images?.[0]?.image;
+  // Priority: 1. category.image (new API field), 2. first product image (fallback)
+  const categoryImage = category.image || products?.[0]?.images?.[0]?.image;
 
   return (
     <>

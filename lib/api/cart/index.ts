@@ -11,6 +11,9 @@ export interface CartItem {
     quantity: number;
     price_at_time: number;
     subtotal: number;
+    product_image?: string | null; // Product image URL
+    size?: string | null; // Product size from variant
+    color?: string | null; // Product color from variant
 }
 
 export interface Cart {

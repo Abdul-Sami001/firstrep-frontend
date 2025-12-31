@@ -92,6 +92,7 @@ export const useInfiniteProducts = (filters?: ProductFilters) => {
         queryKey: QUERY_KEYS.PRODUCTS.INFINITE(filters),
         queryFn: ({ pageParam = 1 }) =>
             productsApi.getProducts({ ...filters, page: pageParam }),
+        initialPageParam: 1,
         getNextPageParam: (lastPage, allPages) =>
             lastPage.next ? allPages.length + 1 : undefined,
         staleTime: DEFAULT_STALE_TIME,

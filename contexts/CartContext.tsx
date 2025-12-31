@@ -170,12 +170,15 @@ export const CartProvider = ({ children }: CartProviderProps) => {
   const closeCart = () => setIsCartOpen(false);
 
   // Transform API data to match cart component expectations
+  // Now using new API fields: product_image, size, color directly from backend
   const cartItems = (apiCart?.items || []).map(item => ({
     ...item,
     name: item.product_name,
     price: item.price_at_time,
-    size: item.variant_name || 'M',
-    color: 'Default',
+    // Use new API fields if available, fallback to old logic for backward compatibility
+    image: item.product_image || undefined, // Map product_image to image for Cart component
+    size: item.size || item.variant_name || undefined,
+    color: item.color || undefined,
   }));
 
   const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);

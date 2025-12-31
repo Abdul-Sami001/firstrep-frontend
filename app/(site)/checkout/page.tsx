@@ -362,10 +362,11 @@ export default function Checkout() {
                                                     className="flex gap-3 p-3 rounded-lg bg-gray-800/50 border border-gray-800"
                                                     data-testid={`order-item-${item.id}`}
                                                 >
-                                                    {item.image ? (
+                                                    {/* Product Image - Using new API field (product_image) or mapped image */}
+                                                    {(item.product_image || (item as any).image) ? (
                                                         <div className="relative w-16 h-16 flex-shrink-0 rounded-md overflow-hidden border border-gray-700">
                                                             <Image
-                                                                src={item.image}
+                                                                src={(item.product_image || (item as any).image) as string}
                                                                 alt={item.product_name}
                                                                 width={64}
                                                                 height={64}
@@ -381,16 +382,19 @@ export default function Checkout() {
                                                     <div className="flex-1 min-w-0">
                                                         <h3 className="font-semibold text-sm text-white mb-1 line-clamp-2">{item.product_name}</h3>
                                                         <div className="flex flex-wrap gap-2 mb-1">
+                                                            {/* Size - Using new API field with fallback */}
                                                             {(item.size || item.variant_name) && (
                                                                 <span className="text-xs text-gray-400">
                                                                     Size: <span className="text-gray-300 font-medium">{item.size || item.variant_name}</span>
                                                                 </span>
                                                             )}
-                                                            {item.color && item.color !== 'Default' && (
+                                                            {/* Color - Using new API field */}
+                                                            {item.color && (
                                                                 <span className="text-xs text-gray-400">
                                                                     Color: <span className="text-gray-300 font-medium">{item.color}</span>
                                                                 </span>
                                                             )}
+                                                            {/* Fallback to variant_name if size/color not available */}
                                                             {!item.size && !item.color && item.variant_name && (
                                                                 <span className="text-xs text-gray-400">
                                                                     <span className="text-gray-300 font-medium">{item.variant_name}</span>

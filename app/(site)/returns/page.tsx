@@ -101,7 +101,7 @@ export default function ReturnsPage() {
                   <SelectValue placeholder="Choose an order to return" />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-700">
-                  {orders?.results?.map((order: any) => (
+                  {((orders as any)?.results || (Array.isArray(orders) ? orders : []))?.map((order: any) => (
                     <SelectItem
                       key={order.id}
                       value={order.id}
@@ -113,7 +113,7 @@ export default function ReturnsPage() {
                 </SelectContent>
               </Select>
             )}
-            {!orders?.results || orders.results.length === 0 ? (
+            {!((orders as any)?.results || (Array.isArray(orders) ? orders : [])) || ((orders as any)?.results || (Array.isArray(orders) ? orders : [])).length === 0 ? (
               <p className="text-gray-400 text-sm">
                 No orders available. <a href="/shop" className="text-[#3c83f6] hover:text-white underline">Start shopping</a>
               </p>

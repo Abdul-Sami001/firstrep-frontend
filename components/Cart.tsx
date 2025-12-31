@@ -100,12 +100,12 @@ export default function Cart() {
                     className="flex gap-4 p-4 rounded-lg border border-gray-800 bg-gray-900/30 hover:bg-gray-900/50 transition-colors"
                     data-testid={`item-cart-${item.id}`}
                   >
-                    {/* Product Image */}
-                    {item.image ? (
+                    {/* Product Image - Using new API field */}
+                    {(item.product_image || (item as any).image) ? (
                       <div className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border border-gray-800">
                         <Image
-                          src={item.image}
-                          alt={item.name}
+                          src={(item.product_image || (item as any).image) as string}
+                          alt={(item as any).name || item.product_name}
                           width={80}
                           height={80}
                           className="w-full h-full object-cover"
@@ -121,16 +121,20 @@ export default function Cart() {
                     {/* Product Details */}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-sm text-white mb-1 line-clamp-2" data-testid={`text-cart-item-name-${item.id}`}>
-                        {item.name}
+                        {(item as any).name || item.product_name}
                       </h3>
                       <div className="flex flex-wrap gap-2 mb-2">
-                        <span className="text-xs text-gray-400">Size: <span className="text-gray-300">{item.size}</span></span>
+                        {/* Size - Using new API field */}
+                        {(item.size || item.variant_name) && (
+                          <span className="text-xs text-gray-400">Size: <span className="text-gray-300">{item.size || item.variant_name}</span></span>
+                        )}
+                        {/* Color - Using new API field */}
                         {item.color && (
                           <span className="text-xs text-gray-400">Color: <span className="text-gray-300">{item.color}</span></span>
                         )}
                       </div>
                       <p className="font-bold text-white mb-3" data-testid={`text-cart-item-price-${item.id}`}>
-                        ${Number(item.price).toFixed(2)}
+                        ${Number((item as any).price || item.price_at_time).toFixed(2)}
                       </p>
 
                       {/* Quantity Controls */}
@@ -139,7 +143,7 @@ export default function Cart() {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8 border-gray-700 text-white hover:bg-gray-800 hover:border-gray-600"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1, item.size, item.color)}
+                          onClick={() => updateQuantity(item.id, item.quantity - 1, item.size || undefined, item.color || undefined)}
                           data-testid={`button-decrease-${item.id}`}
                         >
                           <Minus className="h-3 w-3" />
@@ -151,7 +155,7 @@ export default function Cart() {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8 border-gray-700 text-white hover:bg-gray-800 hover:border-gray-600"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1, item.size, item.color)}
+                          onClick={() => updateQuantity(item.id, item.quantity + 1, item.size || undefined, item.color || undefined)}
                           data-testid={`button-increase-${item.id}`}
                         >
                           <Plus className="h-3 w-3" />
@@ -160,7 +164,7 @@ export default function Cart() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 ml-auto text-gray-400 hover:text-red-400 hover:bg-red-900/20"
-                          onClick={() => removeItem(item.id, item.size, item.color)}
+                          onClick={() => removeItem(item.id, item.size || undefined, item.color || undefined)}
                           data-testid={`button-remove-${item.id}`}
                         >
                           <Trash2 className="h-4 w-4" />

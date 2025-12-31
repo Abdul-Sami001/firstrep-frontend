@@ -1,6 +1,6 @@
 // app/(site)/verify-email/page.tsx
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useVerifyEmail } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
     const searchParams = useSearchParams();
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState('');
@@ -77,5 +77,22 @@ export default function VerifyEmailPage() {
                 </div>
             </Card>
         </div>
+    );
+}
+
+export default function VerifyEmailPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-background flex items-center justify-center p-4">
+                <Card className="w-full max-w-md p-6">
+                    <div className="text-center space-y-4">
+                        <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
+                        <h1 className="text-2xl font-bold">Loading...</h1>
+                    </div>
+                </Card>
+            </div>
+        }>
+            <VerifyEmailContent />
+        </Suspense>
     );
 }

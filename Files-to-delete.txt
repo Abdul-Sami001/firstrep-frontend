@@ -1,0 +1,31 @@
+Files to delete
+1. Example components (entire folder unused)
+components/examples/Cart.tsx
+components/examples/CategoryCard.tsx
+components/examples/Header.tsx
+components/examples/Hero.tsx
+components/examples/ProductCard.tsx
+components/examples/ThemeProvider.tsx
+2. Unused component files
+components/OrderStatus.tsx (not imported anywhere)
+components/PaymentStatus.tsx (not imported anywhere)
+components/GenderSelector.tsx (not imported in app files)
+components/ui/responsive-image.tsx (not imported anywhere)
+3. Unused hooks
+hooks/useCarts.ts (duplicate of useCart.ts, never imported)
+4. Unused pages/routes
+app/(site)/home/page.tsx (just returns null, unused)
+app/reseller/login/ (empty directory)
+5. Non-code files
+lib.rar (archive file, not needed in codebase)
+Cursor-prompt-frontend.txt (documentation/notes file)
+6. Potentially unused (verify before deleting)
+contexts/ThemeProvider.tsx — There are two ThemeProviders:
+components/ThemeProvider.tsx (used in app/layout.tsx)
+contexts/ThemeProvider.tsx (different implementation, verify if used)
+Check if contexts/ThemeProvider.tsx is imported anywhere. If not, it can be deleted.
+7. UI components (shadcn components — keep if part of your UI library)
+components/ui/chart.tsx (not imported, but might be a shadcn component)
+components/ui/input-otp.tsx (not imported, but might be a shadcn component)
+Note: The useCart hook in hooks/useCart.ts references clearCart and applyCoupon methods that don't exist in lib/api/cart/index.ts. These methods won't work, but the file itself is used, so keep it and fix the implementation separately.
+Summary: Safe to delete: 13 files + 1 empty directory. Verify before deleting: 1 file (contexts/ThemeProvider.tsx).

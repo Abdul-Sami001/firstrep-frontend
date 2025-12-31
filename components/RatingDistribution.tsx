@@ -19,7 +19,7 @@ export default function RatingDistribution({
     const { rating_distribution, review_count } = stats;
 
     const getPercentage = (rating: number) => {
-        const count = rating_distribution[rating.toString()] || 0;
+        const count = rating_distribution[rating.toString() as keyof typeof rating_distribution] || 0;
         return review_count > 0 ? Math.round((count / review_count) * 100) : 0;
     };
 
@@ -49,7 +49,7 @@ export default function RatingDistribution({
             
             <div className="space-y-2">
                 {[5, 4, 3, 2, 1].map((rating) => {
-                    const count = rating_distribution[rating.toString()] || 0;
+                    const count = rating_distribution[rating.toString() as keyof typeof rating_distribution] || 0;
                     const percentage = getPercentage(rating);
                     const isClickable = !!onRatingClick;
 

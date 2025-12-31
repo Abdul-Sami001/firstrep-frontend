@@ -9,6 +9,11 @@ export interface OrderItem {
     quantity: number;
     price: string; // Changed to string to match API
     subtotal: string; // Changed to string to match API
+    product_name?: string | null; // Product title
+    variant_sku?: string | null; // Variant SKU
+    product_image?: string | null; // Product image URL
+    size?: string | null; // Product size from variant
+    color?: string | null; // Product color from variant
 }
 
 export interface Order {

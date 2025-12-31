@@ -84,9 +84,9 @@ export default function OrderTrackingPage() {
                   <Skeleton key={i} className="h-32 bg-gray-800" />
                 ))}
               </div>
-            ) : orders && orders.results && orders.results.length > 0 ? (
+            ) : orders && Array.isArray(orders) && orders.length > 0 ? (
               <div className="space-y-4">
-                {orders.results.map((order: any) => (
+                {orders.map((order) => (
                   <OrderCard key={order.id} order={order} />
                 ))}
               </div>

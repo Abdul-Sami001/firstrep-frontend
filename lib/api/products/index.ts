@@ -8,6 +8,8 @@ export interface Category {
     slug: string;
     parent?: string | null;
     children?: Category[]; // Nested categories
+    image?: string | null; // Category image URL
+    hover_image?: string | null; // Category hover image URL
 }
 
 export interface ProductVariant {

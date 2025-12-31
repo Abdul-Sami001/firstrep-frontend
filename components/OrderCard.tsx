@@ -1,5 +1,6 @@
 // components/OrderCard.tsx
 import Link from 'next/link';
+import Image from 'next/image';
 import { Calendar, Package, CreditCard, MapPin, AlertCircle, CheckCircle, Clock, Truck, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -160,14 +161,51 @@ export default function OrderCard({ order }: OrderCardProps) {
                     <h4 className="font-medium text-sm text-foreground">Items:</h4>
                     <div className="space-y-2">
                         {order.items.slice(0, 2).map((item) => (
-                            <div key={item.id} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
-                                <div className="flex-1">
-                                    <span className="text-sm font-medium">Product #{item.product.slice(0, 8)}</span>
-                                    <div className="text-xs text-muted-foreground">
-                                        Qty: {item.quantity} • {formatCurrency(item.price)} each
+                            <div key={item.id} className="flex gap-3 items-center p-2 bg-muted/50 rounded-md">
+                                {/* Product Image - Using new API field */}
+                                {item.product_image ? (
+                                    <div className="relative w-12 h-12 flex-shrink-0 rounded-md overflow-hidden border border-border">
+                                        <Image
+                                            src={item.product_image}
+                                            alt={item.product_name || `Product ${item.product.slice(0, 8)}`}
+                                            width={48}
+                                            height={48}
+                                            className="w-full h-full object-cover"
+                                            sizes="48px"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="w-12 h-12 flex-shrink-0 bg-muted rounded-md flex items-center justify-center border border-border">
+                                        <Package className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    {/* Product Name - Using new API field */}
+                                    <span className="text-sm font-medium block truncate">
+                                        {item.product_name || `Product #${item.product.slice(0, 8)}`}
+                                    </span>
+                                    <div className="text-xs text-muted-foreground space-y-1">
+                                        <div>
+                                            Qty: {item.quantity} • {formatCurrency(item.price)} each
+                                        </div>
+                                        {/* Size and Color - Using new API fields */}
+                                        {(item.size || item.color) && (
+                                            <div className="flex gap-2 flex-wrap">
+                                                {item.size && (
+                                                    <span>Size: {item.size}</span>
+                                                )}
+                                                {item.color && (
+                                                    <span>Color: {item.color}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                        {/* Variant SKU - Using new API field */}
+                                        {item.variant_sku && (
+                                            <div className="text-xs font-mono">SKU: {item.variant_sku}</div>
+                                        )}
                                     </div>
                                 </div>
-                                <span className="text-sm font-semibold">
+                                <span className="text-sm font-semibold flex-shrink-0">
                                     {formatCurrency(item.subtotal)}
                                 </span>
                             </div>

@@ -391,4 +391,85 @@
   .animate-gradient-shift {
     animation: gradientShift 15s ease-in-out infinite alternate;
   }
+
+  /* Hero section fade-in-up animation */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+  }
+
+  /* Hero image responsive positioning to prevent head cropping */
+  .hero-image-position {
+    object-position: center 25%;
+  }
+
+  @media (min-width: 640px) {
+    .hero-image-position {
+      object-position: center 20%;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .hero-image-position {
+      object-position: center 15%;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-image-position {
+      object-position: center 10%;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .hero-image-position {
+      object-position: center top;
+    }
+  }
+
+  /* Hero section exact viewport height calculation */
+  .hero-viewport-height {
+    height: calc(100vh - 3.5rem); /* Mobile: 100vh - 56px header */
+  }
+
+  @media (min-width: 768px) {
+    .hero-viewport-height {
+      height: calc(100vh - 4rem); /* Tablet: 100vh - 64px header */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-viewport-height {
+      height: calc(100vh - 4.5rem); /* Desktop: 100vh - 72px header */
+    }
+  }
+
+  /* Support for modern viewport units with fallback */
+  @supports (height: 100svh) {
+    .hero-viewport-height {
+      height: calc(100svh - 3.5rem);
+    }
+
+    @media (min-width: 768px) {
+      .hero-viewport-height {
+        height: calc(100svh - 4rem);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .hero-viewport-height {
+        height: calc(100svh - 4.5rem);
+      }
+    }
+  }
 }

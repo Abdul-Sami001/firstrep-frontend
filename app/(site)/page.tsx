@@ -1,12 +1,12 @@
 // app/(site)/page.tsx - Redesigned to match reference site with dark theme
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 import { useCategories, useProducts } from '@/hooks/useProducts';
 import CategoryShowcase from '@/components/CategoryShowcase';
 import ProductCarousel from '@/components/ProductCarousel';
 import CategorySectionSkeleton from '@/components/CategorySectionSkeleton';
-import GenderSelector from '@/components/GenderSelector';
 import { Button } from '@/components/ui/button';
 
 // Category badge types matching reference site
@@ -44,28 +44,59 @@ export default function HomePage() {
   // Categories is already an array from useCategories hook
   const categoriesList = Array.isArray(categories) ? categories : [];
 
-  // YouTube video embed URL (from reference site)
-  const youtubeVideoUrl = 'https://www.youtube.com/embed/BYfw1tBH5dM?list=TLGG6zh_FWpJjJEyNTEyMjAyNQ&autoplay=1&mute=1&loop=1&playlist=BYfw1tBH5dM';
-
   return (
     <div className="min-h-screen bg-[#000000]">
-      {/* Hero Video Section - Full Width */}
-      <section className="relative w-full aspect-video md:aspect-[16/9] bg-[#000000]">
-        <iframe
-          src={youtubeVideoUrl}
-          title="1stRep Video"
-          className="w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
-        {/* Dark overlay for better contrast */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 pointer-events-none" />
-      </section>
+      {/* Modern Hero Section - Exact Viewport Height with Responsive Design */}
+      {/* Account for: Header heights (3.5rem=56px mobile, 4rem=64px tablet, 4.5rem=72px desktop) */}
+      <section className="relative w-full hero-viewport-height bg-[#000000] overflow-hidden">
+        {/* Responsive Background Image with Next.js Image Component */}
+        <div className="absolute inset-0 w-full h-full">
+          <Image
+            src="/images/hero-section-image.webp"
+            alt="1stRep Hero"
+            fill
+            priority
+            quality={90}
+            className="object-cover hero-image-position"
+            sizes="100vw"
+          />
+        </div>
 
-      {/* Gender Selector - Dark Theme */}
-      <div className="bg-[#000000] border-y border-gray-800">
-        <GenderSelector />
-      </div>
+        {/* Modern Gradient Overlay - Enhanced for better contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/60 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30 pointer-events-none" />
+        
+        {/* Content Container - Modern Layout */}
+        <div className="relative z-10 h-full flex flex-col justify-end items-center pb-8 sm:pb-12 md:pb-16 lg:pb-20 px-4 sm:px-6 md:px-8">
+          {/* Gender Selector Buttons - Modern Design with Animation */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 w-full max-w-2xl animate-fade-in-up">
+            <Link 
+              href="/shop-clean?gender=men"
+              className="w-full sm:w-auto group"
+            >
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="w-full sm:w-auto uppercase font-bold tracking-wider border-2 border-white/30 backdrop-blur-sm bg-white/5 text-white hover:bg-white hover:text-black hover:border-white transition-all duration-500 ease-out px-8 sm:px-10 md:px-12 py-6 sm:py-7 md:py-8 text-sm sm:text-base md:text-lg shadow-lg hover:shadow-2xl hover:scale-105 transform"
+              >
+                Men
+              </Button>
+            </Link>
+            <Link 
+              href="/shop-clean?gender=women"
+              className="w-full sm:w-auto group"
+            >
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="w-full sm:w-auto uppercase font-bold tracking-wider border-2 border-white/30 backdrop-blur-sm bg-white/5 text-white hover:bg-white hover:text-black hover:border-white transition-all duration-500 ease-out px-8 sm:px-10 md:px-12 py-6 sm:py-7 md:py-8 text-sm sm:text-base md:text-lg shadow-lg hover:shadow-2xl hover:scale-105 transform"
+              >
+                Women
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* Category Showcase Sections with Alternating Layout */}
       {categoriesLoading ? (

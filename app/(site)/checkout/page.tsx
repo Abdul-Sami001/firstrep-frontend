@@ -8,12 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Lock, ShoppingBag, Truck, Loader2, AlertCircle } from "lucide-react";
+import { CreditCard, Lock, ShoppingBag, Truck, Loader2, AlertCircle, MapPin, Shield, ArrowLeft } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useUserProfile, useUpdateProfile } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
+import Link from "next/link";
 
 interface AddressForm {
     address: string;
@@ -30,6 +31,11 @@ export default function Checkout() {
     const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile();
     const updateProfileMutation = useUpdateProfile();
     const checkoutMutation = useCheckout();
+
+    // Calculate VAT (20% UK standard rate)
+    const vatRate = 0.20;
+    const vat = subtotal * vatRate;
+    const totalWithVAT = subtotal + vat + shipping;
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [addressForm, setAddressForm] = useState<AddressForm>({
@@ -143,15 +149,24 @@ export default function Checkout() {
 
     if (cartItems.length === 0) {
         return (
-            <div className="min-h-screen bg-background">
-                <div className="mobile-container tablet-container desktop-container py-8">
-                    <div className="text-center space-y-4">
-                        <ShoppingBag className="h-16 w-16 mx-auto text-muted-foreground" />
-                        <h1 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold">Your cart is empty</h1>
-                        <p className="text-sm md:text-base text-muted-foreground">Add some items to your cart before checking out.</p>
-                        <Button onClick={() => router.push('/shop')}>
-                            Continue Shopping
-                        </Button>
+            <div className="min-h-screen bg-[#000000]">
+                <div className="mobile-container tablet-container desktop-container py-12 md:py-16 lg:py-20">
+                    <div className="text-center space-y-6 max-w-md mx-auto">
+                        <div className="flex justify-center">
+                            <div className="p-4 rounded-full bg-gray-900 border border-gray-800">
+                                <ShoppingBag className="h-12 w-12 text-gray-400" />
+                            </div>
+                        </div>
+                        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">Your cart is empty</h1>
+                        <p className="text-sm md:text-base text-gray-400">Add some items to your cart before checking out.</p>
+                        <Link href="/shop-clean">
+                            <Button 
+                                variant="outline"
+                                className="border-white/20 text-white hover:bg-white hover:text-black"
+                            >
+                                Continue Shopping
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -159,115 +174,134 @@ export default function Checkout() {
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            <div className="mobile-container tablet-container desktop-container py-8">
-                <div className="max-w-6xl mx-auto">
-                    <div className="mb-8">
-                        <h1 className="text-mobile-h2 md:text-tablet-h2 lg:text-desktop-h2 font-bold" data-testid="checkout-title">Checkout</h1>
-                        <p className="text-sm md:text-base text-muted-foreground">Complete your order with 1stRep</p>
+        <div className="min-h-screen bg-[#000000]">
+            <div className="mobile-container tablet-container desktop-container py-8 md:py-12 lg:py-16">
+                <div className="max-w-7xl mx-auto">
+                    {/* Header */}
+                    <div className="mb-8 md:mb-12">
+                        <Link href="/shop-clean">
+                            <Button 
+                                variant="ghost" 
+                                className="mb-6 text-gray-400 hover:text-white"
+                            >
+                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                Back to Shopping
+                            </Button>
+                        </Link>
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2" data-testid="checkout-title">
+                            Checkout
+                        </h1>
+                        <p className="text-sm md:text-base text-gray-400">Complete your order with 1stRep</p>
                     </div>
 
-                    <div className="grid grid-cols-mobile md:grid-cols-tablet lg:grid-cols-desktop gap-mobile md:gap-tablet lg:gap-desktop">
-                        {/* Checkout Form */}
-                        <div className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+                        {/* Checkout Form - Left Column (2/3) */}
+                        <div className="lg:col-span-2 space-y-6">
                             {/* Shipping Address */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Truck className="h-5 w-5" />
+                            <Card className="bg-gray-900/30 border-gray-800">
+                                <CardHeader className="border-b border-gray-800">
+                                    <CardTitle className="flex items-center gap-3 text-white">
+                                        <div className="p-2 rounded-lg bg-[#00bfff]/10 border border-[#00bfff]/20">
+                                            <MapPin className="h-5 w-5 text-[#00bfff]" />
+                                        </div>
                                         Shipping Address
                                     </CardTitle>
-                                    <CardDescription>
+                                    <CardDescription className="text-gray-400 mt-2">
                                         Where should we send your order?
                                     </CardDescription>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
+                                <CardContent className="space-y-4 pt-6">
                                     {profileLoading ? (
-                                        <div className="flex items-center justify-center py-8">
-                                            <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                                            <span>Loading your address...</span>
+                                        <div className="flex items-center justify-center py-12">
+                                            <Loader2 className="h-6 w-6 animate-spin mr-2 text-[#00bfff]" />
+                                            <span className="text-gray-400">Loading your address...</span>
                                         </div>
                                     ) : profileError ? (
-                                        <div className="text-center py-8">
-                                            <AlertCircle className="h-8 w-8 mx-auto mb-2 text-destructive" />
-                                            <p className="text-sm text-destructive mb-2">Failed to load your address</p>
-                                            <p className="text-xs text-muted-foreground">Please enter your address manually</p>
+                                        <div className="text-center py-8 p-4 rounded-lg bg-red-900/20 border border-red-800/50">
+                                            <AlertCircle className="h-8 w-8 mx-auto mb-2 text-red-400" />
+                                            <p className="text-sm text-red-400 mb-2">Failed to load your address</p>
+                                            <p className="text-xs text-gray-400">Please enter your address manually</p>
                                         </div>
                                     ) : (
                                         <>
                                             <div>
-                                                <Label htmlFor="address">Address</Label>
+                                                <Label htmlFor="address" className="text-gray-300 mb-2">Street Address</Label>
                                                 <Input
                                                     id="address"
                                                     value={addressForm.address}
                                                     onChange={(e) => handleAddressChange('address', e.target.value)}
                                                     required
                                                     data-testid="input-address"
-                                                    className={formErrors.address ? "border-destructive" : ""}
+                                                    className={`bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] ${formErrors.address ? "border-red-500" : ""}`}
+                                                    placeholder="123 Main Street"
                                                 />
                                                 {formErrors.address && (
-                                                    <p className="text-xs text-destructive mt-1">{formErrors.address}</p>
+                                                    <p className="text-xs text-red-400 mt-1">{formErrors.address}</p>
                                                 )}
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div>
-                                                    <Label htmlFor="city">City</Label>
+                                                    <Label htmlFor="city" className="text-gray-300 mb-2">City</Label>
                                                     <Input
                                                         id="city"
                                                         value={addressForm.city}
                                                         onChange={(e) => handleAddressChange('city', e.target.value)}
                                                         required
                                                         data-testid="input-city"
-                                                        className={formErrors.city ? "border-destructive" : ""}
+                                                        className={`bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] ${formErrors.city ? "border-red-500" : ""}`}
+                                                        placeholder="London"
                                                     />
                                                     {formErrors.city && (
-                                                        <p className="text-xs text-destructive mt-1">{formErrors.city}</p>
+                                                        <p className="text-xs text-red-400 mt-1">{formErrors.city}</p>
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="state">State/County</Label>
+                                                    <Label htmlFor="state" className="text-gray-300 mb-2">State/County</Label>
                                                     <Input
                                                         id="state"
                                                         value={addressForm.state}
                                                         onChange={(e) => handleAddressChange('state', e.target.value)}
                                                         required
                                                         data-testid="input-state"
-                                                        className={formErrors.state ? "border-destructive" : ""}
+                                                        className={`bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] ${formErrors.state ? "border-red-500" : ""}`}
+                                                        placeholder="Greater London"
                                                     />
                                                     {formErrors.state && (
-                                                        <p className="text-xs text-destructive mt-1">{formErrors.state}</p>
+                                                        <p className="text-xs text-red-400 mt-1">{formErrors.state}</p>
                                                     )}
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div>
-                                                    <Label htmlFor="zip_code">Postal Code</Label>
+                                                    <Label htmlFor="zip_code" className="text-gray-300 mb-2">Postal Code</Label>
                                                     <Input
                                                         id="zip_code"
                                                         value={addressForm.zip_code}
                                                         onChange={(e) => handleAddressChange('zip_code', e.target.value)}
                                                         required
                                                         data-testid="input-postal-code"
-                                                        className={formErrors.zip_code ? "border-destructive" : ""}
+                                                        className={`bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] ${formErrors.zip_code ? "border-red-500" : ""}`}
+                                                        placeholder="SW1A 1AA"
                                                     />
                                                     {formErrors.zip_code && (
-                                                        <p className="text-xs text-destructive mt-1">{formErrors.zip_code}</p>
+                                                        <p className="text-xs text-red-400 mt-1">{formErrors.zip_code}</p>
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="country">Country</Label>
+                                                    <Label htmlFor="country" className="text-gray-300 mb-2">Country</Label>
                                                     <Input
                                                         id="country"
                                                         value={addressForm.country}
                                                         onChange={(e) => handleAddressChange('country', e.target.value)}
                                                         required
                                                         data-testid="input-country"
-                                                        className={formErrors.country ? "border-destructive" : ""}
+                                                        className={`bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] ${formErrors.country ? "border-red-500" : ""}`}
+                                                        placeholder="United Kingdom"
                                                     />
                                                     {formErrors.country && (
-                                                        <p className="text-xs text-destructive mt-1">{formErrors.country}</p>
+                                                        <p className="text-xs text-red-400 mt-1">{formErrors.country}</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -277,104 +311,168 @@ export default function Checkout() {
                             </Card>
 
                             {/* Payment Information */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <CreditCard className="h-5 w-5" />
+                            <Card className="bg-gray-900/30 border-gray-800">
+                                <CardHeader className="border-b border-gray-800">
+                                    <CardTitle className="flex items-center gap-3 text-white">
+                                        <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                                            <Shield className="h-5 w-5 text-green-400" />
+                                        </div>
                                         Payment
                                     </CardTitle>
-                                    <CardDescription className="flex items-center gap-2">
+                                    <CardDescription className="flex items-center gap-2 text-gray-400 mt-2">
                                         <Lock className="h-4 w-4" />
                                         Secure payment powered by Stripe
                                     </CardDescription>
                                 </CardHeader>
-                                <CardContent>
+                                <CardContent className="pt-6">
                                     <div className="text-center py-8">
-                                        <CreditCard className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                                        <p className="text-sm text-muted-foreground">
+                                        <div className="flex justify-center mb-4">
+                                            <div className="p-4 rounded-full bg-gray-800 border border-gray-700">
+                                                <CreditCard className="h-10 w-10 text-[#00bfff]" />
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-400">
                                             You'll be redirected to Stripe for secure payment processing
                                         </p>
+                                        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
+                                            <Lock className="h-3 w-3" />
+                                            <span>256-bit SSL encryption</span>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
                         </div>
 
-                        {/* Order Summary */}
-                        <div className="space-y-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Order Summary</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    {/* Order Items */}
-                                    <div className="space-y-3">
-                                        {cartItems.map((item) => (
-                                            <div key={`${item.id}-${item.variant}`} className="flex gap-3" data-testid={`order-item-${item.id}`}>
-                                                <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
-                                                    <span className="text-xs text-muted-foreground">Product</span>
+                        {/* Order Summary - Right Column (1/3) */}
+                        <div className="lg:col-span-1">
+                            <div className="sticky top-8 space-y-6">
+                                <Card className="bg-gray-900/30 border-gray-800">
+                                    <CardHeader className="border-b border-gray-800">
+                                        <CardTitle className="text-white flex items-center gap-2">
+                                            <ShoppingBag className="h-5 w-5 text-[#00bfff]" />
+                                            Order Summary
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4 pt-6">
+                                        {/* Order Items */}
+                                        <div className="space-y-4 max-h-[300px] overflow-y-auto scrollbar-hide">
+                                            {cartItems.map((item) => (
+                                                <div 
+                                                    key={`${item.id}-${item.variant}`} 
+                                                    className="flex gap-3 p-3 rounded-lg bg-gray-800/50 border border-gray-800"
+                                                    data-testid={`order-item-${item.id}`}
+                                                >
+                                                    {item.image ? (
+                                                        <div className="relative w-16 h-16 flex-shrink-0 rounded-md overflow-hidden border border-gray-700">
+                                                            <Image
+                                                                src={item.image}
+                                                                alt={item.product_name}
+                                                                width={64}
+                                                                height={64}
+                                                                className="w-full h-full object-cover"
+                                                                sizes="64px"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="w-16 h-16 bg-gray-800 rounded-md flex items-center justify-center border border-gray-700 flex-shrink-0">
+                                                            <span className="text-xs text-gray-500">No image</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="font-semibold text-sm text-white mb-1 line-clamp-2">{item.product_name}</h3>
+                                                        <div className="flex flex-wrap gap-2 mb-1">
+                                                            {(item.size || item.variant_name) && (
+                                                                <span className="text-xs text-gray-400">
+                                                                    Size: <span className="text-gray-300 font-medium">{item.size || item.variant_name}</span>
+                                                                </span>
+                                                            )}
+                                                            {item.color && item.color !== 'Default' && (
+                                                                <span className="text-xs text-gray-400">
+                                                                    Color: <span className="text-gray-300 font-medium">{item.color}</span>
+                                                                </span>
+                                                            )}
+                                                            {!item.size && !item.color && item.variant_name && (
+                                                                <span className="text-xs text-gray-400">
+                                                                    <span className="text-gray-300 font-medium">{item.variant_name}</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs text-gray-400 mb-1">
+                                                            Qty: {item.quantity}
+                                                        </p>
+                                                        <p className="text-sm font-bold text-white">
+                                                            ${(Number(item.price_at_time) * item.quantity).toFixed(2)}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex-1">
-                                                    <h3 className="font-medium text-sm">{item.product_name}</h3>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {item.variant_name && `${item.variant_name} • `}Qty: {item.quantity}
-                                                    </p>
-                                                    <p className="text-sm font-semibold">
-                                                        ${(item.price_at_time * item.quantity).toFixed(2)}
-                                                    </p>
-                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <Separator className="bg-gray-800" />
+
+                                        {/* Order Totals */}
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-gray-400">Subtotal</span>
+                                                <span className="text-white font-medium">${subtotal.toFixed(2)}</span>
                                             </div>
-                                        ))}
-                                    </div>
-
-                                    <Separator />
-
-                                    {/* Order Totals */}
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span>Subtotal</span>
-                                            <span>${subtotal.toFixed(2)}</span>
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-gray-400">VAT (20%)</span>
+                                                <span className="text-white font-medium">${vat.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-gray-400">Shipping</span>
+                                                <span className="text-white font-medium">
+                                                    {shipping === 0 ? (
+                                                        <span className="text-green-400">FREE</span>
+                                                    ) : (
+                                                        `$${shipping.toFixed(2)}`
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <Separator className="bg-gray-800" />
+                                            <div className="flex justify-between font-bold text-lg pt-1">
+                                                <span className="text-white">Total</span>
+                                                <span className="text-white" data-testid="order-total">${totalWithVAT.toFixed(2)}</span>
+                                            </div>
                                         </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span>Shipping</span>
-                                            <span>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
-                                        </div>
-                                        <Separator />
-                                        <div className="flex justify-between font-semibold">
-                                            <span>Total</span>
-                                            <span data-testid="order-total">${total.toFixed(2)}</span>
-                                        </div>
-                                    </div>
 
-                                    {subtotal < 75 && (
-                                        <Badge variant="secondary" className="w-full justify-center">
-                                            Add ${(75 - subtotal).toFixed(2)} more for free shipping
-                                        </Badge>
-                                    )}
-                                </CardContent>
-                            </Card>
+                                        {subtotal < 75 && (
+                                            <div className="p-3 rounded-lg bg-[#00bfff]/10 border border-[#00bfff]/20">
+                                                <p className="text-xs text-[#00bfff] text-center">
+                                                    Add <span className="font-semibold">${(75 - subtotal).toFixed(2)}</span> more for free shipping
+                                                </p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
 
-                            {/* Place Order Button */}
-                            <Button
-                                onClick={handlePlaceOrder}
-                                className="w-full"
-                                size="lg"
-                                disabled={isProcessing || profileLoading}
-                                data-testid="button-place-order"
-                            >
+                                {/* Place Order Button */}
+                                <Button
+                                    onClick={handlePlaceOrder}
+                                    className="w-full bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white font-semibold uppercase text-sm shadow-lg shadow-[#00bfff]/30 hover:shadow-[#00bfff]/40 transition-all duration-300 border-0 h-14"
+                                    size="lg"
+                                    disabled={isProcessing || profileLoading}
+                                    data-testid="button-place-order"
+                                >
                                 {isProcessing ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                         Processing...
                                     </>
                                 ) : (
-                                    `Place Order - $${total.toFixed(2)}`
+                                    `Place Order - $${totalWithVAT.toFixed(2)}`
                                 )}
-                            </Button>
+                                </Button>
 
-                            <p className="text-xs text-muted-foreground text-center">
-                                By placing your order, you agree to our Terms of Service and Privacy Policy.
-                                Your payment will be processed securely by Stripe.
-                            </p>
+                                <p className="text-xs text-gray-500 text-center leading-relaxed">
+                                    By placing your order, you agree to our{" "}
+                                    <Link href="/terms-of-service" className="text-[#00bfff] hover:underline">Terms of Service</Link>
+                                    {" "}and{" "}
+                                    <Link href="/privacy-policy" className="text-[#00bfff] hover:underline">Privacy Policy</Link>.
+                                    Your payment will be processed securely by Stripe.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

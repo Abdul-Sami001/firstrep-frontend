@@ -57,14 +57,17 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-hidden p-0 bg-[#000000] border-gray-800 max-w-2xl">
         <DialogTitle className="sr-only">Search Products</DialogTitle>
-        <Command className="bg-[#000000] text-white">
+        <Command 
+          className="bg-[#000000] text-white"
+          shouldFilter={false}
+        >
           <CommandInput
             placeholder="Search products..."
             value={searchQuery}
             onValueChange={setSearchQuery}
             className="bg-[#000000] text-white placeholder:text-gray-500 border-b border-gray-800 focus:border-[#00bfff] h-14 text-base [&_svg]:text-gray-500"
           />
-          <CommandList className="max-h-[400px] overflow-y-auto">
+          <CommandList className="max-h-[500px] overflow-y-auto">
             {!showResults ? (
               <CommandEmpty className="py-8 text-center text-gray-400">
                 <p className="text-sm">Type at least 3 characters to search</p>
@@ -83,50 +86,59 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               </CommandEmpty>
             ) : (
               <>
-                <CommandGroup 
-                  heading={`Found ${products.length} product${products.length !== 1 ? 's' : ''}`}
-                  className="[&_[cmdk-group-heading]]:text-gray-400 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:font-semibold"
-                >
-                  {products.slice(0, 8).map((product) => (
-                    <CommandItem
+                {/* Product List - Always show when there are results */}
+                <div className="px-4 pt-3 pb-2">
+                  <p className="text-xs uppercase font-semibold text-gray-400">
+                    {products.length} product{products.length !== 1 ? 's' : ''} found
+                  </p>
+                </div>
+                <div className="space-y-2 px-2 pb-2">
+                  {products.slice(0, 10).map((product) => (
+                    <div
                       key={product.id}
-                      value={product.id}
-                      onSelect={() => handleSelectProduct(product.id)}
-                      className="flex items-center gap-4 p-4 cursor-pointer hover:bg-gray-900 data-[selected='true']:bg-gray-900 data-[selected='true']:text-white"
+                      onClick={() => handleSelectProduct(product.id)}
+                      className="flex items-center gap-4 p-4 mx-2 my-1 rounded-lg cursor-pointer hover:bg-gray-900/50 transition-colors border border-transparent hover:border-gray-800"
                     >
-                      <div className="relative w-16 h-16 flex-shrink-0 rounded-md overflow-hidden bg-gray-800">
-                        <Image
-                          src={product.images?.[0]?.image || '/placeholder-product.jpg'}
-                          alt={product.images?.[0]?.alt_text || product.title}
-                          fill
-                          className="object-cover"
-                          sizes="64px"
-                        />
+                      <div className="relative w-16 h-16 flex-shrink-0 rounded-md overflow-hidden bg-gray-800 border border-gray-700">
+                        {product.images?.[0]?.image ? (
+                          <Image
+                            src={product.images[0].image}
+                            alt={product.images[0]?.alt_text || product.title}
+                            fill
+                            className="object-cover"
+                            sizes="64px"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-xs text-gray-500">No image</span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">
+                        <p className="text-sm font-semibold text-white truncate mb-1">
                           {product.title}
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-gray-400 mb-1">
                           {product.category?.name || 'Uncategorized'}
                         </p>
-                        <p className="text-sm font-semibold text-[#00bfff] mt-1">
+                        <p className="text-sm font-bold text-[#00bfff]">
                           {product.currency || '$'}{typeof product.price === 'number' ? product.price.toFixed(2) : (product.price ? Number(product.price).toFixed(2) : '0.00')}
                         </p>
                       </div>
-                    </CommandItem>
+                    </div>
                   ))}
-                </CommandGroup>
-                {products.length > 8 && (
-                  <div className="border-t border-gray-800 p-4">
-                    <button
-                      onClick={handleViewAll}
-                      className="w-full text-center text-sm text-[#00bfff] hover:text-white font-medium transition-colors"
-                    >
-                      View all {products.length} results →
-                    </button>
-                  </div>
-                )}
+                </div>
+                
+                {/* View All Link - Always show when there are results */}
+                <div className="border-t border-gray-800 p-4 bg-gray-900/30">
+                  <button
+                    onClick={handleViewAll}
+                    className="w-full text-center text-sm text-[#00bfff] hover:text-white font-semibold transition-colors flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-gray-800/50"
+                  >
+                    <span>View all {products.length} results</span>
+                    <span>→</span>
+                  </button>
+                </div>
               </>
             )}
           </CommandList>

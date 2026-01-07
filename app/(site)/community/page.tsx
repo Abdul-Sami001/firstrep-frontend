@@ -12,7 +12,7 @@ export default function CommunityPage() {
     {
       id: '1',
       user: '@athlete_jane',
-      image: '/attached_assets/placeholder.jpg',
+      image: null,
       caption: 'Just completed my first marathon in @1strep gear! The performance was incredible. #1stRep #Marathon',
       likes: 124,
       comments: 23,
@@ -20,7 +20,7 @@ export default function CommunityPage() {
     {
       id: '2',
       user: '@fitness_pro',
-      image: '/attached_assets/placeholder.jpg',
+      image: null,
       caption: 'Training session in the new 1stRep collection. Quality that matches the intensity! 💪',
       likes: 89,
       comments: 15,
@@ -28,7 +28,7 @@ export default function CommunityPage() {
     {
       id: '3',
       user: '@runner_mike',
-      image: '/attached_assets/placeholder.jpg',
+      image: null,
       caption: 'Love the breathability of these leggings. Perfect for long runs!',
       likes: 67,
       comments: 8,
@@ -108,13 +108,19 @@ export default function CommunityPage() {
                 className="bg-gray-900/50 rounded-lg overflow-hidden border border-gray-800"
               >
                 <div className="relative aspect-square bg-gray-800">
-                  <Image
-                    src={post.image}
-                    alt={post.caption}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  />
+                  {post.image ? (
+                    <Image
+                      src={post.image}
+                      alt={post.caption}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-gray-500 text-xs">No Image</span>
+                    </div>
+                  )}
                 </div>
                 <div className="p-4 space-y-3">
                   <div className="flex items-center gap-2">

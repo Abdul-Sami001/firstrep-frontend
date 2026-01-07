@@ -1,17 +1,20 @@
 // app/(reseller)/ResellerLogin/page.tsx - Redesigned to match reference site with toggle system
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useLogin } from "@/hooks/useAuth";
-import { resellersApi, ResellerApplicationPayload } from "@/lib/api/resellers";
-import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, Building2, User, Phone, MapPin, Home, Zap, Check } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSubmitResellerApplication, useResellerApplication } from "@/hooks/useResellers";
+import { ResellerApplication } from "@/lib/api/resellers";
+import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, Building2, User, Phone, MapPin, Home, Zap, Check, Globe, FileText, Users } from "lucide-react";
 
 type RoleType = 'reseller' | 'wholesaler' | null;
 type ViewType = 'login' | 'role-selection' | 'application';
@@ -19,20 +22,50 @@ type ViewType = 'login' | 'role-selection' | 'application';
 export default function ResellerLogin() {
     const router = useRouter();
     const { toast } = useToast();
+    const { isAuthenticated, isLoading: authLoading } = useAuth();
     const loginMutation = useLogin();
+    const submitApplicationMutation = useSubmitResellerApplication();
+    const { data: existingApplication, isLoading: applicationLoading } = useResellerApplication(isAuthenticated);
+    
+    // Type guard for application - check if it's a valid ResellerApplication object
+    const application: ResellerApplication | undefined = existingApplication;
+    const hasApplication = application && application.id;
+    
     const [currentView, setCurrentView] = useState<ViewType>('login'); // Default to login
     const [selectedRole, setSelectedRole] = useState<RoleType>(null);
     const [showPassword, setShowPassword] = useState(false);
-    const [formData, setFormData] = useState({
+    
+    // Login form data
+    const [loginData, setLoginData] = useState({
         email: "",
-        password: "",
-        businessName: "",
-        contactPerson: "",
-        phoneNumber: "",
-        businessAddress: ""
+        password: ""
     });
+    
+    // Application form data
+    const [applicationData, setApplicationData] = useState({
+        company_name: "",
+        website_url: "",
+        app_url: "",
+        description: "",
+        location_description: "",
+        expected_traffic: ""
+    });
+    
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+
+    // Check if user is authenticated and has existing application
+    useEffect(() => {
+        if (!authLoading && isAuthenticated && !applicationLoading) {
+            if (hasApplication) {
+                // User has an application, show status
+                setCurrentView('application');
+            } else if (currentView === 'login') {
+                // User is authenticated but no application, show role selection
+                setCurrentView('role-selection');
+            }
+        }
+    }, [isAuthenticated, authLoading, hasApplication, applicationLoading, currentView]);
 
     const handleLoginSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,10 +73,11 @@ export default function ResellerLogin() {
         setIsLoading(true);
 
         loginMutation.mutate(
-            { email: formData.email, password: formData.password },
+            { email: loginData.email, password: loginData.password },
             {
                 onSuccess: () => {
-                    router.push("/ResellerDashboard");
+                    // After successful login, check if user has application or show role selection
+                    setCurrentView('role-selection');
                 },
                 onError: () => {
                     setError("Authentication failed. Please try again.");
@@ -56,53 +90,55 @@ export default function ResellerLogin() {
     const handleApplicationSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
-        setIsLoading(true);
 
-        try {
-            // Prepare application payload
-            const applicationData: ResellerApplicationPayload = {
-                email: formData.email,
-                password: formData.password,
-                company_name: formData.businessName,
-                contact_name: formData.contactPerson,
-                contact_phone: formData.phoneNumber,
-                business_address: formData.businessAddress,
-            };
-
-            // Submit application to backend
-            const response = await resellersApi.submitApplication(applicationData);
-            
-            toast({
-                title: "Application Submitted",
-                description: "Your application has been submitted successfully. You will receive a confirmation email shortly. We'll review your application and get back to you within 2-3 business days.",
-            });
-            
-            // Reset form
-            setFormData({
-                email: "",
-                password: "",
-                businessName: "",
-                contactPerson: "",
-                phoneNumber: "",
-                businessAddress: ""
-            });
-            setSelectedRole(null);
+        if (!isAuthenticated) {
+            setError("Please log in first to submit an application.");
             setCurrentView('login');
-        } catch (err: any) {
-            const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || "Failed to submit application. Please try again.";
-            setError(errorMessage);
-            toast({
-                title: "Application Failed",
-                description: errorMessage,
-                variant: "destructive",
-            });
-        } finally {
-            setIsLoading(false);
+            return;
         }
+
+        // Prepare application payload (matching backend API)
+        const payload = {
+            company_name: applicationData.company_name,
+            website_url: applicationData.website_url || undefined,
+            app_url: applicationData.app_url || undefined,
+            description: applicationData.description || undefined,
+            location_description: applicationData.location_description || undefined,
+            expected_traffic: applicationData.expected_traffic || undefined,
+        };
+
+        submitApplicationMutation.mutate(payload, {
+            onSuccess: () => {
+                // Reset form
+                setApplicationData({
+                    company_name: "",
+                    website_url: "",
+                    app_url: "",
+                    description: "",
+                    location_description: "",
+                    expected_traffic: ""
+                });
+                setSelectedRole(null);
+            },
+            onError: (err: any) => {
+                const errorMessage = err?.response?.data?.detail || 
+                                   err?.response?.data?.message || 
+                                   err?.response?.data?.non_field_errors?.[0] ||
+                                   "Failed to submit application. Please try again.";
+                setError(errorMessage);
+            },
+        });
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData(prev => ({
+    const handleLoginInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setLoginData(prev => ({
+            ...prev,
+            [e.target.name]: e.target.value
+        }));
+    };
+
+    const handleApplicationInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setApplicationData(prev => ({
             ...prev,
             [e.target.name]: e.target.value
         }));
@@ -118,13 +154,13 @@ export default function ResellerLogin() {
         setSelectedRole(null);
         setCurrentView('role-selection');
         setError("");
-        setFormData({
-            email: "",
-            password: "",
-            businessName: "",
-            contactPerson: "",
-            phoneNumber: "",
-            businessAddress: ""
+        setApplicationData({
+            company_name: "",
+            website_url: "",
+            app_url: "",
+            description: "",
+            location_description: "",
+            expected_traffic: ""
         });
     };
 
@@ -251,8 +287,8 @@ export default function ResellerLogin() {
                                             type="email"
                                             placeholder="admin@1strep.com"
                                             className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] h-12"
-                                            value={formData.email}
-                                            onChange={handleInputChange}
+                                            value={loginData.email}
+                                            onChange={handleLoginInputChange}
                                             required
                                         />
                                     </div>
@@ -281,8 +317,8 @@ export default function ResellerLogin() {
                                             type={showPassword ? 'text' : 'password'}
                                             placeholder="••••••••"
                                             className="pl-10 pr-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] h-12"
-                                            value={formData.password}
-                                            onChange={handleInputChange}
+                                            value={loginData.password}
+                                            onChange={handleLoginInputChange}
                                             required
                                         />
                                         <button
@@ -455,150 +491,217 @@ export default function ResellerLogin() {
                     ) : (
                         /* Application Form View */
                         <>
-                            <div className="space-y-2">
-                                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
-                                    Complete your profile
-                                </h2>
-                            </div>
+                            {hasApplication && application ? (
+                                /* Application Status View */
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
+                                            Application Status
+                                        </h2>
+                                        <p className="text-gray-400 text-lg">
+                                            Your reseller application has been submitted
+                                        </p>
+                                    </div>
 
-                            <form onSubmit={handleApplicationSubmit} className="space-y-5">
-                                {error && (
-                                    <Alert variant="destructive" className="bg-red-900/20 border-red-800">
-                                        <AlertDescription className="text-red-300">{error}</AlertDescription>
+                                    <Alert className={`${
+                                        application.status === 'approved' ? 'bg-green-900/20 border-green-800' :
+                                        application.status === 'rejected' ? 'bg-red-900/20 border-red-800' :
+                                        'bg-yellow-900/20 border-yellow-800'
+                                    }`}>
+                                        <AlertDescription className="text-white">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold">Status:</span>
+                                                    <span className="uppercase">{application.status.replace('_', ' ')}</span>
+                                                </div>
+                                                {application.status === 'rejected' && application.review_notes && (
+                                                    <div className="mt-2 pt-2 border-t border-red-800">
+                                                        <span className="font-semibold">Reason:</span>
+                                                        <p className="text-gray-300">{application.review_notes}</p>
+                                                    </div>
+                                                )}
+                                                {application.status === 'approved' && (
+                                                    <div className="mt-2">
+                                                        <p className="text-green-300">Congratulations! Your application has been approved. You can now access the reseller dashboard.</p>
+                                                        <Button
+                                                            onClick={() => router.push('/ResellerDashboard')}
+                                                            className="mt-4 bg-green-600 hover:bg-green-700"
+                                                        >
+                                                            Go to Dashboard
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </AlertDescription>
                                     </Alert>
-                                )}
 
-                                {/* Business Email */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="email" className="text-gray-300">Business Email</Label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                        <Input
-                                            id="email"
-                                            name="email"
-                                            type="email"
-                                            placeholder="admin@1strep.com"
-                                            className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] h-12"
-                                            value={formData.email}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
+                                    <div className="bg-gray-900/50 rounded-lg p-6 space-y-4 border border-gray-800">
+                                        <h3 className="text-lg font-semibold text-white">Application Details</h3>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-400">Company Name:</span>
+                                                <span className="text-white">{application.company_name}</span>
+                                            </div>
+                                            {application.website_url && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">Website:</span>
+                                                    <span className="text-white">{application.website_url}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-400">Submitted:</span>
+                                                <span className="text-white">
+                                                    {new Date(application.created_at).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-
-                                {/* Password */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="password" className="text-gray-300">Password</Label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
-                                        <Input
-                                            id="password"
-                                            name="password"
-                                            type={showPassword ? 'text' : 'password'}
-                                            placeholder="••••••••"
-                                            className="pl-10 pr-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] h-12"
-                                            value={formData.password}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center text-gray-500 hover:text-gray-300 transition-colors"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                        >
-                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Business Name */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="businessName" className="text-gray-300">Business Name</Label>
-                                    <div className="relative">
-                                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                        <Input
-                                            id="businessName"
-                                            name="businessName"
-                                            type="text"
-                                            placeholder="Your Business Name"
-                                            className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] h-12"
-                                            value={formData.businessName}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Contact Person */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="contactPerson" className="text-gray-300">Contact Person</Label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                        <Input
-                                            id="contactPerson"
-                                            name="contactPerson"
-                                            type="text"
-                                            placeholder="Full Name"
-                                            className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] h-12"
-                                            value={formData.contactPerson}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Phone Number */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="phoneNumber" className="text-gray-300">Phone Number</Label>
-                                    <div className="relative">
-                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                        <Input
-                                            id="phoneNumber"
-                                            name="phoneNumber"
-                                            type="tel"
-                                            placeholder="+44 7XXX XXXXXX"
-                                            className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] h-12"
-                                            value={formData.phoneNumber}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Business Address */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="businessAddress" className="text-gray-300">Business Address</Label>
-                                    <div className="relative">
-                                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                        <Input
-                                            id="businessAddress"
-                                            name="businessAddress"
-                                            type="text"
-                                            placeholder="Full business address"
-                                            className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] h-12"
-                                            value={formData.businessAddress}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Submit Button */}
-                                <Button
-                                    type="submit"
-                                    className="w-full h-12 bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white font-semibold uppercase text-sm md:text-base shadow-lg shadow-[#00bfff]/30 hover:shadow-[#00bfff]/40 transition-all duration-300 border-0"
-                                    disabled={isLoading}
-                                >
-                                    {isLoading ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Processing...
-                                        </>
-                                    ) : (
-                                        "Submit Application"
+                            ) : (
+                                /* New Application Form */
+                                <>
+                                    {!isAuthenticated && (
+                                        <Alert className="bg-yellow-900/20 border-yellow-800 mb-6">
+                                            <AlertDescription className="text-yellow-300">
+                                                Please log in first to submit an application. If you don't have an account, please register first.
+                                            </AlertDescription>
+                                        </Alert>
                                     )}
-                                </Button>
-                            </form>
+
+                                    <div className="space-y-2">
+                                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
+                                            Complete your profile
+                                        </h2>
+                                        <p className="text-gray-400 text-lg">
+                                            Tell us about your business
+                                        </p>
+                                    </div>
+
+                                    <form onSubmit={handleApplicationSubmit} className="space-y-5">
+                                        {error && (
+                                            <Alert variant="destructive" className="bg-red-900/20 border-red-800">
+                                                <AlertDescription className="text-red-300">{error}</AlertDescription>
+                                            </Alert>
+                                        )}
+
+                                        {/* Company Name - Required */}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="company_name" className="text-gray-300">
+                                                Company Name <span className="text-red-500">*</span>
+                                            </Label>
+                                            <div className="relative">
+                                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                                <Input
+                                                    id="company_name"
+                                                    name="company_name"
+                                                    type="text"
+                                                    placeholder="Your Company Name"
+                                                    className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] h-12"
+                                                    value={applicationData.company_name}
+                                                    onChange={handleApplicationInputChange}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Website URL - Optional */}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="website_url" className="text-gray-300">Website URL</Label>
+                                            <div className="relative">
+                                                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                                <Input
+                                                    id="website_url"
+                                                    name="website_url"
+                                                    type="url"
+                                                    placeholder="https://yourwebsite.com"
+                                                    className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] h-12"
+                                                    value={applicationData.website_url}
+                                                    onChange={handleApplicationInputChange}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* App URL - Optional */}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="app_url" className="text-gray-300">App URL (if applicable)</Label>
+                                            <div className="relative">
+                                                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                                <Input
+                                                    id="app_url"
+                                                    name="app_url"
+                                                    type="url"
+                                                    placeholder="https://yourapp.com"
+                                                    className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] h-12"
+                                                    value={applicationData.app_url}
+                                                    onChange={handleApplicationInputChange}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Description - Optional */}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="description" className="text-gray-300">How will you promote the brand?</Label>
+                                            <Textarea
+                                                id="description"
+                                                name="description"
+                                                placeholder="Describe how you plan to promote and sell 1stRep products..."
+                                                className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] min-h-[100px]"
+                                                value={applicationData.description}
+                                                onChange={handleApplicationInputChange}
+                                            />
+                                        </div>
+
+                                        {/* Location Description - Optional */}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="location_description" className="text-gray-300">Physical Locations / Screens</Label>
+                                            <div className="relative">
+                                                <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                                                <Textarea
+                                                    id="location_description"
+                                                    name="location_description"
+                                                    placeholder="Describe your physical locations, screens, or where customers will see products..."
+                                                    className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] min-h-[100px]"
+                                                    value={applicationData.location_description}
+                                                    onChange={handleApplicationInputChange}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Expected Traffic - Optional */}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="expected_traffic" className="text-gray-300">Expected Traffic</Label>
+                                            <div className="relative">
+                                                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                                <Input
+                                                    id="expected_traffic"
+                                                    name="expected_traffic"
+                                                    type="text"
+                                                    placeholder="e.g., 1000+ visitors/month, 500+ members"
+                                                    className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] h-12"
+                                                    value={applicationData.expected_traffic}
+                                                    onChange={handleApplicationInputChange}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Submit Button */}
+                                        <Button
+                                            type="submit"
+                                            className="w-full h-12 bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white font-semibold uppercase text-sm md:text-base shadow-lg shadow-[#00bfff]/30 hover:shadow-[#00bfff]/40 transition-all duration-300 border-0"
+                                            disabled={submitApplicationMutation.isPending || !isAuthenticated}
+                                        >
+                                            {submitApplicationMutation.isPending ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    Processing...
+                                                </>
+                                            ) : (
+                                                "Submit Application"
+                                            )}
+                                        </Button>
+                                    </form>
+                                </>
+                            )}
 
                             {/* Benefits Section */}
                             <div className="pt-6 border-t border-gray-800">

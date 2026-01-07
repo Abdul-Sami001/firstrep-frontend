@@ -1,6 +1,5 @@
 // next.config.ts - Complete Image Optimization
 import type { NextConfig } from "next";
-import path from "path";
 
 const nextConfig: NextConfig = {
   // Image optimization for mobile-first
@@ -24,10 +23,6 @@ const nextConfig: NextConfig = {
   },
 
   webpack: (config) => {
-    // Asset aliases
-    config.resolve.alias["attached_assets"] = path.resolve("./public/attached_assets");
-    config.resolve.alias["@assets"] = path.resolve("./public/attached_assets");
-
     // Better asset handling for mobile
     config.module.rules.push({
       test: /\.(png|jpe?g|gif|svg|webp|avif)$/i,

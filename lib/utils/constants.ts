@@ -95,5 +95,6 @@ export const QUERY_KEYS = {
         STOREFRONT_PRODUCTS: (storefrontId: string) => ['resellers', 'storefronts', storefrontId, 'products'] as const,
         MARKETING_ASSETS: ['resellers', 'marketing-assets'] as const,
         MARKETING_ASSET: (id: string) => ['resellers', 'marketing-assets', id] as const,
+        APPLICATION: ['resellers', 'application'] as const,
     },
 } as const;

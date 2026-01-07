@@ -16,7 +16,7 @@ const blogPosts = [
     excerpt: 'Understanding how advanced materials and design enhance athletic performance and recovery.',
     author: 'Dr. Sarah Johnson',
     date: '2025-01-15',
-    image: '/attached_assets/placeholder.jpg',
+    image: null,
     category: 'Science',
     readTime: '5 min read',
   },
@@ -26,7 +26,7 @@ const blogPosts = [
     excerpt: 'Learn from the best as we share training routines and insights from our sponsored athletes.',
     author: 'Mike Thompson',
     date: '2025-01-10',
-    image: '/attached_assets/placeholder.jpg',
+    image: null,
     category: 'Training',
     readTime: '7 min read',
   },
@@ -36,7 +36,7 @@ const blogPosts = [
     excerpt: 'How 1stRep is leading the way in sustainable performance apparel and what it means for the future.',
     author: 'Emma Wilson',
     date: '2025-01-05',
-    image: '/attached_assets/placeholder.jpg',
+    image: null,
     category: 'Sustainability',
     readTime: '6 min read',
   },
@@ -46,7 +46,7 @@ const blogPosts = [
     excerpt: 'Fuel your workouts with the right nutrition strategies for optimal performance and recovery.',
     author: 'Dr. James Miller',
     date: '2024-12-28',
-    image: '/attached_assets/placeholder.jpg',
+    image: null,
     category: 'Nutrition',
     readTime: '8 min read',
   },
@@ -92,13 +92,19 @@ export default function BlogPage() {
             <div className="bg-gray-900/50 rounded-lg overflow-hidden border border-gray-800 hover:border-[#3c83f6] transition-colors">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="relative aspect-video bg-gray-800">
-                  <Image
-                    src={filteredPosts[0].image}
-                    alt={filteredPosts[0].title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                  />
+                  {filteredPosts[0].image ? (
+                    <Image
+                      src={filteredPosts[0].image}
+                      alt={filteredPosts[0].title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-gray-500 text-sm">No Image</span>
+                    </div>
+                  )}
                 </div>
                 <div className="p-6 md:p-8 flex flex-col justify-center space-y-4">
                   <div className="flex items-center gap-2">
@@ -152,13 +158,19 @@ export default function BlogPage() {
                 <Link key={post.id} href={`/blog/${post.id}`}>
                   <div className="bg-gray-900/50 rounded-lg overflow-hidden border border-gray-800 hover:border-[#3c83f6] transition-colors h-full flex flex-col">
                     <div className="relative aspect-video bg-gray-800">
-                      <Image
-                        src={post.image}
-                        alt={post.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      />
+                      {post.image ? (
+                        <Image
+                          src={post.image}
+                          alt={post.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-gray-500 text-xs">No Image</span>
+                        </div>
+                      )}
                     </div>
                     <div className="p-6 flex-1 flex flex-col space-y-3">
                       <div className="flex items-center gap-2">

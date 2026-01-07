@@ -150,13 +150,9 @@ export interface UpdateProfilePayload {
 }
 
 export interface ResellerApplicationPayload {
-  email: string;
-  password: string;
   company_name: string;
-  contact_name: string;
-  contact_phone: string;
-  business_address?: string;
   website_url?: string;
+  app_url?: string;
   description?: string;
   location_description?: string;
   expected_traffic?: string;
@@ -176,6 +172,11 @@ export interface ResellerApplication {
   reviewed_at?: string;
   reviewed_by?: string | null;
   review_notes?: string;
+  approved_at?: string;
+  approved_by?: string;
+  rejected_at?: string;
+  rejected_by?: string;
+  rejection_reason?: string;
 }
 
 // --- API Methods -------------------------------------------------------------
@@ -184,10 +185,12 @@ export const resellersApi = {
   getMe: () => api.get<ResellerProfile>('/resellers/me/'),
   updateProfile: (data: UpdateProfilePayload) => api.patch<ResellerProfile>('/resellers/me/profile/', data),
 
-  // Application submission (public endpoint - no auth required)
-  // Note: This should be a public endpoint for users to submit applications
+  // Application submission (requires authentication)
   submitApplication: (data: ResellerApplicationPayload) =>
-    api.post<ResellerApplication>('/reseller-applications/', data),
+    api.post<ResellerApplication>('/resellers/applications/', data),
+
+  // Check application status (requires authentication)
+  getMyApplication: () => api.get<ResellerApplication>('/resellers/applications/me/'),
 
   getAnalyticsOverview: () => api.get<ResellerAnalyticsOverview>('/resellers/analytics/overview/'),
 

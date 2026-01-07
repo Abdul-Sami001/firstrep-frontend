@@ -25,8 +25,8 @@ export default function CategoryShowcase({
 }: CategoryShowcaseProps) {
   const isImageLeft = imagePosition === 'left';
   
-  // Priority: 1. category.image (new API field), 2. passed image prop, 3. fallback
-  const displayImage = category.image || image || '/attached_assets/placeholder.jpg';
+  // Priority: 1. category.image (new API field), 2. passed image prop, 3. null (no fallback)
+  const displayImage = category.image || image || null;
   const hoverImage = category.hover_image || null;
 
   return (
@@ -78,29 +78,37 @@ export default function CategoryShowcase({
           <div className="flex-1 w-full">
             <div className="relative aspect-[4/3] md:aspect-[16/10] lg:aspect-square overflow-hidden rounded-lg group">
               {/* Main Image */}
-              <Image
-                src={displayImage}
-                alt={category.name}
-                fill
-                className={`object-cover transition-all duration-700 ${
-                  hoverImage ? 'group-hover:opacity-0' : 'group-hover:scale-105'
-                }`}
-                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 50vw"
-                priority={index < 2}
-                quality={90}
-              />
-              {/* Hover Image - Using new API field */}
-              {hoverImage && (
-                <Image
-                  src={hoverImage}
-                  alt={`${category.name} hover`}
-                  fill
-                  className="object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 50vw"
-                  quality={90}
-                />
+              {displayImage ? (
+                <>
+                  <Image
+                    src={displayImage}
+                    alt={category.name}
+                    fill
+                    className={`object-cover transition-all duration-700 ${
+                      hoverImage ? 'group-hover:opacity-0' : 'group-hover:scale-105'
+                    }`}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 50vw"
+                    priority={index < 2}
+                    quality={90}
+                  />
+                  {/* Hover Image - Using new API field */}
+                  {hoverImage && (
+                    <Image
+                      src={hoverImage}
+                      alt={`${category.name} hover`}
+                      fill
+                      className="object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 50vw"
+                      quality={90}
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+                  <span className="text-gray-500 text-sm md:text-base">No Image Available</span>
+                </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
           </div>
         </div>

@@ -17,7 +17,7 @@ const events = [
     time: '10:00 AM - 6:00 PM',
     location: 'ExCeL London, Royal Victoria Dock, London E16 1XL',
     description: 'Visit our booth at the London Marathon Expo. Try on our latest collection and meet our team.',
-    image: '/attached_assets/placeholder.jpg',
+    image: null,
     attendees: 500,
     type: 'Expo',
   },
@@ -28,7 +28,7 @@ const events = [
     time: '8:00 AM',
     location: 'Hyde Park, London',
     description: 'Join us for a community 5K run followed by refreshments and product demos.',
-    image: '/attached_assets/placeholder.jpg',
+    image: null,
     attendees: 200,
     type: 'Community',
   },
@@ -39,7 +39,7 @@ const events = [
     time: '9:00 AM - 5:00 PM',
     location: 'Manchester Central, M2 3GX',
     description: 'Experience our full product range and attend exclusive training sessions with our athletes.',
-    image: '/attached_assets/placeholder.jpg',
+    image: null,
     attendees: 1000,
     type: 'Festival',
   },
@@ -95,13 +95,19 @@ export default function EventsPage() {
                 >
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="relative aspect-video md:aspect-square bg-gray-800">
-                      <Image
-                        src={event.image}
-                        alt={event.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                      />
+                      {event.image ? (
+                        <Image
+                          src={event.image}
+                          alt={event.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-gray-500 text-sm">No Image</span>
+                        </div>
+                      )}
                     </div>
                     <div className="md:col-span-2 p-6 space-y-4">
                       <div>

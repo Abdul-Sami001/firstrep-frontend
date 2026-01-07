@@ -54,24 +54,30 @@ export default function ShopHero({
     return 'Discover premium performance apparel. It all starts with your 1st Rep.';
   };
 
-  // Get hero image - use category image, product image, or default
-  const heroImage = image || category?.image || '/attached_assets/placeholder.jpg';
+  // Get hero image - use category image, product image, or null
+  const heroImage = image || category?.image || null;
 
   return (
     <section className="relative w-full aspect-[16/9] md:aspect-[21/9] lg:aspect-[24/9] bg-[#000000] overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0">
-        <Image
-          src={heroImage}
-          alt={getTitle()}
-          fill
-          className="object-cover"
-          sizes="100vw"
-          priority
-          quality={90}
-        />
-        {/* Dark overlay for better text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/70" />
+        {heroImage ? (
+          <>
+            <Image
+              src={heroImage}
+              alt={getTitle()}
+              fill
+              className="object-cover"
+              sizes="100vw"
+              priority
+              quality={90}
+            />
+            {/* Dark overlay for better text contrast */}
+            <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/70" />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gray-900" />
+        )}
       </div>
 
       {/* Content */}

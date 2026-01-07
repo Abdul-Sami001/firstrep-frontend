@@ -38,8 +38,8 @@ export default function ProductCard({
   const primaryImage = isApiProduct
     ? product?.images?.find(img => img?.position === 0)?.image ||
     product?.images?.[0]?.image ||
-    '/attached_assets/placeholder.jpg'
-    : product?.image || '/attached_assets/placeholder.jpg';
+    null
+    : product?.image || null;
 
   const hoverImage = isApiProduct
     ? product?.images?.find(img => img?.position === 1)?.image || ''
@@ -101,7 +101,7 @@ export default function ProductCard({
         {/* Click only the image to navigate (not the whole surface) */}
         <Link href={`/product/${productId}`} className="relative block h-full w-full">
           <span className="sr-only">View {productName}</span>
-          {primaryImage && (
+          {primaryImage ? (
             <Image
               src={primaryImage}
               alt={productName}
@@ -112,6 +112,10 @@ export default function ProductCard({
               priority={priority}
               quality={85}
             />
+          ) : (
+            <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+              <span className="text-gray-500 text-xs md:text-sm text-center px-2">No Image</span>
+            </div>
           )}
         </Link>
 

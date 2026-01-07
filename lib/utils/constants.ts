@@ -86,4 +86,14 @@ export const QUERY_KEYS = {
         ITEMS: ['wishlist', 'items'] as const,
         CHECK: (productId: string) => ['wishlist', 'check', productId] as const,
     },
+    RESELLERS: {
+        ME: ['resellers', 'me'] as const,
+        ANALYTICS: ['resellers', 'analytics', 'overview'] as const,
+        COMMISSIONS: (params?: any) => ['resellers', 'commissions', params] as const,
+        COMMISSION_SUMMARY: ['resellers', 'commissions', 'summary'] as const,
+        STOREFRONTS: ['resellers', 'storefronts'] as const,
+        STOREFRONT_PRODUCTS: (storefrontId: string) => ['resellers', 'storefronts', storefrontId, 'products'] as const,
+        MARKETING_ASSETS: ['resellers', 'marketing-assets'] as const,
+        MARKETING_ASSET: (id: string) => ['resellers', 'marketing-assets', id] as const,
+    },
 } as const;

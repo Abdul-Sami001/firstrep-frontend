@@ -13,21 +13,13 @@ export interface User {
 }
 
 export interface UserProfile {
-    id: string;
-    user: string;
-    phone_number?: string;
-    date_of_birth?: string;
+    email: string;
+    role: string;
+    full_name?: string;
+    phone?: string;
     address?: string;
-    city?: string;
-    state?: string;
-    zip_code?: string;
-    country?: string;
-    avatar?: string;
-    preferences?: {
-        newsletter: boolean;
-        sms_notifications: boolean;
-        email_notifications: boolean;
-    };
+    avatar?: string | null;
+    bio?: string;
 }
 
 export interface AuthResponse {
@@ -48,19 +40,11 @@ export interface RegisterRequest {
 }
 
 export interface ProfileUpdateRequest {
-    phone_number?: string;
-    date_of_birth?: string;
+    full_name?: string;
+    phone?: string;
     address?: string;
-    city?: string;
-    state?: string;
-    zip_code?: string;
-    country?: string;
-    avatar?: string;
-    preferences?: {
-        newsletter?: boolean;
-        sms_notifications?: boolean;
-        email_notifications?: boolean;
-    };
+    avatar?: string | null;
+    bio?: string;
 }
 
 export interface PasswordResetRequest {

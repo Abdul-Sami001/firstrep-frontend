@@ -1,7 +1,7 @@
 // app/(site)/checkout/page.tsx
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useUserProfile, useUpdateProfile } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
+import { getStorefrontId } from "@/lib/utils/storefront";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -26,11 +27,25 @@ interface AddressForm {
 
 export default function Checkout() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
     const { cartItems, total, subtotal, shipping } = useCart();
     const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile();
     const updateProfileMutation = useUpdateProfile();
     const checkoutMutation = useCheckout();
+
+    // Memoize storefront ID extraction to prevent re-renders
+    const storefrontId = useMemo(() => {
+        return getStorefrontId(searchParams);
+    }, [searchParams]);
+
+    // Store storefront_id from URL into sessionStorage (only if from URL)
+    useEffect(() => {
+        const urlParam = searchParams?.get('storefront');
+        if (urlParam && typeof window !== 'undefined') {
+            sessionStorage.setItem('storefront_id', urlParam);
+        }
+    }, [searchParams]);
 
     // Calculate VAT (20% UK standard rate)
     const vatRate = 0.20;
@@ -118,6 +133,8 @@ export default function Checkout() {
                 });
             }
 
+            // Use memoized storefront_id for reseller attribution
+
             // Create order and Stripe checkout session
             const checkoutResponse = await checkoutMutation.mutateAsync({
                 shipping_address: addressForm.address,
@@ -125,7 +142,8 @@ export default function Checkout() {
                 state: addressForm.state,
                 zip_code: addressForm.zip_code,
                 country: addressForm.country,
-                payment_method: 'stripe'
+                payment_method: 'stripe',
+                ...(storefrontId && { storefront_id: storefrontId })
             });
 
             // Redirect to Stripe Checkout

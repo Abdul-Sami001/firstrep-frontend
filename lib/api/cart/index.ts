@@ -41,6 +41,7 @@ export interface CheckoutRequest {
     zip_code: string;
     country: string;
     payment_method: 'stripe' | 'paypal' | 'cod' | 'bank_transfer';
+    storefront_id?: string; // Optional: UUID or slug of Storefront for reseller attribution
 }
 
 export interface CheckoutResponse {

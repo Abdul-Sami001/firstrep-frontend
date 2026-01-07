@@ -29,6 +29,10 @@ export interface Order {
     shipping_address?: string;
     billing_address?: string;
     items: OrderItem[];
+    // Reseller attribution fields (from backend)
+    reseller_id?: string | null;
+    storefront_id?: string | null;
+    storefront_slug?: string | null;
 }
 
 export interface OrderFilters {

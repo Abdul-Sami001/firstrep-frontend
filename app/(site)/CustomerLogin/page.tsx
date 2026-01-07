@@ -1,6 +1,6 @@
 // app/(site)/CustomerLogin/page.tsx - Redesigned to match reference site
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useLogin, useRegister, usePasswordReset } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { Mail, Lock, User, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 
 export default function CustomerLogin() {
     const router = useRouter();
     const { toast } = useToast();
+    const { isAuthenticated, isLoading: authLoading } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
     const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -87,24 +89,53 @@ export default function CustomerLogin() {
         }));
     };
 
-    // Handle successful operations
-    if (loginMutation.isSuccess) {
-        router.push("/");
-    }
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            router.push("/profile");
+        }
+    }, [isAuthenticated, authLoading, router]);
 
-    if (registerMutation.isSuccess) {
-        setIsLogin(true);
-        setFormData({ email: "", password: "", confirmPassword: "", firstName: "", lastName: "" });
-        setSuccess("Registration successful! Please check your email to verify your account.");
-    }
+    // Handle successful login - redirect
+    useEffect(() => {
+        if (loginMutation.isSuccess) {
+            router.push("/");
+        }
+    }, [loginMutation.isSuccess, router]);
 
-    if (passwordResetMutation.isSuccess) {
-        setShowForgotPassword(false);
-        setSuccess("Password reset link sent to your email!");
-        setFormData({ email: "", password: "", confirmPassword: "", firstName: "", lastName: "" });
-    }
+    // Handle successful registration
+    useEffect(() => {
+        if (registerMutation.isSuccess) {
+            setIsLogin(true);
+            setFormData({ email: "", password: "", confirmPassword: "", firstName: "", lastName: "" });
+            setSuccess("Registration successful! Please check your email to verify your account.");
+        }
+    }, [registerMutation.isSuccess]);
+
+    // Handle successful password reset
+    useEffect(() => {
+        if (passwordResetMutation.isSuccess) {
+            setShowForgotPassword(false);
+            setSuccess("Password reset link sent to your email!");
+            setFormData({ email: "", password: "", confirmPassword: "", firstName: "", lastName: "" });
+        }
+    }, [passwordResetMutation.isSuccess]);
 
     const isLoading = loginMutation.isPending || registerMutation.isPending || passwordResetMutation.isPending;
+
+    // Show loading state while checking authentication
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
+            </div>
+        );
+    }
+
+    // Don't render login form if already authenticated (redirect will happen)
+    if (isAuthenticated) {
+        return null;
+    }
 
     return (
         <div className="min-h-screen bg-[#000000] flex">

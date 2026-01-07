@@ -44,22 +44,22 @@ export default function OrderDetailPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            case 'processing': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'shipped': return 'bg-purple-100 text-purple-800 border-purple-200';
-            case 'delivered': return 'bg-green-100 text-green-800 border-green-200';
-            case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-            default: return 'bg-gray-100 text-gray-800 border-gray-200';
+            case 'pending': return 'bg-yellow-900/30 text-yellow-400 border-yellow-800';
+            case 'processing': return 'bg-blue-900/30 text-blue-400 border-blue-800';
+            case 'shipped': return 'bg-purple-900/30 text-purple-400 border-purple-800';
+            case 'delivered': return 'bg-green-900/30 text-green-400 border-green-800';
+            case 'cancelled': return 'bg-red-900/30 text-red-400 border-red-800';
+            default: return 'bg-gray-800 text-gray-400 border-gray-700';
         }
     };
 
     const getPaymentStatusColor = (status: string) => {
         switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            case 'paid': return 'bg-green-100 text-green-800 border-green-200';
-            case 'failed': return 'bg-red-100 text-red-800 border-red-200';
-            case 'refunded': return 'bg-gray-100 text-gray-800 border-gray-200';
-            default: return 'bg-gray-100 text-gray-800 border-gray-200';
+            case 'pending': return 'bg-yellow-900/30 text-yellow-400 border-yellow-800';
+            case 'paid': return 'bg-green-900/30 text-green-400 border-green-800';
+            case 'failed': return 'bg-red-900/30 text-red-400 border-red-800';
+            case 'refunded': return 'bg-gray-800 text-gray-400 border-gray-700';
+            default: return 'bg-gray-800 text-gray-400 border-gray-700';
         }
     };
 
@@ -76,10 +76,10 @@ export default function OrderDetailPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p className="text-lg font-medium">Loading order details...</p>
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-white" />
+                    <p className="text-lg font-medium text-white">Loading order details...</p>
                 </div>
             </div>
         );
@@ -87,12 +87,12 @@ export default function OrderDetailPage() {
 
     if (error) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
                 <div className="text-center">
-                    <AlertCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                    <h1 className="text-2xl font-bold mb-4">Error Loading Order</h1>
-                    <p className="text-muted-foreground mb-8">There was a problem loading your order.</p>
-                    <Button onClick={() => window.location.reload()}>
+                    <AlertCircle className="h-16 w-16 mx-auto mb-4 text-gray-600" />
+                    <h1 className="text-2xl font-bold mb-4 text-white">Error Loading Order</h1>
+                    <p className="text-gray-400 mb-8">There was a problem loading your order.</p>
+                    <Button onClick={() => window.location.reload()} className="bg-white text-black hover:bg-gray-200">
                         Try Again
                     </Button>
                 </div>
@@ -102,13 +102,13 @@ export default function OrderDetailPage() {
 
     if (!order) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
                 <div className="text-center">
-                    <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                    <h1 className="text-2xl font-bold mb-4">Order Not Found</h1>
-                    <p className="text-muted-foreground mb-8">The order you're looking for doesn't exist.</p>
+                    <Package className="h-16 w-16 mx-auto mb-4 text-gray-600" />
+                    <h1 className="text-2xl font-bold mb-4 text-white">Order Not Found</h1>
+                    <p className="text-gray-400 mb-8">The order you're looking for doesn't exist.</p>
                     <Link href="/orders">
-                        <Button>View All Orders</Button>
+                        <Button className="bg-white text-black hover:bg-gray-200">View All Orders</Button>
                     </Link>
                 </div>
             </div>
@@ -118,25 +118,23 @@ export default function OrderDetailPage() {
     const StatusIcon = getStatusIcon(order.status);
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-[#000000]">
             {/* Enhanced Header */}
-            <div className="border-b bg-gradient-to-r from-background to-muted/20">
-                <div className="mobile-container tablet-container desktop-container">
-                    <div className="py-6">
-                        <div className="flex items-center gap-4 mb-4">
-                            <Link href="/orders">
-                                <Button variant="ghost" size="icon">
-                                    <ArrowLeft className="h-4 w-4" />
-                                </Button>
-                            </Link>
-                            <div className="flex-1">
-                                <h1 className="text-mobile-h1 md:text-tablet-h1 lg:text-desktop-h1 font-bold">
-                                    Order Details
-                                </h1>
-                                <p className="text-sm text-muted-foreground">
-                                    Order #{order.id.slice(0, 8).toUpperCase()}
-                                </p>
-                            </div>
+            <div className="border-b border-gray-800 bg-[#000000]">
+                <div className="mobile-container tablet-container desktop-container py-8 md:py-12">
+                    <div className="flex items-center gap-4 mb-4">
+                        <Link href="/orders">
+                            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-gray-800">
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                        <div className="flex-1">
+                            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
+                                Order Details
+                            </h1>
+                            <p className="text-sm md:text-base text-gray-400">
+                                Order #{order.id.slice(0, 8).toUpperCase()}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -145,15 +143,15 @@ export default function OrderDetailPage() {
             <div className="mobile-container tablet-container desktop-container py-8 md:py-12">
                 <div className="max-w-4xl mx-auto space-y-6">
                     {/* Order Status */}
-                    <Card className="border-l-4 border-l-primary">
+                    <Card className="bg-gray-900 border-gray-800 border-l-4 border-l-[#00bfff]">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
+                            <CardTitle className="flex items-center gap-2 text-white">
                                 <StatusIcon className="h-5 w-5" />
                                 Order Status
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 flex-wrap">
                                 <Badge className={`${getStatusColor(order.status)} border`}>
                                     <StatusIcon className="h-3 w-3 mr-1" />
                                     {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -166,9 +164,9 @@ export default function OrderDetailPage() {
                     </Card>
 
                     {/* Order Information */}
-                    <Card>
+                    <Card className="bg-gray-900 border-gray-800">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
+                            <CardTitle className="flex items-center gap-2 text-white">
                                 <Calendar className="h-5 w-5" />
                                 Order Information
                             </CardTitle>
@@ -177,38 +175,38 @@ export default function OrderDetailPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Order Number:</span>
-                                        <span className="font-medium">#{order.id.slice(0, 8).toUpperCase()}</span>
+                                        <span className="text-gray-400">Order Number:</span>
+                                        <span className="font-medium text-white">#{order.id.slice(0, 8).toUpperCase()}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Order Date:</span>
-                                        <span className="font-medium">
+                                        <span className="text-gray-400">Order Date:</span>
+                                        <span className="font-medium text-white">
                                             {new Date(order.created_at).toLocaleDateString()}
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Total Amount:</span>
-                                        <span className="font-medium">${computedPrice(order.total).toFixed(2)}</span>
+                                        <span className="text-gray-400">Total Amount:</span>
+                                        <span className="font-medium text-[#00bfff]">${computedPrice(order.total).toFixed(2)}</span>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
                                     <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Payment Method:</span>
-                                        <span className="font-medium flex items-center gap-1">
+                                        <span className="text-gray-400">Payment Method:</span>
+                                        <span className="font-medium flex items-center gap-1 text-white">
                                             <CreditCard className="h-4 w-4" />
                                             {order.payment_method.charAt(0).toUpperCase() + order.payment_method.slice(1)}
                                         </span>
                                     </div>
                                     {order.payment_reference && (
                                         <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Payment Reference:</span>
-                                            <span className="font-mono text-sm">{order.payment_reference}</span>
+                                            <span className="text-gray-400">Payment Reference:</span>
+                                            <span className="font-mono text-sm text-gray-300">{order.payment_reference}</span>
                                         </div>
                                     )}
                                     {computedPrice(order.vat) !== 0 && (
                                         <div className="flex justify-between">
-                                            <span className="text-muted-foreground">VAT:</span>
-                                            <span className="font-medium">${computedPrice(order.vat).toFixed(2)}</span>
+                                            <span className="text-gray-400">VAT:</span>
+                                            <span className="font-medium text-white">${computedPrice(order.vat).toFixed(2)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -218,23 +216,23 @@ export default function OrderDetailPage() {
 
                     {/* Shipping Address */}
                     {order.shipping_address && (
-                        <Card>
+                        <Card className="bg-gray-900 border-gray-800">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
+                                <CardTitle className="flex items-center gap-2 text-white">
                                     <MapPin className="h-5 w-5" />
                                     Shipping Address
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="whitespace-pre-line">{order.shipping_address}</p>
+                                <p className="whitespace-pre-line text-gray-300">{order.shipping_address}</p>
                             </CardContent>
                         </Card>
                     )}
 
                     {/* Order Items */}
-                    <Card>
+                    <Card className="bg-gray-900 border-gray-800">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
+                            <CardTitle className="flex items-center gap-2 text-white">
                                 <Package className="h-5 w-5" />
                                 Order Items
                             </CardTitle>
@@ -242,10 +240,10 @@ export default function OrderDetailPage() {
                         <CardContent>
                             <div className="space-y-4">
                                 {order.items.map((item) => (
-                                    <div key={item.id} className="flex gap-4 items-center p-4 bg-muted/50 rounded-lg">
+                                    <div key={item.id} className="flex gap-4 items-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
                                         {/* Product Image - Using new API field */}
                                         {item.product_image ? (
-                                            <div className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border border-border">
+                                            <div className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border border-gray-700">
                                                 <Image
                                                     src={item.product_image}
                                                     alt={item.product_name || `Product ${item.product.slice(0, 8)}`}
@@ -256,16 +254,16 @@ export default function OrderDetailPage() {
                                                 />
                                             </div>
                                         ) : (
-                                            <div className="w-20 h-20 flex-shrink-0 bg-muted rounded-md flex items-center justify-center border border-border">
-                                                <Package className="h-6 w-6 text-muted-foreground" />
+                                            <div className="w-20 h-20 flex-shrink-0 bg-gray-800 rounded-md flex items-center justify-center border border-gray-700">
+                                                <Package className="h-6 w-6 text-gray-500" />
                                             </div>
                                         )}
                                         <div className="flex-1 min-w-0">
                                             {/* Product Name - Using new API field */}
-                                            <p className="font-medium text-base mb-1">
+                                            <p className="font-medium text-base mb-1 text-white">
                                                 {item.product_name || `Product #${item.product.slice(0, 8).toUpperCase()}`}
                                             </p>
-                                            <div className="text-sm text-muted-foreground space-y-1">
+                                            <div className="text-sm text-gray-400 space-y-1">
                                                 <div>
                                                     Quantity: {item.quantity} • ${computedPrice(item.price).toFixed(2)} each
                                                 </div>
@@ -273,20 +271,20 @@ export default function OrderDetailPage() {
                                                 {(item.size || item.color) && (
                                                     <div className="flex gap-3 flex-wrap">
                                                         {item.size && (
-                                                            <span>Size: <span className="font-medium text-foreground">{item.size}</span></span>
+                                                            <span>Size: <span className="font-medium text-gray-300">{item.size}</span></span>
                                                         )}
                                                         {item.color && (
-                                                            <span>Color: <span className="font-medium text-foreground">{item.color}</span></span>
+                                                            <span>Color: <span className="font-medium text-gray-300">{item.color}</span></span>
                                                         )}
                                                     </div>
                                                 )}
                                                 {/* Variant SKU - Using new API field */}
                                                 {item.variant_sku && (
-                                                    <div className="text-xs font-mono text-muted-foreground">SKU: {item.variant_sku}</div>
+                                                    <div className="text-xs font-mono text-gray-500">SKU: {item.variant_sku}</div>
                                                 )}
                                             </div>
                                         </div>
-                                        <span className="font-semibold text-lg flex-shrink-0">${computedPrice(item.subtotal).toFixed(2)}</span>
+                                        <span className="font-semibold text-lg flex-shrink-0 text-white">${computedPrice(item.subtotal).toFixed(2)}</span>
                                     </div>
                                 ))}
                             </div>

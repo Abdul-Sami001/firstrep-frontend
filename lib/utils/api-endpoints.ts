@@ -33,6 +33,9 @@ export const PROTECTED_ENDPOINTS = [
   
   // Orders (user-specific)
   '/orders/',
+
+  // Resellers (portal)
+  '/resellers/',
   
   // Seller endpoints
   '/my/',

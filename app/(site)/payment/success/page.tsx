@@ -102,11 +102,11 @@ function PaymentSuccessContent() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p className="text-lg font-medium mb-2">Processing Your Order</p>
-                    <p className="text-sm text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-white" />
+                    <p className="text-lg font-medium mb-2 text-white">Processing Your Order</p>
+                    <p className="text-sm text-gray-400">
                         Please wait while we confirm your payment...
                     </p>
                 </div>
@@ -115,21 +115,19 @@ function PaymentSuccessContent() {
     }
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-[#000000]">
             {/* Header */}
-            <div className="border-b bg-background">
-                <div className="mobile-container tablet-container desktop-container">
-                    <div className="py-6">
-                        <div className="flex items-center gap-4 mb-4">
-                            <Link href="/">
-                                <Button variant="ghost" size="icon">
-                                    <ArrowLeft className="h-4 w-4" />
-                                </Button>
-                            </Link>
-                            <h1 className="text-mobile-h1 md:text-tablet-h1 lg:text-desktop-h1 font-bold">
-                                Payment Successful
-                            </h1>
-                        </div>
+            <div className="border-b border-gray-800 bg-[#000000]">
+                <div className="mobile-container tablet-container desktop-container py-8 md:py-12">
+                    <div className="flex items-center gap-4 mb-4">
+                        <Link href="/">
+                            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-gray-800">
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
+                            Payment Successful
+                        </h1>
                     </div>
                 </div>
             </div>
@@ -137,19 +135,21 @@ function PaymentSuccessContent() {
             <div className="mobile-container tablet-container desktop-container py-8 md:py-12">
                 <div className="max-w-2xl mx-auto">
                     {/* Success Message */}
-                    <Card className="text-center mb-8">
+                    <Card className="text-center mb-8 bg-gray-900 border-gray-800">
                         <CardHeader>
                             <div className="flex items-center justify-center mb-4">
-                                <CheckCircle className="h-16 w-16 text-green-500" />
+                                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center">
+                                    <CheckCircle className="h-12 w-12 text-green-400" />
+                                </div>
                             </div>
-                            <CardTitle className="text-2xl">Payment Successful!</CardTitle>
+                            <CardTitle className="text-2xl text-white">Payment Successful!</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-muted-foreground mb-6">
+                            <p className="text-gray-400 mb-6">
                                 Thank you for your purchase. Your payment has been processed successfully.
                             </p>
                             {sessionId && (
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-sm text-gray-500 font-mono">
                                     Session ID: {sessionId}
                                 </p>
                             )}
@@ -157,10 +157,30 @@ function PaymentSuccessContent() {
                     </Card>
 
                     {/* Order Information */}
-                    {verificationStatus === 'success' ? (
-                        <Card className="mb-8">
+                    {verificationStatus === 'failed' ? (
+                        <Card className="mb-8 bg-gray-900 border-red-800">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
+                                <CardTitle className="flex items-center gap-2 text-white">
+                                    <AlertCircle className="h-5 w-5 text-red-400" />
+                                    Verification Issue
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-gray-400 mb-4">
+                                    {!sessionId 
+                                        ? "No session ID found. Please contact support if you completed a payment."
+                                        : "We couldn't verify your payment automatically. Don't worry - if you completed the payment, your order is being processed."
+                                    }
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                    Check your orders page or contact support for assistance.
+                                </p>
+                            </CardContent>
+                        </Card>
+                    ) : verificationStatus === 'success' ? (
+                        <Card className="mb-8 bg-gray-900 border-gray-800">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-white">
                                     <Package className="h-5 w-5" />
                                     Order Information
                                 </CardTitle>
@@ -168,12 +188,12 @@ function PaymentSuccessContent() {
                             <CardContent>
                                 <div className="space-y-4">
                                     <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Status:</span>
-                                        <span className="font-medium">Processing</span>
+                                        <span className="text-gray-400">Status:</span>
+                                        <span className="font-medium text-white">Processing</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Payment Method:</span>
-                                        <span className="font-medium flex items-center gap-1">
+                                        <span className="text-gray-400">Payment Method:</span>
+                                        <span className="font-medium flex items-center gap-1 text-white">
                                             <CreditCard className="h-4 w-4" />
                                             Card Payment
                                         </span>
@@ -182,15 +202,15 @@ function PaymentSuccessContent() {
                             </CardContent>
                         </Card>
                     ) : (
-                        <Card className="mb-8">
+                        <Card className="mb-8 bg-gray-900 border-gray-800">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                                <CardTitle className="flex items-center gap-2 text-white">
+                                    <Loader2 className="h-5 w-5 animate-spin text-[#00bfff]" />
                                     Processing Order
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-muted-foreground">
+                                <p className="text-gray-400">
                                     Your payment was successful. We're processing your order and will update you shortly.
                                 </p>
                             </CardContent>
@@ -200,13 +220,13 @@ function PaymentSuccessContent() {
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-4">
                         <Link href="/orders" className="flex-1">
-                            <Button className="w-full" size="lg">
+                            <Button className="w-full bg-white text-black hover:bg-gray-200" size="lg">
                                 <Package className="h-4 w-4 mr-2" />
                                 View All Orders
                             </Button>
                         </Link>
-                        <Link href="/" className="flex-1">
-                            <Button variant="ghost" className="w-full" size="lg">
+                        <Link href="/shop-clean" className="flex-1">
+                            <Button variant="outline" className="w-full border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white" size="lg">
                                 Continue Shopping
                             </Button>
                         </Link>
@@ -220,10 +240,10 @@ function PaymentSuccessContent() {
 export default function PaymentSuccessPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p className="text-lg font-medium">Loading...</p>
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-white" />
+                    <p className="text-lg font-medium text-white">Loading...</p>
                 </div>
             </div>
         }>

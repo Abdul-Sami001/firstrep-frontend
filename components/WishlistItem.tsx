@@ -58,7 +58,7 @@ export default function WishlistItem({
     return (
         <div 
             className={cn(
-                'group relative bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200',
+                'group relative bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-all duration-200',
                 className
             )}
             data-testid={testId}
@@ -68,10 +68,10 @@ export default function WishlistItem({
                 variant="ghost"
                 size="sm"
                 onClick={handleRemove}
-                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 h-8 w-8"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 h-8 w-8 text-gray-400 hover:text-white hover:bg-gray-800"
                 data-testid={`remove-wishlist-item-${item.id}`}
             >
-                <X className="h-4 w-4 text-gray-500" />
+                <X className="h-4 w-4" />
             </Button>
 
             <div className="flex gap-4">
@@ -80,7 +80,7 @@ export default function WishlistItem({
                     href={`/product/${item.product}`}
                     className="flex-shrink-0"
                 >
-                    <div className="relative w-20 h-20 bg-gray-100 rounded-md overflow-hidden">
+                    <div className="relative w-20 h-20 bg-gray-800 rounded-md overflow-hidden">
                         {item.product_image ? (
                             <Image
                                 src={item.product_image}
@@ -90,8 +90,8 @@ export default function WishlistItem({
                                 sizes="80px"
                             />
                         ) : (
-                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                                <span className="text-gray-400 text-xs">No Image</span>
+                            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                                <span className="text-gray-600 text-xs">No Image</span>
                             </div>
                         )}
                     </div>
@@ -103,14 +103,14 @@ export default function WishlistItem({
                         href={`/product/${item.product}`}
                         className="block"
                     >
-                        <h3 className="font-medium text-sm text-gray-900 hover:text-primary transition-colors line-clamp-2">
+                        <h3 className="font-medium text-sm text-white hover:text-gray-300 transition-colors line-clamp-2">
                             {item.product_name || 'Product'}
                         </h3>
                     </Link>
 
                     {/* Variant Info */}
                     {item.variant_name && (
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-400 mt-1">
                             {item.variant_name}
                         </div>
                     )}
@@ -118,7 +118,7 @@ export default function WishlistItem({
                     {/* Price Info */}
                     <div className="mt-2 space-y-1">
                         <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm">
+                            <span className="font-semibold text-sm text-white">
                                 {item.product_price 
                                     ? formatPrice(item.product_price, item.product_currency)
                                     : formatPrice(item.price_at_add)
@@ -129,7 +129,7 @@ export default function WishlistItem({
                             {isPriceChanged && priceChangePercent !== 0 && (
                                 <Badge 
                                     variant={priceChangePercent > 0 ? "destructive" : "default"}
-                                    className="text-xs"
+                                    className="text-xs bg-red-900/30 text-red-400 border-red-800"
                                 >
                                     {priceChangePercent > 0 ? '+' : ''}{priceChangePercent}%
                                 </Badge>
@@ -145,7 +145,7 @@ export default function WishlistItem({
                     </div>
 
                     {/* Added Date */}
-                    <div className="text-xs text-gray-400 mt-2">
+                    <div className="text-xs text-gray-500 mt-2">
                         Added {new Date(item.added_at).toLocaleDateString()}
                     </div>
                 </div>
@@ -155,7 +155,7 @@ export default function WishlistItem({
                     <Button
                         size="sm"
                         onClick={handleMoveToCart}
-                        className="text-xs"
+                        className="text-xs bg-white text-black hover:bg-gray-200"
                         data-testid={`move-to-cart-${item.id}`}
                     >
                         <ShoppingCart className="h-3 w-3 mr-1" />
@@ -166,7 +166,7 @@ export default function WishlistItem({
                         variant="outline"
                         size="sm"
                         onClick={handleRemove}
-                        className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-xs border-red-800 text-red-400 hover:bg-red-900/20 hover:text-red-300"
                         data-testid={`remove-item-${item.id}`}
                     >
                         <Trash2 className="h-3 w-3 mr-1" />

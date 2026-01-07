@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { useLogin } from "@/hooks/useAuth";
+import { resellersApi, ResellerApplicationPayload } from "@/lib/api/resellers";
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, Building2, User, Phone, MapPin, Home, Zap, Check } from "lucide-react";
 
 type RoleType = 'reseller' | 'wholesaler' | null;
@@ -17,6 +19,7 @@ type ViewType = 'login' | 'role-selection' | 'application';
 export default function ResellerLogin() {
     const router = useRouter();
     const { toast } = useToast();
+    const loginMutation = useLogin();
     const [currentView, setCurrentView] = useState<ViewType>('login'); // Default to login
     const [selectedRole, setSelectedRole] = useState<RoleType>(null);
     const [showPassword, setShowPassword] = useState(false);
@@ -36,23 +39,18 @@ export default function ResellerLogin() {
         setError("");
         setIsLoading(true);
 
-        try {
-            // TODO: Implement actual reseller login API
-            console.log("Reseller login attempt:", { email: formData.email });
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Store reseller token (mock for now - replace with actual API response)
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('reseller_token', 'mock_reseller_token_' + Date.now());
+        loginMutation.mutate(
+            { email: formData.email, password: formData.password },
+            {
+                onSuccess: () => {
+                    router.push("/ResellerDashboard");
+                },
+                onError: () => {
+                    setError("Authentication failed. Please try again.");
+                },
+                onSettled: () => setIsLoading(false),
             }
-            
-            // Redirect to dashboard
-            router.push("/ResellerDashboard");
-        } catch (err) {
-            setError("Authentication failed. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
+        );
     };
 
     const handleApplicationSubmit = async (e: React.FormEvent) => {
@@ -61,13 +59,22 @@ export default function ResellerLogin() {
         setIsLoading(true);
 
         try {
-            // TODO: Implement actual reseller registration API
-            console.log(`${selectedRole} registration attempt:`, formData);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Prepare application payload
+            const applicationData: ResellerApplicationPayload = {
+                email: formData.email,
+                password: formData.password,
+                company_name: formData.businessName,
+                contact_name: formData.contactPerson,
+                contact_phone: formData.phoneNumber,
+                business_address: formData.businessAddress,
+            };
+
+            // Submit application to backend
+            const response = await resellersApi.submitApplication(applicationData);
             
             toast({
                 title: "Application Submitted",
-                description: "Your application has been submitted successfully. We'll get back to you soon.",
+                description: "Your application has been submitted successfully. You will receive a confirmation email shortly. We'll review your application and get back to you within 2-3 business days.",
             });
             
             // Reset form
@@ -81,8 +88,14 @@ export default function ResellerLogin() {
             });
             setSelectedRole(null);
             setCurrentView('login');
-        } catch (err) {
-            setError("Failed to submit application. Please try again.");
+        } catch (err: any) {
+            const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || "Failed to submit application. Please try again.";
+            setError(errorMessage);
+            toast({
+                title: "Application Failed",
+                description: errorMessage,
+                variant: "destructive",
+            });
         } finally {
             setIsLoading(false);
         }

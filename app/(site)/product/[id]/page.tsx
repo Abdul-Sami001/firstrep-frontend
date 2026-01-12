@@ -249,7 +249,7 @@ export default function ProductDetailPage() {
                             {/* Price */}
                             <div className="mb-4 md:mb-6" data-testid="text-product-price">
                                 <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
-                                    {product?.currency || 'USD'}{' '}
+                                    {product?.currency || 'GBP'}{' '}
                                     {Number(
                                         selectedVariant?.price_override != null
                                             ? selectedVariant.price_override
@@ -424,7 +424,7 @@ export default function ProductDetailPage() {
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <span className="text-gray-500">•</span>
-                                    <span>Currency: <span className="text-white">{product?.currency || 'USD'}</span></span>
+                                    <span>Currency: <span className="text-white">{product?.currency || 'GBP'}</span></span>
                                 </li>
                             </ul>
                         </div>

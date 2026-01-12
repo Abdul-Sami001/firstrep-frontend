@@ -69,12 +69,12 @@ export default function ProductCard({
   const toNum = (v: any) => (typeof v === 'number' ? v : parseFloat(String(v || 0)));
 
   const computedPrice =
-    isApiProduct && 'price_override' in defaultVariant && defaultVariant.price_override != null
+    isApiProduct && defaultVariant && 'price_override' in defaultVariant && defaultVariant.price_override != null
       ? toNum(defaultVariant.price_override)
       : toNum(productPrice);
 
   const formatPrice = () => {
-    const currency = isApiProduct ? product?.currency || 'USD' : 'USD';
+    const currency = isApiProduct ? product?.currency || 'GBP' : 'GBP';
     const price = computedPrice
 
     return (

@@ -4,23 +4,17 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode, useEffect } from 'react';
-import { Loader2, LayoutGrid, Receipt, Store, Image as ImageIcon, User } from 'lucide-react';
+import { Loader2, LogOut } from 'lucide-react';
 import { useResellerProfile } from '@/hooks/useResellers';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-
-const navItems = [
-  { href: '/ResellerDashboard', label: 'Overview', icon: LayoutGrid },
-  { href: '/ResellerDashboard#commissions', label: 'Commissions', icon: Receipt },
-  { href: '/ResellerDashboard#storefronts', label: 'Storefronts', icon: Store },
-  { href: '/ResellerDashboard#marketing', label: 'Marketing', icon: ImageIcon },
-  { href: '/ResellerDashboard#profile', label: 'Profile', icon: User },
-];
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ResellerLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const isLoginPage = pathname === '/ResellerLogin';
+  const { logout } = useAuth();
   
   // Only fetch profile if not on login page
   const { data: profile, isLoading, isError, error } = useResellerProfile(!isLoginPage);
@@ -35,6 +29,11 @@ export default function ResellerLayout({ children }: { children: ReactNode }) {
     }
   }, [isError, error, router, isLoginPage]);
 
+  const handleLogout = () => {
+    logout();
+    router.push('/ResellerLogin');
+  };
+
   // If on login page, render without auth check
   if (isLoginPage) {
     return <>{children}</>;
@@ -43,7 +42,7 @@ export default function ResellerLayout({ children }: { children: ReactNode }) {
   // Protected pages - show loading/error states
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <Loader2 className="h-6 w-6 animate-spin mr-2" />
         Loading reseller portal...
       </div>
@@ -52,9 +51,9 @@ export default function ResellerLayout({ children }: { children: ReactNode }) {
 
   if (isError) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-center space-y-4">
-        <p className="text-lg font-semibold text-foreground">Unable to load reseller account.</p>
-        <p className="text-sm text-muted-foreground">Please sign in again.</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white text-center space-y-4">
+        <p className="text-lg font-semibold">Unable to load reseller account.</p>
+        <p className="text-sm text-gray-400">Please sign in again.</p>
         <Button onClick={() => router.replace('/ResellerLogin')}>Go to Reseller Login</Button>
       </div>
     );
@@ -62,43 +61,48 @@ export default function ResellerLayout({ children }: { children: ReactNode }) {
 
   // Authenticated - show protected layout
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-card">
+    <div className="min-h-screen bg-black text-white">
+      <header className="border-b border-gray-800 bg-[#0a0a0a]">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-lg font-bold tracking-tight">
-            1stRep Reseller
-          </Link>
-          <div className="text-sm text-muted-foreground">
-            {profile?.company_name || 'Reseller'} • {profile?.tier?.display_name || profile?.tier?.name || 'Tier'}
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-xl font-bold tracking-tight text-white">
+              {profile?.company_name || '1stRep Reseller'}
+            </Link>
+            {profile && (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="bg-[#0b1224] text-white border border-[#1f2a44]">
+                  {profile.tier?.display_name || profile.tier?.name}
+                </Badge>
+                <Badge className="gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-700/40">
+                  {profile.status}
+                </Badge>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              className="border-gray-700 text-white hover:bg-gray-800"
+              onClick={() => {
+                // EPOS functionality - placeholder for now
+                router.push('/ResellerDashboard');
+              }}
+            >
+              Reseller EPOS
+            </Button>
+            <Button
+              variant="outline"
+              className="border-gray-700 text-white hover:bg-gray-800"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
-        <aside className="lg:w-64 shrink-0">
-          <nav className="space-y-1 rounded-lg border border-border bg-card p-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href || pathname.startsWith(item.href.split('#')[0]);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted/80',
-                    isActive ? 'bg-muted text-foreground' : 'text-muted-foreground'
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </aside>
-
-        <main className="flex-1">{children}</main>
-      </div>
+      <main className="bg-black">{children}</main>
     </div>
   );
 }

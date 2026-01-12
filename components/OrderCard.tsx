@@ -31,9 +31,9 @@ export default function OrderCard({ order }: OrderCardProps) {
 
     const formatCurrency = (amount: string | number) => {
         const numAmount = computedPrice(amount);
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('en-GB', {
             style: 'currency',
-            currency: 'USD',
+            currency: 'GBP',
         }).format(numAmount);
     };
 

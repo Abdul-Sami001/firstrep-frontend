@@ -122,7 +122,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                           {product.category?.name || 'Uncategorized'}
                         </p>
                         <p className="text-sm font-bold text-[#00bfff]">
-                          {product.currency || '$'}{typeof product.price === 'number' ? product.price.toFixed(2) : (product.price ? Number(product.price).toFixed(2) : '0.00')}
+                          {product.currency || '£'}{typeof product.price === 'number' ? product.price.toFixed(2) : (product.price ? Number(product.price).toFixed(2) : '0.00')}
                         </p>
                       </div>
                     </div>

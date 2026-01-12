@@ -1,11 +1,16 @@
 // lib/utils/formatters.ts
 export const formatters = {
     // Price formatting
-    formatPrice: (price: number, currency: string = 'USD'): string => {
-        return new Intl.NumberFormat('en-US', {
+    formatPrice: (price: number, currency: string = 'GBP'): string => {
+        return new Intl.NumberFormat('en-GB', {
             style: 'currency',
             currency,
         }).format(price);
+    },
+    
+    // Currency formatting (alias for formatPrice)
+    formatCurrency: (price: number, currency: string = 'GBP'): string => {
+        return formatters.formatPrice(price, currency);
     },
 
     // Date formatting
@@ -58,3 +63,8 @@ export const formatters = {
         return phone;
     },
 };
+
+// Named exports for convenience
+export const formatCurrency = formatters.formatCurrency;
+export const formatPrice = formatters.formatPrice;
+export const formatDate = formatters.formatDate;

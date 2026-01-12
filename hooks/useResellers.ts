@@ -1,4 +1,5 @@
 // hooks/useResellers.ts
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import resellersApi, {
   CommissionListParams,
@@ -17,10 +18,11 @@ import { QUERY_KEYS } from '@/lib/utils/constants';
 import { useToast } from './use-toast';
 
 const DEFAULT_QUERY_CONFIG = {
-  staleTime: 2 * 60 * 1000,
-  cacheTime: 5 * 60 * 1000,
+  staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh for 5 minutes
+  cacheTime: 10 * 60 * 1000, // 10 minutes - keep in cache for 10 minutes
   retry: 1,
   refetchOnWindowFocus: false,
+  refetchOnMount: false, // Don't refetch if data exists in cache
 };
 
 export const useResellerProfile = (enabled: boolean = true) =>
@@ -78,7 +80,22 @@ export const useResellerCommissionSummary = () =>
 export const useResellerStorefronts = () =>
   useQuery({
     queryKey: QUERY_KEYS.RESELLERS.STOREFRONTS,
-    queryFn: resellersApi.getStorefronts,
+    queryFn: async () => {
+      const data = await resellersApi.getStorefronts();
+      // Handle both array and paginated response
+      if (Array.isArray(data)) {
+        return data;
+      }
+      // If it's a paginated response, return the results array
+      if (data && typeof data === 'object' && 'results' in data) {
+        const paginatedData = data as { results: Storefront[] };
+        if (Array.isArray(paginatedData.results)) {
+          return paginatedData.results;
+        }
+      }
+      // Fallback to empty array
+      return [];
+    },
     ...DEFAULT_QUERY_CONFIG,
   });
 
@@ -93,7 +110,22 @@ export const useResellerStorefrontProducts = (storefrontId: string, enabled = tr
 export const useResellerMarketingAssets = () =>
   useQuery({
     queryKey: QUERY_KEYS.RESELLERS.MARKETING_ASSETS,
-    queryFn: resellersApi.getMarketingAssets,
+    queryFn: async () => {
+      const data = await resellersApi.getMarketingAssets();
+      // Handle both array and paginated response
+      if (Array.isArray(data)) {
+        return data;
+      }
+      // If it's a paginated response, return the results array
+      if (data && typeof data === 'object' && 'results' in data) {
+        const paginatedData = data as { results: MarketingAsset[] };
+        if (Array.isArray(paginatedData.results)) {
+          return paginatedData.results;
+        }
+      }
+      // Fallback to empty array
+      return [];
+    },
     ...DEFAULT_QUERY_CONFIG,
   });
 
@@ -108,23 +140,30 @@ export const useResellerMarketingAsset = (id: string, enabled = true) =>
 export const useResellerApplication = (enabled = true) => {
   const { toast } = useToast();
   
-  return useQuery<ResellerApplication>({
+  const query = useQuery<ResellerApplication>({
     queryKey: QUERY_KEYS.RESELLERS.APPLICATION,
     queryFn: resellersApi.getMyApplication,
     enabled,
     ...DEFAULT_QUERY_CONFIG,
-    retry: false, // Don't retry on 404 (no application exists)
-    onError: (error: any) => {
-      // 404 is expected if no application exists, don't show error
-      if (error?.response?.status !== 404) {
-        toast({
-          title: 'Failed to load application',
-          description: error?.response?.data?.detail || 'Could not load application status.',
-          variant: 'destructive',
-        });
-      }
+    retry: (failureCount, error: any) => {
+      // Don't retry on 404 (no application exists)
+      if (error?.response?.status === 404) return false;
+      return failureCount < 1;
     },
   });
+
+  // Handle errors separately using useEffect
+  useEffect(() => {
+    if (query.error && (query.error as any)?.response?.status !== 404) {
+      toast({
+        title: 'Failed to load application',
+        description: (query.error as any)?.response?.data?.detail || 'Could not load application status.',
+        variant: 'destructive',
+      });
+    }
+  }, [query.error, toast]);
+
+  return query;
 };
 
 export const useSubmitResellerApplication = () => {

@@ -423,7 +423,7 @@ export default function Checkout() {
                                                             Qty: {item.quantity}
                                                         </p>
                                                         <p className="text-sm font-bold text-white">
-                                                            ${(Number(item.price_at_time) * item.quantity).toFixed(2)}
+                                                            £{(Number(item.price_at_time) * item.quantity).toFixed(2)}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -436,11 +436,11 @@ export default function Checkout() {
                                         <div className="space-y-3">
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-gray-400">Subtotal</span>
-                                                <span className="text-white font-medium">${subtotal.toFixed(2)}</span>
+                                                <span className="text-white font-medium">£{subtotal.toFixed(2)}</span>
                                             </div>
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-gray-400">VAT (20%)</span>
-                                                <span className="text-white font-medium">${vat.toFixed(2)}</span>
+                                                <span className="text-white font-medium">£{vat.toFixed(2)}</span>
                                             </div>
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-gray-400">Shipping</span>
@@ -448,21 +448,21 @@ export default function Checkout() {
                                                     {shipping === 0 ? (
                                                         <span className="text-green-400">FREE</span>
                                                     ) : (
-                                                        `$${shipping.toFixed(2)}`
+                                                        `£${shipping.toFixed(2)}`
                                                     )}
                                                 </span>
                                             </div>
                                             <Separator className="bg-gray-800" />
                                             <div className="flex justify-between font-bold text-lg pt-1">
                                                 <span className="text-white">Total</span>
-                                                <span className="text-white" data-testid="order-total">${totalWithVAT.toFixed(2)}</span>
+                                                <span className="text-white" data-testid="order-total">£{totalWithVAT.toFixed(2)}</span>
                                             </div>
                                         </div>
 
                                         {subtotal < 75 && (
                                             <div className="p-3 rounded-lg bg-[#00bfff]/10 border border-[#00bfff]/20">
                                                 <p className="text-xs text-[#00bfff] text-center">
-                                                    Add <span className="font-semibold">${(75 - subtotal).toFixed(2)}</span> more for free shipping
+                                                    Add <span className="font-semibold">£{(75 - subtotal).toFixed(2)}</span> more for free shipping
                                                 </p>
                                             </div>
                                         )}
@@ -483,7 +483,7 @@ export default function Checkout() {
                                         Processing...
                                     </>
                                 ) : (
-                                    `Place Order - $${totalWithVAT.toFixed(2)}`
+                                    `Place Order - £${totalWithVAT.toFixed(2)}`
                                 )}
                                 </Button>
 

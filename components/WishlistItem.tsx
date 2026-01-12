@@ -46,7 +46,7 @@ export default function WishlistItem({
         }
     };
 
-    const formatPrice = (price: number, currency: string = 'USD') => {
+    const formatPrice = (price: number, currency: string = 'GBP') => {
         return `${currency} ${Number(price).toFixed(2)}`;
     };
 

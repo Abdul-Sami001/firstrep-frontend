@@ -186,7 +186,7 @@ export default function OrderDetailPage() {
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-400">Total Amount:</span>
-                                        <span className="font-medium text-[#00bfff]">${computedPrice(order.total).toFixed(2)}</span>
+                                        <span className="font-medium text-[#00bfff]">£{computedPrice(order.total).toFixed(2)}</span>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
@@ -206,7 +206,7 @@ export default function OrderDetailPage() {
                                     {computedPrice(order.vat) !== 0 && (
                                         <div className="flex justify-between">
                                             <span className="text-gray-400">VAT:</span>
-                                            <span className="font-medium text-white">${computedPrice(order.vat).toFixed(2)}</span>
+                                            <span className="font-medium text-white">£{computedPrice(order.vat).toFixed(2)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -265,7 +265,7 @@ export default function OrderDetailPage() {
                                             </p>
                                             <div className="text-sm text-gray-400 space-y-1">
                                                 <div>
-                                                    Quantity: {item.quantity} • ${computedPrice(item.price).toFixed(2)} each
+                                                    Quantity: {item.quantity} • £{computedPrice(item.price).toFixed(2)} each
                                                 </div>
                                                 {/* Size and Color - Using new API fields */}
                                                 {(item.size || item.color) && (
@@ -284,7 +284,7 @@ export default function OrderDetailPage() {
                                                 )}
                                             </div>
                                         </div>
-                                        <span className="font-semibold text-lg flex-shrink-0 text-white">${computedPrice(item.subtotal).toFixed(2)}</span>
+                                        <span className="font-semibold text-lg flex-shrink-0 text-white">£{computedPrice(item.subtotal).toFixed(2)}</span>
                                     </div>
                                 ))}
                             </div>

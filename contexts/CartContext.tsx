@@ -8,6 +8,7 @@ import { logError } from '@/lib/utils/errors';
 
 interface CartContextType {
   cartItems: CartItem[];
+  cartId: string | null;
   addToCart: (productId: string, variantId?: string, quantity?: number) => void;
   updateQuantity: (itemId: string, quantity: number, size?: string, color?: string) => void;
   removeItem: (itemId: string, size?: string, color?: string) => void;
@@ -16,6 +17,14 @@ interface CartContextType {
   subtotal: number;
   shipping: number;
   total: number;
+  // Discount fields
+  appliedGiftCardCode?: string | null;
+  appliedGiftCardAmount?: number;
+  appliedReferralCode?: string | null;
+  appliedReferralDiscount?: number;
+  appliedLoyaltyPoints?: number;
+  appliedLoyaltyDiscount?: number;
+  totalDiscount?: number;
   isCartOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
@@ -186,11 +195,24 @@ export const CartProvider = ({ children }: CartProviderProps) => {
   const subtotal = apiSubtotalRaw != null
     ? Number(apiSubtotalRaw)
     : cartItems.reduce((total, item) => total + (Number(item.price_at_time) * item.quantity), 0);
+  
+  // Get discount amounts from cart (backend calculates these)
+  const totalDiscount = apiCart?.total_discount ? Number(apiCart.total_discount) : 0;
+  const appliedGiftCardAmount = apiCart?.applied_gift_card_amount ? Number(apiCart.applied_gift_card_amount) : 0;
+  const appliedReferralDiscount = apiCart?.applied_referral_discount ? Number(apiCart.applied_referral_discount) : 0;
+  const appliedLoyaltyDiscount = apiCart?.applied_loyalty_discount ? Number(apiCart.applied_loyalty_discount) : 0;
+  
+  // Calculate discounted subtotal (backend should provide this, but calculate as fallback)
+  const discountedSubtotal = Math.max(0, subtotal - totalDiscount);
+  // Free shipping threshold is based on original subtotal, not discounted (per business rules)
   const shipping = subtotal > 75 ? 0 : 4.99;
-  const total = subtotal + shipping;
+  // VAT is calculated on discounted subtotal (20% UK rate)
+  const vat = discountedSubtotal * 0.20;
+  const total = discountedSubtotal + vat + shipping;
 
   const value: CartContextType = {
     cartItems,
+    cartId: apiCart?.id || null,
     addToCart,
     updateQuantity,
     removeItem,
@@ -199,6 +221,13 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     subtotal,
     shipping,
     total,
+    appliedGiftCardCode: apiCart?.applied_gift_card_code || null,
+    appliedGiftCardAmount,
+    appliedReferralCode: apiCart?.applied_referral_code || null,
+    appliedReferralDiscount,
+    appliedLoyaltyPoints: apiCart?.applied_loyalty_points || undefined,
+    appliedLoyaltyDiscount,
+    totalDiscount,
     isCartOpen,
     openCart,
     closeCart,

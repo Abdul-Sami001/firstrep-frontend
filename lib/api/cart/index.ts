@@ -22,6 +22,14 @@ export interface Cart {
     session_key?: string | null;
     items: CartItem[];
     total: number;
+    // Discount fields (from backend)
+    applied_gift_card_code?: string | null;
+    applied_gift_card_amount?: number | string;
+    applied_referral_code?: string | null;
+    applied_referral_discount?: number | string;
+    applied_loyalty_points?: number;
+    applied_loyalty_discount?: number | string;
+    total_discount?: number | string;
 }
 
 export interface AddToCartRequest {

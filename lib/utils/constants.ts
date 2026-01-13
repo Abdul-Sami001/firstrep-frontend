@@ -47,6 +47,22 @@ export const API_ENDPOINTS = {
         CONFIRM: (id: string) => `/payments/${id}/confirm/`,
         METHODS: '/payments/methods/',
     },
+    MARKETING: {
+        LOYALTY: {
+            ACCOUNT: '/marketing/loyalty/account/',
+            TRANSACTIONS: '/marketing/loyalty/transactions/',
+            REDEEM: '/marketing/loyalty/redeem/',
+        },
+        REFERRALS: {
+            LIST: '/marketing/referrals/',
+            MY_CODE: '/marketing/referrals/my-code/',
+        },
+        GIFT_CARDS: {
+            LIST: '/marketing/gift-cards/',
+            DETAIL: (id: string) => `/marketing/gift-cards/${id}/`,
+            REDEEM: (id: string) => `/marketing/gift-cards/${id}/redeem/`,
+        },
+    },
 } as const;
 
 // lib/utils/constants.ts - Updated Query Keys
@@ -96,5 +112,20 @@ export const QUERY_KEYS = {
         MARKETING_ASSETS: ['resellers', 'marketing-assets'] as const,
         MARKETING_ASSET: (id: string) => ['resellers', 'marketing-assets', id] as const,
         APPLICATION: ['resellers', 'application'] as const,
+    },
+    MARKETING: {
+        LOYALTY: {
+            ACCOUNT: ['marketing', 'loyalty', 'account'] as const,
+            TRANSACTIONS: (params?: any) => ['marketing', 'loyalty', 'transactions', params] as const,
+        },
+        REFERRALS: {
+            MY_CODE: ['marketing', 'referrals', 'my-code'] as const,
+            LIST: (params?: any) => ['marketing', 'referrals', 'list', params] as const,
+        },
+        GIFT_CARDS: {
+            LIST: (params?: any) => ['marketing', 'gift-cards', 'list', params] as const,
+            DETAIL: (id: string) => ['marketing', 'gift-cards', 'detail', id] as const,
+            BY_CODE: (code: string) => ['marketing', 'gift-cards', 'by-code', code] as const,
+        },
     },
 } as const;

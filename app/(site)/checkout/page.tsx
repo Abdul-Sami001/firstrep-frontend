@@ -8,12 +8,21 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Lock, ShoppingBag, Truck, Loader2, AlertCircle, MapPin, Shield, ArrowLeft } from "lucide-react";
+import { CreditCard, Lock, ShoppingBag, Truck, Loader2, AlertCircle, MapPin, Shield, ArrowLeft, Gift, Users, Coins, X, Check } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useUserProfile, useUpdateProfile } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
 import { getStorefrontId } from "@/lib/utils/storefront";
+import { 
+    useValidateGiftCard, 
+    useApplyGiftCardToCart,
+    useValidateReferralCode,
+    useApplyReferralToCart,
+    usePreviewLoyaltyRedemption,
+    useApplyLoyaltyToCart,
+    useLoyaltyAccount
+} from "@/hooks/useMarketing";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -29,10 +38,47 @@ export default function Checkout() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
-    const { cartItems, total, subtotal, shipping } = useCart();
+    const { 
+        cartItems, 
+        cartId,
+        total, 
+        subtotal, 
+        shipping,
+        appliedGiftCardCode,
+        appliedGiftCardAmount,
+        appliedReferralCode,
+        appliedReferralDiscount,
+        appliedLoyaltyPoints,
+        appliedLoyaltyDiscount,
+        totalDiscount
+    } = useCart();
     const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile();
     const updateProfileMutation = useUpdateProfile();
     const checkoutMutation = useCheckout();
+    
+    // Marketing hooks
+    const { data: loyaltyAccount } = useLoyaltyAccount();
+    const validateGiftCard = useValidateGiftCard();
+    const applyGiftCard = useApplyGiftCardToCart();
+    const validateReferral = useValidateReferralCode();
+    const applyReferral = useApplyReferralToCart();
+    const previewLoyalty = usePreviewLoyaltyRedemption();
+    const applyLoyalty = useApplyLoyaltyToCart();
+    
+    // Discount form states
+    const [giftCardCode, setGiftCardCode] = useState('');
+    const [referralCode, setReferralCode] = useState('');
+    const [loyaltyPoints, setLoyaltyPoints] = useState('');
+    const [showGiftCardInput, setShowGiftCardInput] = useState(false);
+    const [showReferralInput, setShowReferralInput] = useState(false);
+    const [showLoyaltyInput, setShowLoyaltyInput] = useState(false);
+    
+    // Update input visibility based on applied discounts
+    useEffect(() => {
+        setShowGiftCardInput(!appliedGiftCardCode);
+        setShowReferralInput(!appliedReferralCode);
+        setShowLoyaltyInput(!appliedLoyaltyPoints);
+    }, [appliedGiftCardCode, appliedReferralCode, appliedLoyaltyPoints]);
 
     // Memoize storefront ID extraction to prevent re-renders
     const storefrontId = useMemo(() => {
@@ -47,10 +93,11 @@ export default function Checkout() {
         }
     }, [searchParams]);
 
-    // Calculate VAT (20% UK standard rate)
+    // Calculate VAT on discounted subtotal (20% UK standard rate)
     const vatRate = 0.20;
-    const vat = subtotal * vatRate;
-    const totalWithVAT = subtotal + vat + shipping;
+    const discountedSubtotal = Math.max(0, subtotal - (totalDiscount || 0));
+    const vat = discountedSubtotal * vatRate;
+    const totalWithVAT = discountedSubtotal + vat + shipping;
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [addressForm, setAddressForm] = useState<AddressForm>({
@@ -61,6 +108,83 @@ export default function Checkout() {
         country: "UK"
     });
     const [formErrors, setFormErrors] = useState<Partial<AddressForm>>({});
+    
+    // Handle gift card application
+    const handleApplyGiftCard = async () => {
+        if (!giftCardCode.trim() || !cartId) return;
+        
+        try {
+            // Validate first
+            const validation = await validateGiftCard.mutateAsync(giftCardCode.trim());
+            if (!validation.valid) {
+                toast({
+                    title: "Invalid gift card",
+                    description: validation.message,
+                    variant: "destructive",
+                });
+                return;
+            }
+            
+            // Apply to cart
+            await applyGiftCard.mutateAsync({ code: giftCardCode.trim(), cartId });
+            setGiftCardCode('');
+            setShowGiftCardInput(false);
+        } catch (error: any) {
+            // Error handled in hook
+        }
+    };
+    
+    // Handle referral code application
+    const handleApplyReferral = async () => {
+        if (!referralCode.trim() || !cartId) return;
+        
+        try {
+            // Validate first
+            const validation = await validateReferral.mutateAsync(referralCode.trim());
+            if (!validation.valid) {
+                toast({
+                    title: "Invalid referral code",
+                    description: validation.message,
+                    variant: "destructive",
+                });
+                return;
+            }
+            
+            // Apply to cart
+            await applyReferral.mutateAsync({ code: referralCode.trim(), cartId });
+            setReferralCode('');
+            setShowReferralInput(false);
+        } catch (error: any) {
+            // Error handled in hook
+        }
+    };
+    
+    // Handle loyalty points application
+    const handleApplyLoyalty = async () => {
+        const points = parseInt(loyaltyPoints);
+        if (!points || points <= 0 || !cartId) return;
+        
+        if (loyaltyAccount && points > loyaltyAccount.points_balance) {
+            toast({
+                title: "Insufficient points",
+                description: `You only have ${loyaltyAccount.points_balance} points available.`,
+                variant: "destructive",
+            });
+            return;
+        }
+        
+        try {
+            // Preview first
+            await previewLoyalty.mutateAsync({ points, cartId });
+            
+            // Apply to cart
+            await applyLoyalty.mutateAsync({ points, cartId });
+            setLoyaltyPoints('');
+            setShowLoyaltyInput(false);
+        } catch (error: any) {
+            // Error handled in hook
+        }
+    };
 
     // Pre-fill address form from user profile
     useEffect(() => {
@@ -328,6 +452,225 @@ export default function Checkout() {
                                 </CardContent>
                             </Card>
 
+                            {/* Discounts & Rewards */}
+                            <Card className="bg-gray-900/30 border-gray-800">
+                                <CardHeader className="border-b border-gray-800">
+                                    <CardTitle className="flex items-center gap-3 text-white">
+                                        <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                                            <Gift className="h-5 w-5 text-purple-400" />
+                                        </div>
+                                        Discounts & Rewards
+                                    </CardTitle>
+                                    <CardDescription className="text-gray-400 mt-2">
+                                        Apply gift cards, referral codes, or loyalty points
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4 pt-6">
+                                    {/* Gift Card */}
+                                    <div className="space-y-2">
+                                        {appliedGiftCardCode ? (
+                                            <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Check className="h-4 w-4 text-green-400" />
+                                                    <div>
+                                                        <p className="text-sm font-medium text-white">Gift Card Applied</p>
+                                                        <p className="text-xs text-gray-400">{appliedGiftCardCode} - £{appliedGiftCardAmount?.toFixed(2)}</p>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        // Remove gift card - would need remove endpoint
+                                                        setShowGiftCardInput(true);
+                                                    }}
+                                                    className="text-gray-400 hover:text-white"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ) : showGiftCardInput ? (
+                                            <div className="space-y-2">
+                                                <Label htmlFor="gift-card" className="text-gray-300 text-sm">Gift Card Code</Label>
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        id="gift-card"
+                                                        value={giftCardCode}
+                                                        onChange={(e) => setGiftCardCode(e.target.value.toUpperCase())}
+                                                        placeholder="Enter gift card code"
+                                                        className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 font-mono"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                handleApplyGiftCard();
+                                                            }
+                                                        }}
+                                                    />
+                                                    <Button
+                                                        onClick={handleApplyGiftCard}
+                                                        disabled={!giftCardCode.trim() || validateGiftCard.isPending || applyGiftCard.isPending}
+                                                        className="bg-white text-black hover:bg-gray-200"
+                                                    >
+                                                        {applyGiftCard.isPending ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            "Apply"
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => setShowGiftCardInput(true)}
+                                                className="w-full border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
+                                            >
+                                                <Gift className="mr-2 h-4 w-4" />
+                                                Add Gift Card
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    {/* Referral Code */}
+                                    <div className="space-y-2">
+                                        {appliedReferralCode ? (
+                                            <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Check className="h-4 w-4 text-green-400" />
+                                                    <div>
+                                                        <p className="text-sm font-medium text-white">Referral Code Applied</p>
+                                                        <p className="text-xs text-gray-400">{appliedReferralCode} - £{appliedReferralDiscount?.toFixed(2)} discount</p>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setShowReferralInput(true);
+                                                    }}
+                                                    className="text-gray-400 hover:text-white"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ) : showReferralInput ? (
+                                            <div className="space-y-2">
+                                                <Label htmlFor="referral-code" className="text-gray-300 text-sm">Referral Code</Label>
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        id="referral-code"
+                                                        value={referralCode}
+                                                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                                                        placeholder="Enter referral code"
+                                                        className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 font-mono"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                handleApplyReferral();
+                                                            }
+                                                        }}
+                                                    />
+                                                    <Button
+                                                        onClick={handleApplyReferral}
+                                                        disabled={!referralCode.trim() || validateReferral.isPending || applyReferral.isPending}
+                                                        className="bg-white text-black hover:bg-gray-200"
+                                                    >
+                                                        {applyReferral.isPending ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            "Apply"
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => setShowReferralInput(true)}
+                                                className="w-full border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
+                                            >
+                                                <Users className="mr-2 h-4 w-4" />
+                                                Add Referral Code
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    {/* Loyalty Points */}
+                                    {loyaltyAccount && loyaltyAccount.points_balance > 0 && (
+                                        <div className="space-y-2">
+                                            {appliedLoyaltyPoints ? (
+                                                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <Check className="h-4 w-4 text-green-400" />
+                                                        <div>
+                                                            <p className="text-sm font-medium text-white">Loyalty Points Applied</p>
+                                                            <p className="text-xs text-gray-400">{appliedLoyaltyPoints} points - £{appliedLoyaltyDiscount?.toFixed(2)} discount</p>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setShowLoyaltyInput(true);
+                                                        }}
+                                                        className="text-gray-400 hover:text-white"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            ) : showLoyaltyInput ? (
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <Label htmlFor="loyalty-points" className="text-gray-300 text-sm">Loyalty Points</Label>
+                                                        <span className="text-xs text-gray-400">Available: {loyaltyAccount.points_balance.toLocaleString()} points</span>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            id="loyalty-points"
+                                                            type="number"
+                                                            min="100"
+                                                            max={loyaltyAccount.points_balance}
+                                                            value={loyaltyPoints}
+                                                            onChange={(e) => setLoyaltyPoints(e.target.value)}
+                                                            placeholder="Enter points (min 100)"
+                                                            className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-500"
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    handleApplyLoyalty();
+                                                                }
+                                                            }}
+                                                        />
+                                                        <Button
+                                                            onClick={handleApplyLoyalty}
+                                                            disabled={!loyaltyPoints || previewLoyalty.isPending || applyLoyalty.isPending}
+                                                            className="bg-white text-black hover:bg-gray-200"
+                                                        >
+                                                            {applyLoyalty.isPending ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                "Apply"
+                                                            )}
+                                                        </Button>
+                                                    </div>
+                                                    {previewLoyalty.data && (
+                                                        <p className="text-xs text-green-400">
+                                                            {previewLoyalty.data.points_to_redeem} points = £{parseFloat(previewLoyalty.data.discount_amount).toFixed(2)} discount
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => setShowLoyaltyInput(true)}
+                                                    className="w-full border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
+                                                >
+                                                    <Coins className="mr-2 h-4 w-4" />
+                                                    Redeem Points ({loyaltyAccount.points_balance.toLocaleString()} available)
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
                             {/* Payment Information */}
                             <Card className="bg-gray-900/30 border-gray-800">
                                 <CardHeader className="border-b border-gray-800">
@@ -438,6 +781,39 @@ export default function Checkout() {
                                                 <span className="text-gray-400">Subtotal</span>
                                                 <span className="text-white font-medium">£{subtotal.toFixed(2)}</span>
                                             </div>
+                                            
+                                            {/* Applied Discounts */}
+                                            {totalDiscount && totalDiscount > 0 && (
+                                                <>
+                                                    {appliedGiftCardAmount && appliedGiftCardAmount > 0 && (
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-400">Gift Card</span>
+                                                            <span className="text-green-400">-£{appliedGiftCardAmount.toFixed(2)}</span>
+                                                        </div>
+                                                    )}
+                                                    {appliedReferralDiscount && appliedReferralDiscount > 0 && (
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-400">Referral Discount</span>
+                                                            <span className="text-green-400">-£{appliedReferralDiscount.toFixed(2)}</span>
+                                                        </div>
+                                                    )}
+                                                    {appliedLoyaltyDiscount && appliedLoyaltyDiscount > 0 && (
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-400">Loyalty Points</span>
+                                                            <span className="text-green-400">-£{appliedLoyaltyDiscount.toFixed(2)}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex justify-between text-sm font-medium">
+                                                        <span className="text-gray-300">Total Discount</span>
+                                                        <span className="text-green-400">-£{totalDiscount.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-gray-400">Discounted Subtotal</span>
+                                                        <span className="text-white font-medium">£{discountedSubtotal.toFixed(2)}</span>
+                                                    </div>
+                                                </>
+                                            )}
+                                            
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-gray-400">VAT (20%)</span>
                                                 <span className="text-white font-medium">£{vat.toFixed(2)}</span>
@@ -463,6 +839,14 @@ export default function Checkout() {
                                             <div className="p-3 rounded-lg bg-[#00bfff]/10 border border-[#00bfff]/20">
                                                 <p className="text-xs text-[#00bfff] text-center">
                                                     Add <span className="font-semibold">£{(75 - subtotal).toFixed(2)}</span> more for free shipping
+                                                </p>
+                                            </div>
+                                        )}
+                                        
+                                        {totalDiscount && totalDiscount > 0 && (
+                                            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                                                <p className="text-xs text-green-400 text-center">
+                                                    You're saving <span className="font-semibold">£{totalDiscount.toFixed(2)}</span> with discounts!
                                                 </p>
                                             </div>
                                         )}

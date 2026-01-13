@@ -11,7 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile, useUpdateProfile } from '@/hooks/useAuth';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useMyReviews } from '@/hooks/useReviews';
-import { User, Mail, Phone, MapPin, Calendar, Save, ArrowLeft, Heart, Star, ExternalLink } from 'lucide-react';
+import { useLoyaltyAccount, useMyReferralCode } from '@/hooks/useMarketing';
+import { User, Mail, Phone, MapPin, Calendar, Save, ArrowLeft, Heart, Star, ExternalLink, Coins, Users, Gift } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import WishlistItem from '@/components/WishlistItem';
 import ReviewCard from '@/components/ReviewCard';
@@ -24,6 +25,8 @@ export default function ProfilePage() {
     const updateProfileMutation = useUpdateProfile();
     const { wishlistItems, totalItems: wishlistTotal } = useWishlist();
     const { data: myReviews } = useMyReviews({ page_size: 5 });
+    const { data: loyaltyAccount } = useLoyaltyAccount();
+    const { data: myReferralCode } = useMyReferralCode();
 
     const [isEditing, setIsEditing] = useState(false);
     
@@ -456,6 +459,69 @@ export default function ProfilePage() {
                                     )}
                                 </div>
                             )}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Marketing Features Section */}
+                <div className="mt-8">
+                    <Card className="bg-gray-900 border-gray-800">
+                        <CardHeader>
+                            <CardTitle className="text-lg sm:text-xl text-white">Rewards & Benefits</CardTitle>
+                            <CardDescription className="text-sm text-gray-400">
+                                Manage your loyalty points, referrals, and gift cards
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* Loyalty Points */}
+                                <Link href="/loyalty" className="block">
+                                    <div className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <Coins className="h-5 w-5 text-yellow-400" />
+                                            <h3 className="font-semibold text-white">Loyalty Points</h3>
+                                        </div>
+                                        {loyaltyAccount ? (
+                                            <p className="text-2xl font-bold text-white mb-1">
+                                                {loyaltyAccount.points_balance.toLocaleString()}
+                                            </p>
+                                        ) : (
+                                            <p className="text-sm text-gray-400">Start earning points</p>
+                                        )}
+                                        <p className="text-xs text-gray-500">Earn and redeem points</p>
+                                    </div>
+                                </Link>
+
+                                {/* Referrals */}
+                                <Link href="/referrals" className="block">
+                                    <div className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <Users className="h-5 w-5 text-blue-400" />
+                                            <h3 className="font-semibold text-white">Referrals</h3>
+                                        </div>
+                                        {myReferralCode ? (
+                                            <p className="text-sm font-mono text-white mb-1">
+                                                {myReferralCode.referral_code}
+                                            </p>
+                                        ) : (
+                                            <p className="text-sm text-gray-400">Get your code</p>
+                                        )}
+                                        <p className="text-xs text-gray-500">Share and earn rewards</p>
+                                    </div>
+                                </Link>
+
+                                {/* Gift Cards */}
+                                <Link href="/gift-cards" className="block">
+                                    <div className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <Gift className="h-5 w-5 text-pink-400" />
+                                            <h3 className="font-semibold text-white">Gift Cards</h3>
+                                        </div>
+                                        <p className="text-sm text-gray-400 mb-1">Check balance</p>
+                                        <p className="text-xs text-gray-500">Redeem gift cards</p>
+                                    </div>
+                                </Link>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>

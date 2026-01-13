@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Package, Truck, CreditCard, MapPin, Calendar, User, Loader2, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Package, Truck, CreditCard, MapPin, Calendar, User, Loader2, CheckCircle, Clock, AlertCircle, XCircle, Gift, Users, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -213,6 +213,72 @@ export default function OrderDetailPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Discounts Applied */}
+                    {(order.applied_gift_card_code || order.applied_referral_code || order.applied_loyalty_points || (order.total_discount && computedPrice(order.total_discount) > 0)) && (
+                        <Card className="bg-gray-900 border-gray-800 border-l-4 border-l-green-500">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-white">
+                                    <Gift className="h-5 w-5 text-green-400" />
+                                    Discounts Applied
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-3">
+                                    {order.applied_gift_card_code && (
+                                        <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <Gift className="h-4 w-4 text-green-400" />
+                                                <div>
+                                                    <p className="text-sm font-medium text-white">Gift Card</p>
+                                                    <p className="text-xs text-gray-400">{order.applied_gift_card_code}</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-green-400 font-semibold">
+                                                -£{computedPrice(order.applied_gift_card_amount || 0).toFixed(2)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {order.applied_referral_code && (
+                                        <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <Users className="h-4 w-4 text-green-400" />
+                                                <div>
+                                                    <p className="text-sm font-medium text-white">Referral Code</p>
+                                                    <p className="text-xs text-gray-400">{order.applied_referral_code}</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-green-400 font-semibold">
+                                                -£{computedPrice(order.applied_referral_discount || 0).toFixed(2)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {order.applied_loyalty_points && (
+                                        <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <Coins className="h-4 w-4 text-green-400" />
+                                                <div>
+                                                    <p className="text-sm font-medium text-white">Loyalty Points</p>
+                                                    <p className="text-xs text-gray-400">{order.applied_loyalty_points.toLocaleString()} points redeemed</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-green-400 font-semibold">
+                                                -£{computedPrice(order.applied_loyalty_discount || 0).toFixed(2)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {order.total_discount && computedPrice(order.total_discount) > 0 && (
+                                        <div className="flex items-center justify-between pt-3 border-t border-gray-700">
+                                            <span className="text-sm font-semibold text-gray-300">Total Discount</span>
+                                            <span className="text-lg font-bold text-green-400">
+                                                -£{computedPrice(order.total_discount).toFixed(2)}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* Shipping Address */}
                     {order.shipping_address && (

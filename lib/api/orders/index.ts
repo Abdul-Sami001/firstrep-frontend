@@ -33,6 +33,14 @@ export interface Order {
     reseller_id?: string | null;
     storefront_id?: string | null;
     storefront_slug?: string | null;
+    // Marketing discount fields (from backend)
+    applied_gift_card_code?: string | null;
+    applied_gift_card_amount?: string;
+    applied_referral_code?: string | null;
+    applied_referral_discount?: string;
+    applied_loyalty_points?: number;
+    applied_loyalty_discount?: string;
+    total_discount?: string;
 }
 
 export interface OrderFilters {

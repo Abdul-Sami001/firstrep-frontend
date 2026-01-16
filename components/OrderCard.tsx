@@ -167,7 +167,7 @@ export default function OrderCard({ order }: OrderCardProps) {
                                     <div className="relative w-12 h-12 flex-shrink-0 rounded-md overflow-hidden border border-gray-700">
                                         <Image
                                             src={item.product_image}
-                                            alt={item.product_name || `Product ${item.product.slice(0, 8)}`}
+                                            alt={item.product_name || (item.product ? `Product ${item.product.slice(0, 8)}` : 'Product image')}
                                             width={48}
                                             height={48}
                                             className="w-full h-full object-cover"
@@ -182,7 +182,7 @@ export default function OrderCard({ order }: OrderCardProps) {
                                 <div className="flex-1 min-w-0">
                                     {/* Product Name - Using new API field */}
                                     <span className="text-sm font-medium block truncate text-white">
-                                        {item.product_name || `Product #${item.product.slice(0, 8)}`}
+                                        {item.product_name || (item.product ? `Product #${item.product.slice(0, 8)}` : 'Unknown Product')}
                                     </span>
                                     <div className="text-xs text-gray-400 space-y-1">
                                         <div>

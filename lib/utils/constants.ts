@@ -127,5 +127,8 @@ export const QUERY_KEYS = {
             DETAIL: (id: string) => ['marketing', 'gift-cards', 'detail', id] as const,
             BY_CODE: (code: string) => ['marketing', 'gift-cards', 'by-code', code] as const,
         },
+        PROMOTIONS: {
+            ACTIVE: ['marketing', 'promotions', 'active'] as const,
+        },
     },
 } as const;

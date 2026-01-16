@@ -121,9 +121,29 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                         <p className="text-xs text-gray-400 mb-1">
                           {product.category?.name || 'Uncategorized'}
                         </p>
-                        <p className="text-sm font-bold text-[#00bfff]">
-                          {product.currency || '£'}{typeof product.price === 'number' ? product.price.toFixed(2) : (product.price ? Number(product.price).toFixed(2) : '0.00')}
-                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-bold text-[#00bfff]">
+                            {product.currency || '£'}{typeof product.current_price === 'number' 
+                              ? product.current_price.toFixed(2) 
+                              : (product.current_price 
+                                  ? Number(product.current_price).toFixed(2) 
+                                  : (product.retail_price 
+                                      ? Number(product.retail_price).toFixed(2) 
+                                      : (product.price 
+                                          ? Number(product.price).toFixed(2) 
+                                          : '0.00')))}
+                          </p>
+                          {product.is_on_sale && product.retail_price && product.current_price && product.retail_price > product.current_price && (
+                            <p className="text-xs text-gray-500 line-through">
+                              {product.currency || '£'}{Number(product.retail_price).toFixed(2)}
+                            </p>
+                          )}
+                          {product.is_on_sale && (
+                            <span className="text-xs bg-red-900/30 text-red-400 border border-red-800 px-1.5 py-0.5 rounded">
+                              SALE
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -312,7 +312,7 @@ export default function OrderDetailPage() {
                                             <div className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border border-gray-700">
                                                 <Image
                                                     src={item.product_image}
-                                                    alt={item.product_name || `Product ${item.product.slice(0, 8)}`}
+                                                    alt={item.product_name || (item.product ? `Product ${item.product.slice(0, 8)}` : 'Product image')}
                                                     width={80}
                                                     height={80}
                                                     className="w-full h-full object-cover"
@@ -327,7 +327,7 @@ export default function OrderDetailPage() {
                                         <div className="flex-1 min-w-0">
                                             {/* Product Name - Using new API field */}
                                             <p className="font-medium text-base mb-1 text-white">
-                                                {item.product_name || `Product #${item.product.slice(0, 8).toUpperCase()}`}
+                                                {item.product_name || (item.product ? `Product #${item.product.slice(0, 8).toUpperCase()}` : 'Unknown Product')}
                                             </p>
                                             <div className="text-sm text-gray-400 space-y-1">
                                                 <div>

@@ -57,6 +57,26 @@ export default function ProductDetailPage() {
 
     const toNum = (v: any) => (typeof v === 'number' ? v : parseFloat(String(v || 0)));
 
+    // Get pricing information using new pricing system
+    const getDisplayPrice = () => {
+      if (selectedVariant?.price_override != null) {
+        return toNum(selectedVariant.price_override);
+      }
+      return product?.current_price ?? product?.retail_price ?? product?.price ?? 0;
+    };
+    
+    const getRetailPrice = () => {
+      if (selectedVariant?.price_override != null) {
+        return toNum(selectedVariant.price_override);
+      }
+      return product?.retail_price ?? product?.price ?? 0;
+    };
+    
+    const isOnSale = product?.is_on_sale ?? false;
+    const saleInfo = product?.sale_info;
+    const displayPrice = getDisplayPrice();
+    const retailPrice = getRetailPrice();
+
     const images = product?.images ?? [];
     const heroSrc = images[currentImageIndex]?.image || '';
     const heroAlt = images[currentImageIndex]?.alt_text || product?.title || 'Product image';
@@ -103,9 +123,6 @@ export default function ProductDetailPage() {
 
     const handleAddToCart = () => {
         if (!product || !selectedVariant || (selectedVariant?.stock ?? 0) <= 0) return;
-
-        const computedPrice =
-            selectedVariant?.price_override != null ? toNum(selectedVariant.price_override) : toNum(product?.price || 0);
 
         // Fix: Pass only the IDs as strings, not objects
         addToCart(
@@ -248,14 +265,34 @@ export default function ProductDetailPage() {
 
                             {/* Price */}
                             <div className="mb-4 md:mb-6" data-testid="text-product-price">
-                                <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
-                                    {product?.currency || 'GBP'}{' '}
-                                    {Number(
-                                        selectedVariant?.price_override != null
-                                            ? selectedVariant.price_override
-                                            : product?.price || 0
-                                    ).toFixed(2)}
-                                </span>
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                        <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
+                                            {product?.currency || 'GBP'}{' '}
+                                            {Number(displayPrice).toFixed(2)}
+                                        </span>
+                                        {isOnSale && retailPrice > displayPrice && (
+                                            <span className="text-lg md:text-xl lg:text-2xl text-gray-500 line-through">
+                                                {product?.currency || 'GBP'}{' '}
+                                                {Number(retailPrice).toFixed(2)}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {isOnSale && saleInfo && (
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-900/30 text-red-400 border border-red-800">
+                                                SALE
+                                            </span>
+                                            <span className="text-sm md:text-base text-green-400 font-medium">
+                                                Save {product?.currency || 'GBP'}{' '}
+                                                {Number(saleInfo.discount_amount || 0).toFixed(2)}
+                                                {saleInfo.discount_percentage && (
+                                                    <span> ({Number(saleInfo.discount_percentage).toFixed(0)}% off)</span>
+                                                )}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Rating Summary */}

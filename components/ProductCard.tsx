@@ -17,6 +17,11 @@ interface ProductCardProps {
     image: string;
     hoverImage?: string;
     category?: string;
+    // Support new pricing fields for backward compatibility
+    current_price?: number;
+    retail_price?: number;
+    is_on_sale?: boolean;
+    sale_info?: any;
   };
   priority?: boolean;
 }
@@ -33,7 +38,34 @@ export default function ProductCard({
 
   const productId = product?.id || '';
   const productName = isApiProduct ? product?.title || '' : product?.name || '';
-  const productPrice = product?.price || 0;
+  
+  // Use new pricing system: current_price for display, fallback to price for backward compatibility
+  const getDisplayPrice = () => {
+    if (isApiProduct) {
+      const apiProduct = product as Product;
+      return apiProduct.current_price ?? apiProduct.retail_price ?? apiProduct.price ?? 0;
+    }
+    return (product as any).current_price ?? product?.price ?? 0;
+  };
+  
+  const getRetailPrice = () => {
+    if (isApiProduct) {
+      const apiProduct = product as Product;
+      return apiProduct.retail_price ?? apiProduct.price ?? 0;
+    }
+    return (product as any).retail_price ?? product?.price ?? 0;
+  };
+  
+  const isOnSale = isApiProduct 
+    ? (product as Product).is_on_sale ?? false
+    : (product as any).is_on_sale ?? false;
+  
+  const saleInfo = isApiProduct 
+    ? (product as Product).sale_info
+    : (product as any).sale_info;
+  
+  const productPrice = getDisplayPrice();
+  const retailPrice = getRetailPrice();
 
   const primaryImage = isApiProduct
     ? product?.images?.find(img => img?.position === 0)?.image ||
@@ -75,12 +107,28 @@ export default function ProductCard({
 
   const formatPrice = () => {
     const currency = isApiProduct ? product?.currency || 'GBP' : 'GBP';
-    const price = computedPrice
+    const displayPrice = computedPrice;
+    const showOriginalPrice = isOnSale && retailPrice > displayPrice;
 
     return (
-      <span className="text-base md:text-lg font-semibold text-white">
-        {currency} {Number(price).toFixed(2)}
-      </span>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-base md:text-lg font-semibold text-white">
+            {currency} {Number(displayPrice).toFixed(2)}
+          </span>
+          {showOriginalPrice && (
+            <span className="text-sm text-gray-500 line-through">
+              {currency} {Number(retailPrice).toFixed(2)}
+            </span>
+          )}
+        </div>
+        {isOnSale && saleInfo && (
+          <span className="text-xs text-green-400 font-medium">
+            Save {currency} {Number(saleInfo.discount_amount || 0).toFixed(2)} 
+            {saleInfo.discount_percentage && ` (${Number(saleInfo.discount_percentage).toFixed(0)}% off)`}
+          </span>
+        )}
+      </div>
     );
   };
 
@@ -134,8 +182,15 @@ export default function ProductCard({
         {/* Loading State */}
         {imageLoading && <div className="absolute inset-0 bg-muted animate-pulse" />}
 
-        {/* Popularity Badge */}
-        {isApiProduct && product?.popularity && product.popularity > 100 && (
+        {/* Sale Badge */}
+        {isOnSale && (
+          <div className="absolute top-3 right-3 bg-gradient-to-r from-red-600 to-red-500 text-white px-2.5 py-1 rounded-md text-xs font-semibold z-20 shadow-lg shadow-red-500/30 animate-pulse">
+            SALE
+          </div>
+        )}
+        
+        {/* Popularity Badge - Show only if not on sale */}
+        {!isOnSale && isApiProduct && product?.popularity && product.popularity > 100 && (
           <div className="absolute top-3 right-3 bg-gradient-to-r from-[#00bfff] to-[#0ea5e9] text-white px-2.5 py-1 rounded-md text-xs font-semibold z-20 shadow-lg shadow-[#00bfff]/30">
             Popular
           </div>

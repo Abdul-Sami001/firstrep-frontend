@@ -9,11 +9,20 @@ export interface CartItem {
     variant?: string | null; // Variant ID
     variant_name?: string | null;
     quantity: number;
-    price_at_time: number;
+    price_at_time: number; // Price paid (current_price if on sale, retail_price if not)
+    retail_price_at_time?: number; // Original/retail price at time of adding to cart (for showing savings)
     subtotal: number;
     product_image?: string | null; // Product image URL
     size?: string | null; // Product size from variant
     color?: string | null; // Product color from variant
+    // Note: Backend should provide retail_price_at_time to show original price vs sale price
+}
+
+export interface AppliedPromotionInfo {
+    code: string;
+    name: string;
+    discount_amount: string;
+    description?: string;
 }
 
 export interface Cart {
@@ -29,6 +38,9 @@ export interface Cart {
     applied_referral_discount?: number | string;
     applied_loyalty_points?: number;
     applied_loyalty_discount?: number | string;
+    applied_promotion_code?: string | null;
+    applied_promotion_discount?: number | string;
+    applied_promotion_info?: AppliedPromotionInfo | null; // Promotion details from backend
     total_discount?: number | string;
 }
 
@@ -36,6 +48,9 @@ export interface AddToCartRequest {
     product: string; // Product ID
     variant?: string; // Variant ID
     quantity?: number;
+    // Note: Backend should use current_price (not retail_price) when storing price_at_time
+    // If backend supports explicit price, we can add it here:
+    // price?: number; // Optional: Explicit price to use (should be current_price if product is on sale)
 }
 
 export interface UpdateCartItemRequest {

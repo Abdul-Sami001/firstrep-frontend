@@ -118,6 +118,83 @@ export interface CreateGiftCardResponse {
     message: string;
 }
 
+// Public Promotion (customer-facing, safe fields only)
+export interface PublicPromotion {
+    id: string;
+    code: string;
+    name: string;
+    description?: string;
+    promotion_type: 'percentage' | 'fixed' | 'free_shipping';
+    discount_value: string; // Percentage (0-100) or fixed amount
+    discount_display: string; // Pre-formatted discount text (e.g., "20% OFF")
+    min_purchase_amount?: string; // Minimum cart total required
+    max_discount_amount?: string | null; // Max discount cap (for percentage)
+    start_date: string;
+    end_date: string;
+}
+
+// Promotion Types (full admin interface)
+export interface Promotion {
+    id: string;
+    code: string;
+    name: string;
+    description?: string;
+    promotion_type: 'percentage' | 'fixed' | 'free_shipping';
+    discount_value: string; // Percentage (0-100) or fixed amount
+    min_purchase_amount?: string; // Minimum cart total required
+    max_discount_amount?: string | null; // Max discount cap (for percentage)
+    applicable_to: 'all' | 'products' | 'categories';
+    product_ids?: string[]; // Product IDs if applicable_to is 'products'
+    category_ids?: string[]; // Category IDs if applicable_to is 'categories'
+    usage_limit?: number | null; // Total usage limit
+    usage_limit_per_user?: number | null; // Usage limit per user
+    used_count?: number; // Number of times used
+    start_date: string;
+    end_date: string;
+    is_active: boolean;
+    is_valid?: boolean; // Whether promotion is currently valid (date range + active)
+    remaining_uses?: number | null; // Remaining uses if usage_limit is set
+    created_by?: string; // User ID who created it
+    created_by_email?: string; // Email of creator
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface ValidatePromotionRequest {
+    code: string;
+    cart_id?: string; // Optional but recommended
+}
+
+export interface ValidatePromotionResponse {
+    valid: boolean;
+    promotion?: Promotion;
+    discount_amount?: string; // Calculated discount for current cart
+    message: string;
+}
+
+export interface ApplyPromotionRequest {
+    code: string;
+    cart_id: string;
+}
+
+export interface ApplyPromotionResponse {
+    success: boolean;
+    discount_amount: string;
+    cart_subtotal: string;
+    cart_total: string; // After discount
+    message: string;
+}
+
+export interface RemovePromotionRequest {
+    cart_id: string;
+}
+
+export interface RemovePromotionResponse {
+    success: boolean;
+    message: string;
+    cart_subtotal: string;
+}
+
 // ============================================================================
 // API Methods - Production Ready
 // ============================================================================
@@ -330,6 +407,43 @@ export const marketingApi = {
         };
     }> =>
         api.post('/marketing/loyalty/apply-to-cart/', { points, cart_id: cartId }),
+
+    // ========================================================================
+    // Promotion Endpoints
+    // ========================================================================
+    
+    /**
+     * Get active promotions (public customer-facing endpoint)
+     * GET /api/v1/public/active-promotions/
+     * Permission: Public (works for guests and authenticated users)
+     * Returns only active promotions filtered by date range
+     */
+    getActivePromotions: (): Promise<PublicPromotion[]> =>
+        api.get<PublicPromotion[]>('/public/active-promotions/'),
+    
+    /**
+     * Validate promotion code
+     * POST /api/v1/promotions/validate/
+     * Permission: Public (works for guests and authenticated users)
+     */
+    validatePromotion: (data: ValidatePromotionRequest): Promise<ValidatePromotionResponse> =>
+        api.post<ValidatePromotionResponse>('/promotions/validate/', data),
+
+    /**
+     * Apply promotion to cart
+     * POST /api/v1/promotions/apply/
+     * Permission: Public (works for guests and authenticated users)
+     */
+    applyPromotionToCart: (data: ApplyPromotionRequest): Promise<ApplyPromotionResponse> =>
+        api.post<ApplyPromotionResponse>('/promotions/apply/', data),
+
+    /**
+     * Remove promotion from cart
+     * POST /api/v1/promotions/remove/
+     * Permission: Public (works for guests and authenticated users)
+     */
+    removePromotionFromCart: (data: RemovePromotionRequest): Promise<RemovePromotionResponse> =>
+        api.post<RemovePromotionResponse>('/promotions/remove/', data),
 };
 
 export default marketingApi;

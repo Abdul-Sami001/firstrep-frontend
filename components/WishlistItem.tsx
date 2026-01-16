@@ -2,7 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Trash2, ShoppingCart, X } from 'lucide-react';
+import { Trash2, ShoppingCart, X, TrendingDown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { WishlistItem as WishlistItemType } from '@/lib/api/wishlist';
@@ -50,9 +50,21 @@ export default function WishlistItem({
         return `${currency} ${Number(price).toFixed(2)}`;
     };
 
-    const isPriceChanged = item.price_at_add !== item.product_price;
-    const priceChangePercent = isPriceChanged && item.product_price 
-        ? Math.round(((item.product_price - item.price_at_add) / item.price_at_add) * 100)
+    // Use new pricing system: prefer current_price, fallback to product_price, then price_at_add
+    const currentPrice = (item as any).current_price ?? item.product_price ?? item.price_at_add;
+    const retailPrice = (item as any).retail_price ?? item.product_price ?? item.price_at_add;
+    const isOnSale = (item as any).is_on_sale ?? false;
+    const saleInfo = (item as any).sale_info;
+    
+    const isPriceChanged = item.price_at_add !== currentPrice;
+    const priceChangePercent = isPriceChanged && currentPrice 
+        ? Math.round(((currentPrice - item.price_at_add) / item.price_at_add) * 100)
+        : 0;
+    
+    // Calculate savings if price dropped
+    const hasPriceDrop = isPriceChanged && currentPrice < item.price_at_add;
+    const savingsAmount = hasPriceDrop 
+        ? item.price_at_add - currentPrice 
         : 0;
 
     return (
@@ -116,17 +128,28 @@ export default function WishlistItem({
                     )}
 
                     {/* Price Info */}
-                    <div className="mt-2 space-y-1">
-                        <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm text-white">
-                                {item.product_price 
-                                    ? formatPrice(item.product_price, item.product_currency)
-                                    : formatPrice(item.price_at_add)
-                                }
-                            </span>
+                    <div className="mt-2 space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold text-sm text-white">
+                                    {formatPrice(currentPrice, item.product_currency || 'GBP')}
+                                </span>
+                                {isOnSale && retailPrice > currentPrice && (
+                                    <span className="text-xs text-gray-500 line-through">
+                                        {formatPrice(retailPrice, item.product_currency || 'GBP')}
+                                    </span>
+                                )}
+                            </div>
+                            
+                            {/* Sale Badge */}
+                            {isOnSale && (
+                                <Badge className="text-xs bg-red-900/30 text-red-400 border-red-800">
+                                    SALE
+                                </Badge>
+                            )}
                             
                             {/* Price Change Badge */}
-                            {isPriceChanged && priceChangePercent !== 0 && (
+                            {isPriceChanged && priceChangePercent !== 0 && !isOnSale && (
                                 <Badge 
                                     variant={priceChangePercent > 0 ? "destructive" : "default"}
                                     className="text-xs bg-red-900/30 text-red-400 border-red-800"
@@ -135,11 +158,38 @@ export default function WishlistItem({
                                 </Badge>
                             )}
                         </div>
+                        
+                        {/* Sale Discount Info */}
+                        {isOnSale && saleInfo && (
+                            <div className="text-xs text-green-400 font-medium">
+                                Save {item.product_currency || 'GBP'} {Number(saleInfo.discount_amount || 0).toFixed(2)}
+                                {saleInfo.discount_percentage && (
+                                    <span> ({Number(saleInfo.discount_percentage).toFixed(0)}% off)</span>
+                                )}
+                            </div>
+                        )}
 
-                        {/* Original Price */}
-                        {isPriceChanged && (
+                        {/* Enhanced Price Drop Alert */}
+                        {hasPriceDrop && !isOnSale && (
+                            <div className="mt-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                                <div className="flex items-center gap-2">
+                                    <TrendingDown className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <p className="text-xs font-semibold text-green-400">
+                                            🔥 Price dropped {Math.abs(priceChangePercent)}%!
+                                        </p>
+                                        <p className="text-xs text-green-300/80 mt-0.5">
+                                            Save {formatPrice(savingsAmount, item.product_currency || 'GBP')} from when you added this
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Original Price (when added) - Only show if price increased */}
+                        {isPriceChanged && !isOnSale && !hasPriceDrop && (
                             <div className="text-xs text-gray-500 line-through">
-                                Added at: {formatPrice(item.price_at_add)}
+                                Added at: {formatPrice(item.price_at_add, item.product_currency || 'GBP')}
                             </div>
                         )}
                     </div>

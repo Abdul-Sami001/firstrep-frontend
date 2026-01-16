@@ -16,7 +16,9 @@ interface CartContextType {
   totalItems: number;
   subtotal: number;
   shipping: number;
+  vat: number;
   total: number;
+  totalSavings: number; // Total savings from sales + discounts
   // Discount fields
   appliedGiftCardCode?: string | null;
   appliedGiftCardAmount?: number;
@@ -24,6 +26,14 @@ interface CartContextType {
   appliedReferralDiscount?: number;
   appliedLoyaltyPoints?: number;
   appliedLoyaltyDiscount?: number;
+  appliedPromotionCode?: string | null;
+  appliedPromotionDiscount?: number;
+  appliedPromotionInfo?: {
+    code: string;
+    name: string;
+    discount_amount: string;
+    description?: string;
+  } | null;
   totalDiscount?: number;
   isCartOpen: boolean;
   openCart: () => void;
@@ -191,24 +201,39 @@ export const CartProvider = ({ children }: CartProviderProps) => {
   }));
 
   const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const apiSubtotalRaw = apiCart?.total;
-  const subtotal = apiSubtotalRaw != null
-    ? Number(apiSubtotalRaw)
-    : cartItems.reduce((total, item) => total + (Number(item.price_at_time) * item.quantity), 0);
+  
+  // Calculate subtotal from cart items (sum of price_at_time * quantity)
+  // Note: Backend's 'total' field might be final total, so we calculate subtotal from items
+  const subtotal = cartItems.reduce((total, item) => total + (Number(item.price_at_time) * item.quantity), 0);
   
   // Get discount amounts from cart (backend calculates these)
   const totalDiscount = apiCart?.total_discount ? Number(apiCart.total_discount) : 0;
   const appliedGiftCardAmount = apiCart?.applied_gift_card_amount ? Number(apiCart.applied_gift_card_amount) : 0;
   const appliedReferralDiscount = apiCart?.applied_referral_discount ? Number(apiCart.applied_referral_discount) : 0;
   const appliedLoyaltyDiscount = apiCart?.applied_loyalty_discount ? Number(apiCart.applied_loyalty_discount) : 0;
+  const appliedPromotionDiscount = apiCart?.applied_promotion_discount ? Number(apiCart.applied_promotion_discount) : 0;
   
   // Calculate discounted subtotal (backend should provide this, but calculate as fallback)
   const discountedSubtotal = Math.max(0, subtotal - totalDiscount);
-  // Free shipping threshold is based on original subtotal, not discounted (per business rules)
-  const shipping = subtotal > 75 ? 0 : 4.99;
+  // Shipping: Show "Free" until backend shipping is configured
+  // TODO: Replace with actual shipping calculation from backend when shipping carriers are configured
+  const shipping = 0; // Free shipping until backend shipping is configured
   // VAT is calculated on discounted subtotal (20% UK rate)
   const vat = discountedSubtotal * 0.20;
+  // Total = discounted subtotal + VAT + shipping
   const total = discountedSubtotal + vat + shipping;
+  
+  // Calculate total savings from sales (original price vs sale price)
+  const savingsFromSales = cartItems.reduce((total, item) => {
+    if (item.retail_price_at_time && item.retail_price_at_time > item.price_at_time) {
+      const savingsPerItem = Number(item.retail_price_at_time) - Number(item.price_at_time);
+      return total + (savingsPerItem * item.quantity);
+    }
+    return total;
+  }, 0);
+  
+  // Total savings = savings from sales + discounts
+  const totalSavings = savingsFromSales + totalDiscount;
 
   const value: CartContextType = {
     cartItems,
@@ -220,13 +245,18 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     totalItems,
     subtotal,
     shipping,
+    vat,
     total,
+    totalSavings,
     appliedGiftCardCode: apiCart?.applied_gift_card_code || null,
     appliedGiftCardAmount,
     appliedReferralCode: apiCart?.applied_referral_code || null,
     appliedReferralDiscount,
     appliedLoyaltyPoints: apiCart?.applied_loyalty_points || undefined,
     appliedLoyaltyDiscount,
+    appliedPromotionCode: apiCart?.applied_promotion_code || null,
+    appliedPromotionDiscount,
+    appliedPromotionInfo: apiCart?.applied_promotion_info || null,
     totalDiscount,
     isCartOpen,
     openCart,

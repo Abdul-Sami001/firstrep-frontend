@@ -30,6 +30,22 @@ export interface ProductImage {
     position: number;
 }
 
+// Sale information interface
+export interface SaleInfo {
+    sale_price: number;
+    original_price: number;
+    discount_amount: number;
+    discount_percentage: number;
+    sale?: {
+        id: string;
+        name?: string;
+        description?: string;
+        start_date?: string;
+        end_date?: string;
+        [key: string]: any;
+    };
+}
+
 export interface Product {
     id: string;
     seller: string;
@@ -37,7 +53,13 @@ export interface Product {
     title: string;
     slug: string;
     description: string;
-    price: number;
+    // Pricing fields
+    price: number; // Legacy/backward compatibility - maps to retail_price
+    retail_price: number; // Base/regular price - always present
+    cost_price?: number; // Internal cost (admin/internal use only)
+    current_price: number; // Price to display (sale price if on sale, otherwise retail_price)
+    is_on_sale: boolean; // Boolean flag indicating if product has active sale
+    sale_info?: SaleInfo | null; // Sale details (null if not on sale)
     currency: string;
     is_active: boolean;
     specifications: Record<string, any>; // JSON field

@@ -4,7 +4,7 @@ import { api } from '../client';
 // Backend-Matching Types (Updated to match your API response)
 export interface OrderItem {
     id: number; // Changed from string to number
-    product: string; // Product ID
+    product: string | null; // Product ID (can be null in some cases)
     variant?: string | null; // Variant ID
     quantity: number;
     price: string; // Changed to string to match API

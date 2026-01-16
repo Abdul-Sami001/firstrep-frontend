@@ -5,7 +5,8 @@ import {
     RedeemLoyaltyPointsRequest,
     RedeemGiftCardRequest,
     CreateReferralRequest,
-    CreateGiftCardRequest
+    CreateGiftCardRequest,
+    ValidatePromotionRequest
 } from '@/lib/api/marketing';
 import { QUERY_KEYS } from '@/lib/utils/constants';
 import { useToast } from '@/hooks/use-toast';
@@ -373,6 +374,92 @@ export const useApplyLoyaltyToCart = () => {
             toast({
                 title: "Failed to apply points",
                 description: error.response?.data?.error || "Failed to apply loyalty points",
+                variant: "destructive",
+            });
+        },
+    });
+};
+
+// ============================================================================
+// Promotion Hooks
+// ============================================================================
+
+/**
+ * Validate promotion code for checkout
+ */
+export const useValidatePromotion = () => {
+    return useMutation({
+        mutationFn: (data: ValidatePromotionRequest) => marketingApi.validatePromotion(data),
+    });
+};
+
+/**
+ * Apply promotion code to cart
+ */
+export const useApplyPromotionToCart = () => {
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    return useMutation({
+        mutationFn: ({ code, cartId }: { code: string; cartId: string }) => 
+            marketingApi.applyPromotionToCart({ code, cart_id: cartId }),
+        onSuccess: (response) => {
+            // Invalidate cart to refetch with updated discounts
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CART.ALL });
+            toast({
+                title: "Promotion applied!",
+                description: response.message || "Promotion code has been applied to your cart.",
+            });
+        },
+        onError: (error: any) => {
+            toast({
+                title: "Failed to apply promotion",
+                description: error.response?.data?.error || error.response?.data?.message || "Invalid or expired promotion code",
+                variant: "destructive",
+            });
+        },
+    });
+};
+
+/**
+ * Get active promotions (public)
+ */
+export const useActivePromotions = () => {
+    return useQuery({
+        queryKey: QUERY_KEYS.MARKETING.PROMOTIONS.ACTIVE,
+        queryFn: marketingApi.getActivePromotions,
+        ...QUERY_CONFIG,
+        staleTime: 2 * 60 * 1000, // 2 minutes - promotions change frequently
+        retry: (failureCount, error: any) => {
+            // Don't retry on 404 (no promotions available)
+            if (error?.response?.status === 404) return false;
+            return failureCount < 2;
+        },
+    });
+};
+
+/**
+ * Remove promotion from cart
+ */
+export const useRemovePromotionFromCart = () => {
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    return useMutation({
+        mutationFn: (cartId: string) => 
+            marketingApi.removePromotionFromCart({ cart_id: cartId }),
+        onSuccess: (response) => {
+            // Invalidate cart to refetch with updated discounts
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CART.ALL });
+            toast({
+                title: "Promotion removed",
+                description: response.message || "Promotion has been removed from your cart.",
+            });
+        },
+        onError: (error: any) => {
+            toast({
+                title: "Failed to remove promotion",
+                description: error.response?.data?.error || error.response?.data?.message || "Failed to remove promotion",
                 variant: "destructive",
             });
         },

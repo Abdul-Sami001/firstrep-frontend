@@ -1,4 +1,4 @@
-import { X, Minus, Plus, Trash2, Loader2, ShoppingBag } from 'lucide-react';
+import { X, Minus, Plus, Trash2, Loader2, ShoppingBag, Sparkles, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCart } from '@/contexts/CartContext';
@@ -12,13 +12,24 @@ export default function Cart() {
     removeItem,
     totalItems,
     subtotal,
+    totalDiscount,
     shipping,
+    vat,
     total,
+    totalSavings,
     isCartOpen,
     closeCart,
     isLoading,
     error
   } = useCart();
+  
+  // Free shipping threshold
+  const FREE_SHIPPING_THRESHOLD = 75;
+  const progress = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
+  const remaining = Math.max(FREE_SHIPPING_THRESHOLD - subtotal, 0);
+  
+  // Calculate discounted subtotal for display
+  const discountedSubtotal = Math.max(0, subtotal - (totalDiscount || 0));
 
   // ✅ Don't render if cart is closed
   if (!isCartOpen) return null;
@@ -133,9 +144,32 @@ export default function Cart() {
                           <span className="text-xs text-gray-400">Color: <span className="text-gray-300">{item.color}</span></span>
                         )}
                       </div>
-                      <p className="font-bold text-white mb-3" data-testid={`text-cart-item-price-${item.id}`}>
-                        ${Number((item as any).price || item.price_at_time).toFixed(2)}
-                      </p>
+                      <div className="mb-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold text-white" data-testid={`text-cart-item-price-${item.id}`}>
+                            £{(Number(item.price_at_time) * item.quantity).toFixed(2)}
+                          </p>
+                          {/* Show original price if item was on sale */}
+                          {item.retail_price_at_time && 
+                           item.retail_price_at_time > item.price_at_time && (
+                            <>
+                              <span className="text-xs text-gray-500 line-through">
+                                £{(Number(item.retail_price_at_time) * item.quantity).toFixed(2)}
+                              </span>
+                              <span className="text-xs bg-red-900/30 text-red-400 border border-red-800 px-1.5 py-0.5 rounded">
+                                SALE
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {/* Show savings per item */}
+                        {item.retail_price_at_time && 
+                         item.retail_price_at_time > item.price_at_time && (
+                          <p className="text-xs text-green-400 mt-0.5">
+                            Save £{((Number(item.retail_price_at_time) - Number(item.price_at_time)) * item.quantity).toFixed(2)}
+                          </p>
+                        )}
+                      </div>
 
                       {/* Quantity Controls */}
                       <div className="flex items-center gap-2">
@@ -181,27 +215,93 @@ export default function Cart() {
         {/* Footer - Summary & Checkout */}
         {cartItems.length > 0 && (
           <div className="border-t border-gray-800 p-6 space-y-4 bg-gray-900/30">
+            {/* Savings Summary Banner */}
+            {totalSavings > 0 && (
+              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-green-400 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-green-400">
+                      You saved £{totalSavings.toFixed(2)} today!
+                    </p>
+                    <p className="text-xs text-green-300/80 mt-0.5">
+                      Great savings on your order
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Free Shipping Progress Bar */}
+            {subtotal < FREE_SHIPPING_THRESHOLD && shipping === 0 && (
+              <div className="p-3 rounded-lg bg-[#00bfff]/10 border border-[#00bfff]/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Truck className="h-4 w-4 text-[#00bfff] flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-[#00bfff]">
+                      Add £{remaining.toFixed(2)} more for free shipping
+                    </p>
+                  </div>
+                  <span className="text-xs text-[#00bfff]/80 font-medium">
+                    {progress.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-[#00bfff] to-[#0ea5e9] transition-all duration-500 ease-out"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Subtotal</span>
                 <span className="text-white font-medium" data-testid="text-subtotal">
-                  ${Number(subtotal).toFixed(2)}
+                  £{Number(subtotal).toFixed(2)}
+                </span>
+              </div>
+              
+              {/* Show discounts if any */}
+              {totalDiscount && totalDiscount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Discount</span>
+                  <span className="text-green-400 font-medium">
+                    -£{Number(totalDiscount).toFixed(2)}
+                  </span>
+                </div>
+              )}
+              
+              {totalDiscount && totalDiscount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Discounted Subtotal</span>
+                  <span className="text-white font-medium">
+                    £{discountedSubtotal.toFixed(2)}
+                  </span>
+                </div>
+              )}
+              
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">VAT (20%)</span>
+                <span className="text-white font-medium" data-testid="text-vat">
+                  £{Number(vat).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Shipping</span>
                 <span className="text-white font-medium" data-testid="text-shipping">
                   {shipping === 0 ? (
-                    <span className="text-green-400">FREE</span>
+                    <span className="text-green-400 font-semibold">FREE</span>
                   ) : (
-                    `$${Number(shipping).toFixed(2)}`
+                    `£${Number(shipping).toFixed(2)}`
                   )}
                 </span>
               </div>
               <div className="flex justify-between font-bold text-lg pt-3 border-t border-gray-800">
                 <span className="text-white">Total</span>
                 <span className="text-white" data-testid="text-total">
-                  ${Number(total).toFixed(2)}
+                  £{Number(total).toFixed(2)}
                 </span>
               </div>
             </div>

@@ -63,6 +63,7 @@ export interface CheckoutRequest {
     state: string;
     zip_code: string;
     country: string;
+    email?: string; // Required for guest checkout, optional for authenticated users
     payment_method: 'stripe' | 'paypal' | 'cod' | 'bank_transfer';
     storefront_id?: string; // Optional: UUID or slug of Storefront for reseller attribution
 }

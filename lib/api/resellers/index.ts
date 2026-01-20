@@ -117,10 +117,23 @@ export interface Storefront {
 export interface StorefrontProduct {
   id: string;
   product: string;
+  product_title?: string; // Product title from backend response
   position?: number;
   is_featured?: boolean;
   notes?: string;
   created_at?: string;
+}
+
+export interface CreateStorefrontPayload {
+  name: string;
+  slug: string;
+  type: StorefrontType;
+  address_line1?: string;
+  city?: string;
+  country?: string;
+  notes?: string;
+  commission_rate_override?: string;
+  is_active?: boolean;
 }
 
 export interface MarketingAsset {
@@ -202,6 +215,9 @@ export const resellersApi = {
   getStorefronts: () => api.get<Storefront[]>('/resellers/storefronts/'),
 
   getStorefront: (id: string) => api.get<Storefront>(`/resellers/storefronts/${id}/`),
+
+  createStorefront: (data: CreateStorefrontPayload) =>
+    api.post<Storefront>('/resellers/storefronts/', data),
 
   updateStorefront: (id: string, data: Partial<Storefront>) =>
     api.patch<Storefront>(`/resellers/storefronts/${id}/`, data),

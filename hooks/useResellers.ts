@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import resellersApi, {
   CommissionListParams,
+  CreateStorefrontPayload,
   MarketingAsset,
   PaginatedResponse,
   ResellerAnalyticsOverview,
@@ -102,7 +103,22 @@ export const useResellerStorefronts = () =>
 export const useResellerStorefrontProducts = (storefrontId: string, enabled = true) =>
   useQuery({
     queryKey: QUERY_KEYS.RESELLERS.STOREFRONT_PRODUCTS(storefrontId),
-    queryFn: () => resellersApi.getStorefrontProducts(storefrontId),
+    queryFn: async () => {
+      const data = await resellersApi.getStorefrontProducts(storefrontId);
+      // Ensure we always return an array
+      if (Array.isArray(data)) {
+        return data;
+      }
+      // Handle paginated response if needed
+      if (data && typeof data === 'object' && 'results' in data) {
+        const paginatedData = data as { results: StorefrontProduct[] };
+        if (Array.isArray(paginatedData.results)) {
+          return paginatedData.results;
+        }
+      }
+      // Fallback to empty array
+      return [];
+    },
     enabled,
     ...DEFAULT_QUERY_CONFIG,
   });
@@ -186,6 +202,128 @@ export const useSubmitResellerApplication = () => {
                           'Failed to submit application. Please try again.';
       toast({
         title: 'Application failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useCreateStorefront = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (payload: CreateStorefrontPayload) => resellersApi.createStorefront(payload),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.RESELLERS.STOREFRONTS });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.RESELLERS.ANALYTICS });
+      toast({
+        title: 'Storefront created',
+        description: 'Your storefront has been created successfully.',
+      });
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.message || 
+                          error?.response?.data?.slug?.[0] ||
+                          error?.response?.data?.non_field_errors?.[0] ||
+                          'Failed to create storefront. Please try again.';
+      toast({
+        title: 'Creation failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useUpdateStorefront = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Storefront> }) => 
+      resellersApi.updateStorefront(id, data),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.RESELLERS.STOREFRONTS });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.RESELLERS.ANALYTICS });
+      // Optionally update the specific storefront in cache
+      queryClient.setQueryData([QUERY_KEYS.RESELLERS.STOREFRONTS], (old: Storefront[] | undefined) => {
+        if (!old) return old;
+        return old.map(sf => sf.id === variables.id ? data : sf);
+      });
+      toast({
+        title: 'Storefront updated',
+        description: 'Your storefront has been updated successfully.',
+      });
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.message || 
+                          error?.response?.data?.slug?.[0] ||
+                          error?.response?.data?.non_field_errors?.[0] ||
+                          'Failed to update storefront. Please try again.';
+      toast({
+        title: 'Update failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useBulkAddStorefrontProducts = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ storefrontId, product_ids }: { storefrontId: string; product_ids: string[] }) =>
+      resellersApi.bulkAddStorefrontProducts(storefrontId, product_ids),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.RESELLERS.STOREFRONT_PRODUCTS(variables.storefrontId) 
+      });
+      toast({
+        title: 'Products added',
+        description: `Successfully added ${variables.product_ids.length} product(s) to the storefront.`,
+      });
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.message ||
+                          'Failed to add products. Please try again.';
+      toast({
+        title: 'Add failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useRemoveStorefrontProduct = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ storefrontId, productId }: { storefrontId: string; productId: string }) =>
+      resellersApi.removeStorefrontProduct(storefrontId, productId),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.RESELLERS.STOREFRONT_PRODUCTS(variables.storefrontId) 
+      });
+      toast({
+        title: 'Product removed',
+        description: 'The product has been removed from the storefront.',
+      });
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.message ||
+                          'Failed to remove product. Please try again.';
+      toast({
+        title: 'Remove failed',
         description: errorMessage,
         variant: 'destructive',
       });

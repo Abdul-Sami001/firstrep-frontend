@@ -84,3 +84,54 @@ export function isValidSlug(slug: string): boolean {
   return slugRegex.test(slug);
 }
 
+/**
+ * Generates a storefront page URL
+ * @param slug - Storefront slug
+ * @returns Full URL to storefront page
+ */
+export function getStorefrontUrl(slug: string): string {
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/storefront/${slug}`;
+  }
+  const frontendUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://yourstore.com';
+  return `${frontendUrl}/storefront/${slug}`;
+}
+
+/**
+ * Generates a products page URL with storefront attribution
+ * @param slug - Storefront slug
+ * @returns Full URL to products page with storefront query parameter
+ */
+export function getStorefrontProductsUrl(slug: string): string {
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/products?storefront=${slug}`;
+  }
+  const frontendUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://yourstore.com';
+  return `${frontendUrl}/products?storefront=${slug}`;
+}
+
+/**
+ * Extracts storefront slug from a storefront URL
+ * @param url - Storefront URL (full URL or path)
+ * @returns Storefront slug or null
+ */
+export function extractStorefrontSlugFromUrl(url: string): string | null {
+  try {
+    // Handle both full URLs and paths
+    const urlObj = url.startsWith('http') ? new URL(url) : new URL(url, 'https://example.com');
+    const pathMatch = urlObj.pathname.match(/\/storefront\/([^\/]+)/);
+    if (pathMatch) {
+      return pathMatch[1];
+    }
+    
+    // Check query parameter as fallback
+    const querySlug = urlObj.searchParams.get('storefront');
+    if (querySlug) {
+      return querySlug;
+    }
+    
+    return null;
+  } catch {
+    return null;
+  }
+}

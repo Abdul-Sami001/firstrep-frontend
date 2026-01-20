@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   BadgeCheck,
   Download,
@@ -31,6 +36,12 @@ import {
   FileCheck,
   Grid3x3,
   FolderTree,
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  X,
+  Share2,
 } from "lucide-react";
 import {
   useResellerAnalytics,
@@ -41,8 +52,15 @@ import {
   useResellerStorefrontProducts,
   useResellerStorefronts,
   useUpdateResellerProfile,
+  useCreateStorefront,
+  useUpdateStorefront,
+  useBulkAddStorefrontProducts,
+  useRemoveStorefrontProduct,
   ResellerCommission,
+  Storefront,
 } from "@/hooks/useResellers";
+import { useProducts, useCategories } from "@/hooks/useProducts";
+import StorefrontSharing from "@/components/reseller/StorefrontSharing";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils/formatters";
 
@@ -81,6 +99,24 @@ export default function ResellerDashboard() {
   const [commissionStorefront, setCommissionStorefront] = useState<string | undefined>(undefined);
   const [profileForm, setProfileForm] = useState<Record<string, string>>({});
   const [selectedStorefront, setSelectedStorefront] = useState<string | null>(null);
+  
+  // Storefront management state
+  const [createStorefrontOpen, setCreateStorefrontOpen] = useState(false);
+  const [editStorefrontOpen, setEditStorefrontOpen] = useState(false);
+  const [editingStorefront, setEditingStorefront] = useState<Storefront | null>(null);
+  const [storefrontForm, setStorefrontForm] = useState<Record<string, any>>({});
+  const [storefrontFilters, setStorefrontFilters] = useState<{ type?: string; is_active?: string; search?: string }>({});
+  
+  // Product curation state
+  const [bulkAddProductsOpen, setBulkAddProductsOpen] = useState(false);
+  const [bulkAddStorefrontId, setBulkAddStorefrontId] = useState<string | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [productOrdering, setProductOrdering] = useState<string>("");
+  const [productCategoryFilter, setProductCategoryFilter] = useState<string>("");
+  const [removingProductId, setRemovingProductId] = useState<string | null>(null);
+  const [sharingStorefrontId, setSharingStorefrontId] = useState<string | null>(null);
+  const [sharingStorefrontSlug, setSharingStorefrontSlug] = useState<string>("");
 
   const { data: profile, isLoading: loadingProfile } = useResellerProfile();
   const { data: analytics, isLoading: loadingAnalytics } = useResellerAnalytics();
@@ -97,9 +133,194 @@ export default function ResellerDashboard() {
   );
   const { data: marketingAssets, isLoading: loadingMarketing } = useResellerMarketingAssets();
   const updateProfileMutation = useUpdateResellerProfile();
+  
+  // Storefront mutations
+  const createStorefrontMutation = useCreateStorefront();
+  const updateStorefrontMutation = useUpdateStorefront();
+  const bulkAddProductsMutation = useBulkAddStorefrontProducts();
+  const removeProductMutation = useRemoveStorefrontProduct();
+  
+  // Categories for filtering
+  const { data: categoriesData } = useCategories();
+  const categories = categoriesData || [];
+  
+  // Products for bulk add
+  const { data: productsData, isLoading: loadingProducts } = useProducts({
+    is_active: true,
+    search: productSearchQuery || undefined,
+    category__slug: productCategoryFilter || undefined,
+    ordering: productOrdering || undefined,
+    page_size: 50,
+  });
+  const availableProducts = productsData?.results || [];
+  
+  // Fetch product details for storefront products to show images and prices
+  // Only fetch when we have storefront products
+  const storefrontProductIds = useMemo(() => {
+    if (!storefrontProducts || !Array.isArray(storefrontProducts)) {
+      return [];
+    }
+    return storefrontProducts.map(p => p.product);
+  }, [storefrontProducts]);
+  
+  // Fetch all products to get details for storefront products
+  // In production, you might want to fetch individual products or use a batch endpoint
+  const { data: allProductsData } = useProducts({
+    page_size: 200, // Fetch more products to cover storefront products
+    is_active: true,
+  });
+  
+  const productDetailsMap = useMemo(() => {
+    const map = new Map<string, any>();
+    if (allProductsData?.results && storefrontProductIds.length > 0) {
+      allProductsData.results.forEach((product: any) => {
+        if (storefrontProductIds.includes(product.id)) {
+          map.set(product.id, product);
+        }
+      });
+    }
+    return map;
+  }, [allProductsData, storefrontProductIds]);
+
+  // Auto-select first storefront when "My Product" tab is opened and no storefront is selected
+  useEffect(() => {
+    if (activeTab === "my-product" && !selectedStorefront && storefronts && storefronts.length > 0) {
+      setSelectedStorefront(storefronts[0].id);
+    }
+  }, [activeTab, selectedStorefront, storefronts]);
 
   const commissionsList = commissions?.results ?? [];
   const topStorefronts = analytics?.top_storefronts ?? [];
+  
+  // Filter storefronts
+  const filteredStorefronts = useMemo(() => {
+    if (!storefronts || !Array.isArray(storefronts)) return [];
+    let filtered = [...storefronts];
+    
+    if (storefrontFilters.type) {
+      filtered = filtered.filter(sf => sf.type === storefrontFilters.type);
+    }
+    
+    if (storefrontFilters.is_active !== undefined) {
+      const isActive = storefrontFilters.is_active === "true";
+      filtered = filtered.filter(sf => sf.is_active === isActive);
+    }
+    
+    if (storefrontFilters.search) {
+      const searchLower = storefrontFilters.search.toLowerCase();
+      filtered = filtered.filter(sf => 
+        sf.name.toLowerCase().includes(searchLower) ||
+        sf.slug.toLowerCase().includes(searchLower) ||
+        (sf.city && sf.city.toLowerCase().includes(searchLower)) ||
+        (sf.country && sf.country.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    return filtered;
+  }, [storefronts, storefrontFilters]);
+  
+  // Storefront form handlers
+  const handleStorefrontFormChange = (field: string, value: any) => {
+    setStorefrontForm((prev) => ({ ...prev, [field]: value }));
+  };
+  
+  const handleCreateStorefront = (e: React.FormEvent) => {
+    e.preventDefault();
+    createStorefrontMutation.mutate(storefrontForm as any, {
+      onSuccess: () => {
+        setStorefrontForm({});
+        setCreateStorefrontOpen(false);
+      },
+    });
+  };
+  
+  const handleEditStorefront = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStorefront) return;
+    updateStorefrontMutation.mutate(
+      { id: editingStorefront.id, data: storefrontForm },
+      {
+        onSuccess: () => {
+          setStorefrontForm({});
+          setEditStorefrontOpen(false);
+          setEditingStorefront(null);
+        },
+      }
+    );
+  };
+  
+  const openEditDialog = (storefront: Storefront) => {
+    setEditingStorefront(storefront);
+    setStorefrontForm({
+      name: storefront.name,
+      slug: storefront.slug,
+      type: storefront.type,
+      address_line1: storefront.address_line1 || "",
+      city: storefront.city || "",
+      country: storefront.country || "",
+      notes: storefront.notes || "",
+      commission_rate_override: storefront.commission_rate_override || "",
+      is_active: storefront.is_active,
+    });
+    setEditStorefrontOpen(true);
+  };
+  
+  const handleBulkAddProducts = () => {
+    if (!bulkAddStorefrontId || selectedProducts.size === 0) return;
+    bulkAddProductsMutation.mutate(
+      { storefrontId: bulkAddStorefrontId, product_ids: Array.from(selectedProducts) },
+      {
+        onSuccess: () => {
+          setSelectedProducts(new Set());
+          setBulkAddProductsOpen(false);
+          setBulkAddStorefrontId(null);
+          setProductSearchQuery("");
+          setProductOrdering("");
+          setProductCategoryFilter("");
+        },
+      }
+    );
+  };
+  
+  // Calculate total products across all storefronts
+  const totalProductsCount = useMemo(() => {
+    if (!storefronts || !Array.isArray(storefronts)) return 0;
+    // Note: This is an approximation. For exact count, we'd need to fetch products for each storefront
+    // or have a summary endpoint. For now, we'll show a message.
+    return storefronts.length > 0 ? "Multiple" : 0;
+  }, [storefronts]);
+  
+  const handleRemoveProduct = (productId: string) => {
+    if (!selectedStorefront) return;
+    removeProductMutation.mutate(
+      { storefrontId: selectedStorefront, productId },
+      {
+        onSuccess: () => {
+          setRemovingProductId(null);
+        },
+      }
+    );
+  };
+  
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProducts((prev) => {
+      const next = new Set(prev);
+      if (next.has(productId)) {
+        next.delete(productId);
+      } else {
+        next.add(productId);
+      }
+      return next;
+    });
+  };
+  
+  const selectAllProducts = () => {
+    setSelectedProducts(new Set(availableProducts.map(p => p.id)));
+  };
+  
+  const deselectAllProducts = () => {
+    setSelectedProducts(new Set());
+  };
 
   const handleProfileChange = (field: string, value: string) => {
     setProfileForm((prev) => ({ ...prev, [field]: value }));
@@ -157,41 +378,43 @@ export default function ResellerDashboard() {
     <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-11 bg-[#0a0a0a] border border-gray-800 mb-6">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black">
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="storefront" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black">
-              Storefront
-            </TabsTrigger>
-            <TabsTrigger value="inventory" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black">
-              Inventory
-            </TabsTrigger>
-            <TabsTrigger value="order" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black">
-              Order
-            </TabsTrigger>
-            <TabsTrigger value="earning" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black">
-              Earning
-            </TabsTrigger>
-            <TabsTrigger value="analytic" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black">
-              Analytic
-            </TabsTrigger>
-            <TabsTrigger value="pricing" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black">
-              Pricing
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black">
-              Messages
-            </TabsTrigger>
-            <TabsTrigger value="licensing" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black">
-              Licensing
-            </TabsTrigger>
-            <TabsTrigger value="my-product" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black">
-              My Product
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black">
-              Categories
-            </TabsTrigger>
-          </TabsList>
+          <div className="w-full mb-6 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex w-max min-w-full sm:w-full sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-11 bg-[#0a0a0a] border border-gray-800 h-auto p-1 gap-1">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black whitespace-nowrap text-xs sm:text-sm px-3 py-2 flex-shrink-0 sm:flex-shrink">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="storefront" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black whitespace-nowrap text-xs sm:text-sm px-3 py-2 flex-shrink-0 sm:flex-shrink">
+                Storefront
+              </TabsTrigger>
+              <TabsTrigger value="inventory" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black whitespace-nowrap text-xs sm:text-sm px-3 py-2 flex-shrink-0 sm:flex-shrink">
+                Inventory
+              </TabsTrigger>
+              <TabsTrigger value="order" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black whitespace-nowrap text-xs sm:text-sm px-3 py-2 flex-shrink-0 sm:flex-shrink">
+                Order
+              </TabsTrigger>
+              <TabsTrigger value="earning" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black whitespace-nowrap text-xs sm:text-sm px-3 py-2 flex-shrink-0 sm:flex-shrink">
+                Earning
+              </TabsTrigger>
+              <TabsTrigger value="analytic" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black whitespace-nowrap text-xs sm:text-sm px-3 py-2 flex-shrink-0 sm:flex-shrink">
+                Analytic
+              </TabsTrigger>
+              <TabsTrigger value="pricing" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black whitespace-nowrap text-xs sm:text-sm px-3 py-2 flex-shrink-0 sm:flex-shrink">
+                Pricing
+              </TabsTrigger>
+              <TabsTrigger value="messages" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black whitespace-nowrap text-xs sm:text-sm px-3 py-2 flex-shrink-0 sm:flex-shrink">
+                Messages
+              </TabsTrigger>
+              <TabsTrigger value="licensing" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black whitespace-nowrap text-xs sm:text-sm px-3 py-2 flex-shrink-0 sm:flex-shrink">
+                Licensing
+              </TabsTrigger>
+              <TabsTrigger value="my-product" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black whitespace-nowrap text-xs sm:text-sm px-3 py-2 flex-shrink-0 sm:flex-shrink">
+                My Product
+              </TabsTrigger>
+              <TabsTrigger value="categories" className="data-[state=active]:bg-[#00bfff] data-[state=active]:text-black whitespace-nowrap text-xs sm:text-sm px-3 py-2 flex-shrink-0 sm:flex-shrink">
+                Categories
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
@@ -252,22 +475,128 @@ export default function ResellerDashboard() {
 
           {/* Storefront Tab */}
           <TabsContent value="storefront" className="space-y-6">
+            {/* Summary Cards */}
+            {storefronts && storefronts.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className={cardBase}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-400">Total Storefronts</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-white">{storefronts.length}</div>
+                    <p className="text-xs text-gray-500 mt-1">Active storefronts</p>
+                  </CardContent>
+                </Card>
+                <Card className={cardBase}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-400">Active Storefronts</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-white">
+                      {storefronts.filter(sf => sf.is_active).length}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Currently active</p>
+                  </CardContent>
+                </Card>
+                <Card className={cardBase}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-400">Storefront Types</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-white">
+                      {new Set(storefronts.map(sf => sf.type)).size}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Different types</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+            
             <Card className={cardBase}>
               <CardHeader>
-                <CardTitle className="text-lg text-white">Storefronts</CardTitle>
-                <CardDescription className={mutedText}>Manage storefront attribution and curated products.</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg text-white">Storefronts</CardTitle>
+                    <CardDescription className={mutedText}>Manage storefront attribution and curated products.</CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setStorefrontForm({ is_active: true });
+                      setCreateStorefrontOpen(true);
+                    }}
+                    className="gap-2 bg-[#00bfff] text-black hover:bg-[#00a8e6]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create Storefront
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="pt-6 space-y-4">
+                {/* Filters and Search */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search by name, slug, city, or country..."
+                      value={storefrontFilters.search || ""}
+                      onChange={(e) => setStorefrontFilters((prev) => ({ ...prev, search: e.target.value }))}
+                      className="pl-10 bg-[#0f172a] border-gray-700 text-white"
+                    />
+                  </div>
+                  <Select
+                    value={storefrontFilters.type || "all"}
+                    onValueChange={(v) => setStorefrontFilters((prev) => ({ ...prev, type: v === "all" ? undefined : v }))}
+                  >
+                    <SelectTrigger className="w-full sm:w-40 bg-[#0f172a] border-gray-700 text-white">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="online">Online</SelectItem>
+                      <SelectItem value="physical_screen">Physical Screen</SelectItem>
+                      <SelectItem value="link">Link</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={storefrontFilters.is_active !== undefined ? storefrontFilters.is_active : "all"}
+                    onValueChange={(v) => setStorefrontFilters((prev) => ({ ...prev, is_active: v === "all" ? undefined : v }))}
+                  >
+                    <SelectTrigger className="w-full sm:w-40 bg-[#0f172a] border-gray-700 text-white">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="true">Active</SelectItem>
+                      <SelectItem value="false">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 {loadingStorefronts ? (
                   <div className="space-y-3">
                     <Skeleton className="h-12 w-full" />
                     <Skeleton className="h-12 w-full" />
                   </div>
-                ) : !storefronts || !Array.isArray(storefronts) || storefronts.length === 0 ? (
-                  <p className={mutedText}>No storefronts yet.</p>
+                ) : filteredStorefronts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Store className="h-12 w-12 mx-auto text-gray-600 mb-4" />
+                    <p className={mutedText}>No storefronts found.</p>
+                    {(!storefronts || storefronts.length === 0) && (
+                      <Button
+                        onClick={() => {
+                          setStorefrontForm({ is_active: true });
+                          setCreateStorefrontOpen(true);
+                        }}
+                        className="mt-4 gap-2 bg-[#00bfff] text-black hover:bg-[#00a8e6]"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Create your first storefront
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
-                    {storefronts.map((sf) => (
+                    {filteredStorefronts.map((sf) => (
                       <Card key={sf.id} className={`${cardBase} border border-gray-800`}>
                         <CardHeader className="pb-2 flex flex-row items-center justify-between">
                           <div>
@@ -279,21 +608,66 @@ export default function ResellerDashboard() {
                           </Badge>
                         </CardHeader>
                         <CardContent className="space-y-2">
+                          {sf.address_line1 && (
+                            <p className="text-sm text-gray-400">
+                              {sf.address_line1}
+                              {sf.city && `, ${sf.city}`}
+                              {sf.country && `, ${sf.country}`}
+                            </p>
+                          )}
                           <p className="text-sm text-gray-400">
                             Commission override:{" "}
                             {sf.commission_rate_override
                               ? `${(parseFloat(sf.commission_rate_override) * 100).toFixed(1)}%`
                               : "Tier default"}
                           </p>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setSelectedStorefront(sf.id)}
+                              onClick={() => setSelectedStorefront(sf.id === selectedStorefront ? null : sf.id)}
                               className="gap-2 border-gray-700 bg-[#0f172a] text-white hover:bg-[#111a2f]"
                             >
                               <Store className="h-4 w-4" />
-                              View products
+                              {selectedStorefront === sf.id ? "Hide products" : "View products"}
+                              {storefrontProducts && Array.isArray(storefrontProducts) && selectedStorefront === sf.id && storefrontProducts.length > 0 && (
+                                <Badge variant="secondary" className="ml-1 bg-[#00bfff]/20 text-[#00bfff] border-[#00bfff]/40">
+                                  {storefrontProducts.length}
+                                </Badge>
+                              )}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditDialog(sf)}
+                              className="gap-2 border-gray-700 bg-[#0f172a] text-white hover:bg-[#111a2f]"
+                            >
+                              <Edit className="h-4 w-4" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setBulkAddStorefrontId(sf.id);
+                                setBulkAddProductsOpen(true);
+                              }}
+                              className="gap-2 border-gray-700 bg-[#0f172a] text-white hover:bg-[#111a2f]"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Add Products
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSharingStorefrontId(sf.id);
+                                setSharingStorefrontSlug(sf.slug);
+                              }}
+                              className="gap-2 border-gray-700 bg-[#0f172a] text-white hover:bg-[#111a2f]"
+                            >
+                              <Share2 className="h-4 w-4" />
+                              Share
                             </Button>
                             {sf.is_active ? (
                               <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 border border-emerald-700/40">
@@ -306,23 +680,99 @@ export default function ResellerDashboard() {
                             )}
                           </div>
                           {selectedStorefront === sf.id && (
-                            <div className="mt-3 rounded-lg border border-dashed border-gray-700 p-3 bg-[#0b1224]/40">
-                              <p className="text-sm font-semibold mb-2 text-white">Products</p>
+                            <div className="mt-3 rounded-lg border border-gray-700 p-4 bg-[#0b1224]/60">
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-white">Products in Storefront</p>
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    {storefrontProducts && Array.isArray(storefrontProducts) && storefrontProducts.length > 0 
+                                      ? `${storefrontProducts.length} product(s) added`
+                                      : "No products added yet"}
+                                  </p>
+                                </div>
+                                {storefrontProducts && Array.isArray(storefrontProducts) && storefrontProducts.length > 0 && (
+                                  <Badge variant="outline" className="border-[#00bfff] text-[#00bfff] bg-[#00bfff]/10">
+                                    {storefrontProducts.length} product(s)
+                                  </Badge>
+                                )}
+                              </div>
                               {loadingStorefrontProducts ? (
                                 <Skeleton className="h-10 w-full" />
-                              ) : storefrontProducts && storefrontProducts.length > 0 ? (
-                                <ul className="space-y-1 text-sm text-gray-300">
-                                  {storefrontProducts.map((p) => (
-                                    <li key={p.id} className="flex items-center justify-between">
-                                      <span>Product #{p.product}</span>
-                                      <Badge variant="outline" className="border-gray-700 text-gray-200">
-                                        Pos {p.position ?? "-"}
-                                      </Badge>
-                                    </li>
-                                  ))}
-                                </ul>
+                              ) : storefrontProducts && Array.isArray(storefrontProducts) && storefrontProducts.length > 0 ? (
+                                <div className="space-y-3">
+                                  {storefrontProducts.map((p) => {
+                                    const productDetail = productDetailsMap.get(p.product);
+                                    return (
+                                      <div key={p.id} className="flex items-start gap-3 p-3 rounded-lg bg-[#0b0b0f] border border-gray-800 hover:border-gray-700 transition-colors">
+                                        {productDetail?.images?.[0] ? (
+                                          <img
+                                            src={productDetail.images[0].image}
+                                            alt={productDetail.images[0].alt_text || p.product_title || "Product"}
+                                            className="w-16 h-16 object-cover rounded border border-gray-800 flex-shrink-0"
+                                          />
+                                        ) : (
+                                          <div className="w-16 h-16 rounded border border-gray-800 bg-[#0f172a] flex items-center justify-center flex-shrink-0">
+                                            <Package className="h-6 w-6 text-gray-600" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-sm font-medium text-white truncate">
+                                                {p.product_title || productDetail?.title || `Product ${p.product.substring(0, 8)}...`}
+                                              </p>
+                                              {productDetail && (
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                  {formatCurrency(productDetail.current_price)} {productDetail.currency}
+                                                </p>
+                                              )}
+                                              {p.notes && (
+                                                <p className="text-xs text-gray-500 mt-1 italic">"{p.notes}"</p>
+                                              )}
+                                            </div>
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                              {p.is_featured && (
+                                                <Badge variant="outline" className="border-yellow-700 text-yellow-300 text-xs">
+                                                  Featured
+                                                </Badge>
+                                              )}
+                                              {p.position !== undefined && (
+                                                <Badge variant="outline" className="border-gray-700 text-gray-200 text-xs">
+                                                  #{p.position}
+                                                </Badge>
+                                              )}
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setRemovingProductId(p.id)}
+                                                className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                                title="Remove product"
+                                              >
+                                                <Trash2 className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               ) : (
-                                <p className={mutedText}>No products assigned.</p>
+                                <div className="text-center py-4">
+                                  <p className={mutedText}>No products assigned.</p>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setBulkAddStorefrontId(sf.id);
+                                      setBulkAddProductsOpen(true);
+                                    }}
+                                    className="mt-2 gap-2 border-gray-700 bg-[#0f172a] text-white hover:bg-[#111a2f]"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                    Add Products
+                                  </Button>
+                                </div>
                               )}
                             </div>
                           )}
@@ -646,36 +1096,166 @@ export default function ResellerDashboard() {
           <TabsContent value="my-product" className="space-y-6">
             <Card className={cardBase}>
               <CardHeader>
-                <CardTitle className="text-lg text-white">My Products</CardTitle>
-                <CardDescription className={mutedText}>Manage products across your storefronts.</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg text-white">My Products</CardTitle>
+                    <CardDescription className={mutedText}>Manage products across your storefronts.</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="pt-6">
-                {selectedStorefront ? (
-                  <div className="space-y-4">
-                    <p className={mutedText}>Products for selected storefront.</p>
-                    {loadingStorefrontProducts ? (
-                      <Skeleton className="h-32 w-full" />
-                    ) : storefrontProducts && storefrontProducts.length > 0 ? (
-                      <div className="space-y-2">
-                        {storefrontProducts.map((p) => (
-                          <Card key={p.id} className={cardBase}>
-                            <CardContent className="pt-4">
-                              <div className="flex items-center justify-between">
-                                <span className="text-white">Product #{p.product}</span>
-                                <Badge variant="outline" className="border-gray-700 text-gray-200">
-                                  Position {p.position ?? "-"}
-                                </Badge>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className={mutedText}>No products assigned to this storefront.</p>
-                    )}
+                {loadingStorefronts ? (
+                  <Skeleton className="h-10 w-full mb-4" />
+                ) : !storefronts || storefronts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Store className="h-12 w-12 mx-auto text-gray-600 mb-4" />
+                    <p className={mutedText}>No storefronts found. Create a storefront first to add products.</p>
+                    <Button
+                      onClick={() => {
+                        setActiveTab("storefront");
+                        setStorefrontForm({ is_active: true });
+                        setCreateStorefrontOpen(true);
+                      }}
+                      className="mt-4 gap-2 bg-[#00bfff] text-black hover:bg-[#00a8e6]"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Create Storefront
+                    </Button>
                   </div>
                 ) : (
-                  <p className={mutedText}>Select a storefront from the Storefront tab to view products.</p>
+                  <div className="space-y-4">
+                    {/* Storefront Selector */}
+                    <div className="flex items-center gap-3">
+                      <Label htmlFor="my-product-storefront" className="text-sm font-medium text-white whitespace-nowrap">
+                        Select Storefront:
+                      </Label>
+                      <Select
+                        value={selectedStorefront || (storefronts && storefronts.length > 0 ? storefronts[0].id : "")}
+                        onValueChange={(value) => setSelectedStorefront(value)}
+                      >
+                        <SelectTrigger id="my-product-storefront" className="flex-1 max-w-md bg-[#0f172a] border-gray-700 text-white">
+                          <SelectValue placeholder="Select a storefront" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {storefronts.map((sf) => (
+                            <SelectItem key={sf.id} value={sf.id}>
+                              {sf.name} {sf.is_active ? "" : "(Inactive)"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Products List */}
+                    {selectedStorefront ? (
+                      <>
+                        {loadingStorefrontProducts ? (
+                          <div className="space-y-3">
+                            <Skeleton className="h-24 w-full" />
+                            <Skeleton className="h-24 w-full" />
+                            <Skeleton className="h-24 w-full" />
+                          </div>
+                        ) : storefrontProducts && Array.isArray(storefrontProducts) && storefrontProducts.length > 0 ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-sm text-gray-400">
+                                {storefrontProducts.length} product{storefrontProducts.length !== 1 ? "s" : ""} in this storefront
+                              </p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setBulkAddStorefrontId(selectedStorefront);
+                                  setBulkAddProductsOpen(true);
+                                }}
+                                className="gap-2 border-gray-700 bg-[#0f172a] text-white hover:bg-[#111a2f]"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Add Products
+                              </Button>
+                            </div>
+                            {storefrontProducts.map((p) => {
+                              const productDetail = productDetailsMap.get(p.product);
+                              return (
+                                <Card key={p.id} className={cardBase}>
+                                  <CardContent className="pt-4">
+                                    <div className="flex items-start gap-3">
+                                      {productDetail?.images?.[0] ? (
+                                        <img
+                                          src={productDetail.images[0].image}
+                                          alt={productDetail.images[0].alt_text || p.product_title || "Product"}
+                                          className="w-20 h-20 object-cover rounded border border-gray-800 flex-shrink-0"
+                                        />
+                                      ) : (
+                                        <div className="w-20 h-20 rounded border border-gray-800 bg-[#0f172a] flex items-center justify-center flex-shrink-0">
+                                          <Package className="h-8 w-8 text-gray-600" />
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="flex-1">
+                                            <p className="text-sm font-medium text-white">
+                                              {p.product_title || productDetail?.title || `Product ${p.product.substring(0, 8)}...`}
+                                            </p>
+                                            {productDetail && (
+                                              <p className="text-xs text-gray-400 mt-1">
+                                                {formatCurrency(productDetail.current_price)} {productDetail.currency}
+                                              </p>
+                                            )}
+                                            {p.notes && (
+                                              <p className="text-xs text-gray-500 mt-1 italic">"{p.notes}"</p>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-2 flex-shrink-0">
+                                            {p.is_featured && (
+                                              <Badge variant="outline" className="border-yellow-700 text-yellow-300 text-xs">
+                                                Featured
+                                              </Badge>
+                                            )}
+                                            <Badge variant="outline" className="border-gray-700 text-gray-200 text-xs">
+                                              Position {p.position ?? "-"}
+                                            </Badge>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => setRemovingProductId(p.id)}
+                                              className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                              title="Remove product"
+                                            >
+                                              <Trash2 className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 border border-gray-800 rounded-lg bg-[#0b1224]/60">
+                            <Package className="h-12 w-12 mx-auto text-gray-600 mb-4" />
+                            <p className={mutedText}>No products assigned to this storefront.</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setBulkAddStorefrontId(selectedStorefront);
+                                setBulkAddProductsOpen(true);
+                              }}
+                              className="mt-4 gap-2 border-gray-700 bg-[#0f172a] text-white hover:bg-[#111a2f]"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Add Products
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className={mutedText}>Please select a storefront to view products.</p>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -695,6 +1275,494 @@ export default function ResellerDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Create Storefront Dialog */}
+      <Dialog open={createStorefrontOpen} onOpenChange={setCreateStorefrontOpen}>
+        <DialogContent className="bg-[#0b0b0f] border-gray-800 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Storefront</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Create a new storefront for your reseller account.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateStorefront} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  value={storefrontForm.name || ""}
+                  onChange={(e) => handleStorefrontFormChange("name", e.target.value)}
+                  required
+                  maxLength={255}
+                  className="bg-[#0f172a] border-gray-700 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="slug">Slug *</Label>
+                <Input
+                  id="slug"
+                  value={storefrontForm.slug || ""}
+                  onChange={(e) => handleStorefrontFormChange("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+                  required
+                  maxLength={120}
+                  placeholder="gym-alpha-main-entrance"
+                  className="bg-[#0f172a] border-gray-700 text-white"
+                />
+                <p className="text-xs text-gray-500">URL-friendly identifier (alphanumeric and hyphens only)</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="type">Type *</Label>
+              <Select
+                value={storefrontForm.type || ""}
+                onValueChange={(v) => handleStorefrontFormChange("type", v)}
+                required
+              >
+                <SelectTrigger className="bg-[#0f172a] border-gray-700 text-white">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="physical_screen">Physical Screen</SelectItem>
+                  <SelectItem value="link">Link</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="address_line1">Address</Label>
+                <Input
+                  id="address_line1"
+                  value={storefrontForm.address_line1 || ""}
+                  onChange={(e) => handleStorefrontFormChange("address_line1", e.target.value)}
+                  className="bg-[#0f172a] border-gray-700 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={storefrontForm.city || ""}
+                  onChange={(e) => handleStorefrontFormChange("city", e.target.value)}
+                  className="bg-[#0f172a] border-gray-700 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  value={storefrontForm.country || ""}
+                  onChange={(e) => handleStorefrontFormChange("country", e.target.value)}
+                  className="bg-[#0f172a] border-gray-700 text-white"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="commission_rate_override">Commission Rate Override (%)</Label>
+              <Input
+                id="commission_rate_override"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={storefrontForm.commission_rate_override ? (parseFloat(storefrontForm.commission_rate_override) * 100).toString() : ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "") {
+                    handleStorefrontFormChange("commission_rate_override", "");
+                  } else {
+                    const decimal = (parseFloat(value) / 100).toString();
+                    handleStorefrontFormChange("commission_rate_override", decimal);
+                  }
+                }}
+                placeholder="Leave empty for tier default"
+                className="bg-[#0f172a] border-gray-700 text-white"
+              />
+              <p className="text-xs text-gray-500">Override commission rate (0-100%). Leave empty to use tier default.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={storefrontForm.notes || ""}
+                onChange={(e) => handleStorefrontFormChange("notes", e.target.value)}
+                className="bg-[#0f172a] border-gray-700 text-white"
+                rows={3}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_active"
+                checked={storefrontForm.is_active !== false}
+                onCheckedChange={(checked) => handleStorefrontFormChange("is_active", checked)}
+              />
+              <Label htmlFor="is_active" className="cursor-pointer">Active</Label>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setCreateStorefrontOpen(false);
+                  setStorefrontForm({});
+                }}
+                className="border-gray-700 text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createStorefrontMutation.isPending}
+                className="bg-[#00bfff] text-black hover:bg-[#00a8e6]"
+              >
+                {createStorefrontMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create Storefront
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Storefront Dialog */}
+      <Dialog open={editStorefrontOpen} onOpenChange={setEditStorefrontOpen}>
+        <DialogContent className="bg-[#0b0b0f] border-gray-800 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Storefront</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Update storefront information.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditStorefront} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Name *</Label>
+                <Input
+                  id="edit-name"
+                  value={storefrontForm.name || ""}
+                  onChange={(e) => handleStorefrontFormChange("name", e.target.value)}
+                  required
+                  maxLength={255}
+                  className="bg-[#0f172a] border-gray-700 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-slug">Slug *</Label>
+                <Input
+                  id="edit-slug"
+                  value={storefrontForm.slug || ""}
+                  onChange={(e) => handleStorefrontFormChange("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+                  required
+                  maxLength={120}
+                  className="bg-[#0f172a] border-gray-700 text-white"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-type">Type *</Label>
+              <Select
+                value={storefrontForm.type || ""}
+                onValueChange={(v) => handleStorefrontFormChange("type", v)}
+                required
+              >
+                <SelectTrigger className="bg-[#0f172a] border-gray-700 text-white">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="physical_screen">Physical Screen</SelectItem>
+                  <SelectItem value="link">Link</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-address_line1">Address</Label>
+                <Input
+                  id="edit-address_line1"
+                  value={storefrontForm.address_line1 || ""}
+                  onChange={(e) => handleStorefrontFormChange("address_line1", e.target.value)}
+                  className="bg-[#0f172a] border-gray-700 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-city">City</Label>
+                <Input
+                  id="edit-city"
+                  value={storefrontForm.city || ""}
+                  onChange={(e) => handleStorefrontFormChange("city", e.target.value)}
+                  className="bg-[#0f172a] border-gray-700 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-country">Country</Label>
+                <Input
+                  id="edit-country"
+                  value={storefrontForm.country || ""}
+                  onChange={(e) => handleStorefrontFormChange("country", e.target.value)}
+                  className="bg-[#0f172a] border-gray-700 text-white"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-commission_rate_override">Commission Rate Override (%)</Label>
+              <Input
+                id="edit-commission_rate_override"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={storefrontForm.commission_rate_override ? (parseFloat(storefrontForm.commission_rate_override) * 100).toString() : ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "") {
+                    handleStorefrontFormChange("commission_rate_override", "");
+                  } else {
+                    const decimal = (parseFloat(value) / 100).toString();
+                    handleStorefrontFormChange("commission_rate_override", decimal);
+                  }
+                }}
+                placeholder="Leave empty for tier default"
+                className="bg-[#0f172a] border-gray-700 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-notes">Notes</Label>
+              <Textarea
+                id="edit-notes"
+                value={storefrontForm.notes || ""}
+                onChange={(e) => handleStorefrontFormChange("notes", e.target.value)}
+                className="bg-[#0f172a] border-gray-700 text-white"
+                rows={3}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit-is_active"
+                checked={storefrontForm.is_active !== false}
+                onCheckedChange={(checked) => handleStorefrontFormChange("is_active", checked)}
+              />
+              <Label htmlFor="edit-is_active" className="cursor-pointer">Active</Label>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEditStorefrontOpen(false);
+                  setStorefrontForm({});
+                  setEditingStorefront(null);
+                }}
+                className="border-gray-700 text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={updateStorefrontMutation.isPending}
+                className="bg-[#00bfff] text-black hover:bg-[#00a8e6]"
+              >
+                {updateStorefrontMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Storefront
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Bulk Add Products Dialog */}
+      <Dialog open={bulkAddProductsOpen} onOpenChange={setBulkAddProductsOpen}>
+        <DialogContent className="bg-[#0b0b0f] border-gray-800 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Products to Storefront</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Search and select products to add to your storefront.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search products..."
+                value={productSearchQuery}
+                onChange={(e) => setProductSearchQuery(e.target.value)}
+                className="pl-10 bg-[#0f172a] border-gray-700 text-white"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-400">Category</Label>
+                <Select
+                  value={productCategoryFilter || "all"}
+                  onValueChange={(v) => setProductCategoryFilter(v === "all" ? "" : v)}
+                >
+                  <SelectTrigger className="bg-[#0f172a] border-gray-700 text-white">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((cat: any) => (
+                      <SelectItem key={cat.id} value={cat.slug}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-400">Sort By</Label>
+                <Select
+                  value={productOrdering || "title"}
+                  onValueChange={(v) => setProductOrdering(v === "title" ? "" : v)}
+                >
+                  <SelectTrigger className="bg-[#0f172a] border-gray-700 text-white">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="title">Title (A-Z)</SelectItem>
+                    <SelectItem value="-title">Title (Z-A)</SelectItem>
+                    <SelectItem value="price">Price (Low to High)</SelectItem>
+                    <SelectItem value="-price">Price (High to Low)</SelectItem>
+                    <SelectItem value="popularity">Most Popular</SelectItem>
+                    <SelectItem value="-popularity">Least Popular</SelectItem>
+                    <SelectItem value="created_at">Newest First</SelectItem>
+                    <SelectItem value="-created_at">Oldest First</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400">
+                {selectedProducts.size} product(s) selected
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={selectAllProducts}
+                  className="border-gray-700 text-white"
+                >
+                  Select All
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={deselectAllProducts}
+                  className="border-gray-700 text-white"
+                >
+                  Deselect All
+                </Button>
+              </div>
+            </div>
+            <div className="border border-gray-800 rounded-lg p-4 max-h-96 overflow-y-auto bg-[#0f172a]">
+              {loadingProducts ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ) : availableProducts.length === 0 ? (
+                <p className={mutedText}>No products found.</p>
+              ) : (
+                <div className="space-y-2">
+                  {availableProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-center space-x-3 p-3 rounded-lg border border-gray-800 hover:bg-[#0b0b0f]"
+                    >
+                      <Checkbox
+                        checked={selectedProducts.has(product.id)}
+                        onCheckedChange={() => toggleProductSelection(product.id)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{product.title}</p>
+                        <p className="text-xs text-gray-400">
+                          {formatCurrency(product.current_price)} {product.currency}
+                        </p>
+                      </div>
+                      {product.images && product.images.length > 0 && (
+                        <img
+                          src={product.images[0].image}
+                          alt={product.images[0].alt_text}
+                          className="w-12 h-12 object-cover rounded border border-gray-800"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setBulkAddProductsOpen(false);
+                  setSelectedProducts(new Set());
+                  setProductSearchQuery("");
+                  setProductOrdering("");
+                  setProductCategoryFilter("");
+                  setBulkAddStorefrontId(null);
+                }}
+                className="border-gray-700 text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleBulkAddProducts}
+                disabled={bulkAddProductsMutation.isPending || selectedProducts.size === 0}
+                className="bg-[#00bfff] text-black hover:bg-[#00a8e6]"
+              >
+                {bulkAddProductsMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Add {selectedProducts.size > 0 && `${selectedProducts.size} `}Product{selectedProducts.size !== 1 ? "s" : ""}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Remove Product Confirmation Dialog */}
+      <AlertDialog open={removingProductId !== null} onOpenChange={(open) => !open && setRemovingProductId(null)}>
+        <AlertDialogContent className="bg-[#0b0b0f] border-gray-800 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Product</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Are you sure you want to remove this product from the storefront? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-gray-700 text-white">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (removingProductId) {
+                  handleRemoveProduct(removingProductId);
+                }
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {removeProductMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Storefront Sharing Dialog */}
+      {sharingStorefrontId && (
+        <StorefrontSharing
+          storefrontId={sharingStorefrontId}
+          storefrontSlug={sharingStorefrontSlug}
+          open={sharingStorefrontId !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSharingStorefrontId(null);
+              setSharingStorefrontSlug("");
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

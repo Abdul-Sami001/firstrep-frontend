@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, Lock, ShoppingBag, Truck, Loader2, AlertCircle, MapPin, Shield, ArrowLeft, Gift, Users, Coins, X, Check, Tag } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile, useUpdateProfile } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +31,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 interface AddressForm {
+    email: string;
     address: string;
     city: string;
     state: string;
@@ -58,6 +60,7 @@ export default function Checkout() {
         appliedPromotionInfo,
         totalDiscount
     } = useCart();
+    const { isAuthenticated } = useAuth();
     const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile();
     const updateProfileMutation = useUpdateProfile();
     const checkoutMutation = useCheckout();
@@ -127,6 +130,7 @@ export default function Checkout() {
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [addressForm, setAddressForm] = useState<AddressForm>({
+        email: "",
         address: "",
         city: "",
         state: "",
@@ -259,6 +263,7 @@ export default function Checkout() {
     useEffect(() => {
         if (profile) {
             setAddressForm({
+                email: profile.email || "",
                 address: profile.address || "",
                 city: profile.city || "",
                 state: profile.state || "",
@@ -270,6 +275,13 @@ export default function Checkout() {
 
     const validateForm = (): boolean => {
         const errors: Partial<AddressForm> = {};
+
+        // Email is required for guest checkout
+        if (!isAuthenticated && !addressForm.email.trim()) {
+            errors.email = "Email is required";
+        } else if (addressForm.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addressForm.email.trim())) {
+            errors.email = "Please enter a valid email address";
+        }
 
         if (!addressForm.address.trim()) errors.address = "Address is required";
         if (!addressForm.city.trim()) errors.city = "City is required";
@@ -307,37 +319,55 @@ export default function Checkout() {
         setIsProcessing(true);
 
         try {
-            // Update user profile with new address if changed
-            const hasAddressChanged = profile && (
-                profile.address !== addressForm.address ||
-                profile.city !== addressForm.city ||
-                profile.state !== addressForm.state ||
-                profile.zip_code !== addressForm.zip_code ||
-                profile.country !== addressForm.country
-            );
+            // Update user profile with new address if changed (only for authenticated users)
+            if (isAuthenticated && profile) {
+                const hasAddressChanged = (
+                    profile.address !== addressForm.address ||
+                    profile.city !== addressForm.city ||
+                    profile.state !== addressForm.state ||
+                    profile.zip_code !== addressForm.zip_code ||
+                    profile.country !== addressForm.country
+                );
 
-            if (hasAddressChanged) {
-                await updateProfileMutation.mutateAsync({
-                    address: addressForm.address,
-                    city: addressForm.city,
-                    state: addressForm.state,
-                    zip_code: addressForm.zip_code,
-                    country: addressForm.country
-                });
+                if (hasAddressChanged) {
+                    await updateProfileMutation.mutateAsync({
+                        address: addressForm.address,
+                        city: addressForm.city,
+                        state: addressForm.state,
+                        zip_code: addressForm.zip_code,
+                        country: addressForm.country
+                    });
+                }
             }
 
             // Use memoized storefront_id for reseller attribution
 
             // Create order and Stripe checkout session
-            const checkoutResponse = await checkoutMutation.mutateAsync({
+            // Email is required for guest checkout, uses account email for authenticated users
+            const checkoutData: any = {
                 shipping_address: addressForm.address,
                 city: addressForm.city,
                 state: addressForm.state,
                 zip_code: addressForm.zip_code,
                 country: addressForm.country,
                 payment_method: 'stripe',
-                ...(storefrontId && { storefront_id: storefrontId })
-            });
+            };
+            
+            // Include email - required for guest checkout, optional for authenticated (backend may use account email)
+            if (!isAuthenticated) {
+                // Guest checkout: email is required
+                checkoutData.email = addressForm.email;
+            } else if (profile?.email) {
+                // Authenticated users: include email from profile (backend may use this or account email)
+                checkoutData.email = profile.email;
+            }
+            
+            // Include storefront_id if present
+            if (storefrontId) {
+                checkoutData.storefront_id = storefrontId;
+            }
+            
+            const checkoutResponse = await checkoutMutation.mutateAsync(checkoutData);
 
             // Redirect to Stripe Checkout
             if (checkoutResponse?.checkout_url) {
@@ -422,12 +452,12 @@ export default function Checkout() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4 pt-6">
-                                    {profileLoading ? (
+                                    {isAuthenticated && profileLoading ? (
                                         <div className="flex items-center justify-center py-12">
                                             <Loader2 className="h-6 w-6 animate-spin mr-2 text-[#00bfff]" />
                                             <span className="text-gray-400">Loading your address...</span>
                                         </div>
-                                    ) : profileError ? (
+                                    ) : isAuthenticated && profileError ? (
                                         <div className="text-center py-8 p-4 rounded-lg bg-red-900/20 border border-red-800/50">
                                             <AlertCircle className="h-8 w-8 mx-auto mb-2 text-red-400" />
                                             <p className="text-sm text-red-400 mb-2">Failed to load your address</p>
@@ -435,6 +465,29 @@ export default function Checkout() {
                                         </div>
                                     ) : (
                                         <>
+                                            {/* Email Field - Required for guest checkout */}
+                                            {!isAuthenticated && (
+                                                <div>
+                                                    <Label htmlFor="email" className="text-gray-300 mb-2">
+                                                        Email Address <span className="text-red-400">*</span>
+                                                    </Label>
+                                                    <Input
+                                                        id="email"
+                                                        type="email"
+                                                        value={addressForm.email}
+                                                        onChange={(e) => handleAddressChange('email', e.target.value)}
+                                                        required
+                                                        data-testid="input-email"
+                                                        className={`bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] ${formErrors.email ? "border-red-500" : ""}`}
+                                                        placeholder="your.email@example.com"
+                                                    />
+                                                    {formErrors.email && (
+                                                        <p className="text-xs text-red-400 mt-1">{formErrors.email}</p>
+                                                    )}
+                                                    <p className="text-xs text-gray-400 mt-1">We'll send your order confirmation to this email</p>
+                                                </div>
+                                            )}
+                                            
                                             <div>
                                                 <Label htmlFor="address" className="text-gray-300 mb-2">Street Address</Label>
                                                 <Input

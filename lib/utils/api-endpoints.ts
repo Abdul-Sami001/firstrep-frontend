@@ -37,6 +37,9 @@ export const PROTECTED_ENDPOINTS = [
   // Resellers (portal)
   '/resellers/',
   
+  // Support (tickets/messages/events/mark-read)
+  '/support/',
+
   // Seller endpoints
   '/my/',
   

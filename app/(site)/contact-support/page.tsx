@@ -40,34 +40,29 @@ export default function ContactSupportPage() {
               </a>
             </div>
 
-            {/* Live Chat */}
+            {/* Support Tickets (replaces live chat) */}
             <div className="bg-gray-900/50 rounded-lg p-6 md:p-8 border border-gray-800">
               <div className="flex items-center gap-4 mb-4">
                 <div className="bg-[#3c83f6]/20 p-3 rounded-lg">
                   <MessageCircle className="h-6 w-6 text-[#3c83f6]" />
                 </div>
                 <div>
-                  <h3 className="text-xl md:text-2xl font-bold text-white">Live Chat</h3>
-                  <p className="text-sm text-gray-400">Available 9 AM - 6 PM GMT</p>
+                  <h3 className="text-xl md:text-2xl font-bold text-white">Support Tickets</h3>
+                  <p className="text-sm text-gray-400">Fast responses from our team</p>
                 </div>
               </div>
               <p className="text-base md:text-lg text-gray-300 mb-4">
-                Chat with our support team in real-time for immediate assistance.
+                Open a ticket and track replies directly in your account. We respond promptly during business hours.
               </p>
-              <Button
-                variant="outline"
-                className="w-full border-white/20 text-white hover:bg-white hover:text-black transition-all duration-300"
-                onClick={() => {
-                  // This would typically open a chat widget
-                  if (typeof window !== 'undefined') {
-                    // Chat widget integration would go here
-                    alert('Live chat will be available soon. Please email us at support@1strep.com');
-                  }
-                }}
-              >
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Start Chat
-              </Button>
+              <Link href="/support">
+                <Button
+                  variant="outline"
+                  className="w-full border-white/20 text-white hover:bg-white hover:text-black transition-all duration-300"
+                >
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Go to Support
+                </Button>
+              </Link>
             </div>
           </div>
         </section>

@@ -131,4 +131,10 @@ export const QUERY_KEYS = {
             ACTIVE: ['marketing', 'promotions', 'active'] as const,
         },
     },
+    SUPPORT: {
+        TICKETS: (params?: any) => ['support', 'tickets', params] as const,
+        TICKET: (id: string) => ['support', 'ticket', id] as const,
+        MESSAGES: (ticketId: string, params?: any) => ['support', 'messages', ticketId, params] as const,
+        EVENTS: (ticketId: string) => ['support', 'events', ticketId] as const,
+    },
 } as const;

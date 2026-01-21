@@ -1,6 +1,6 @@
 // components/Header.tsx - Fixed Mobile-First Responsive Design
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Menu, X, Heart, User, LogOut, Settings } from 'lucide-react';
+import { ShoppingCart, Search, Menu, X, Heart, User, LogOut, Settings, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -199,6 +199,10 @@ export default function Header() {
                   <DropdownMenuItem onClick={() => router.push('/orders')}>
                     <Settings className="mr-2 h-4 w-4" />
                     Orders
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/support')}>
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Support
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>

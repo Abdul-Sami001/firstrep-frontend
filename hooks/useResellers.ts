@@ -57,32 +57,59 @@ export const useUpdateResellerProfile = () => {
   });
 };
 
-export const useResellerAnalytics = () =>
+export const useResellerAnalytics = (params?: { dateFrom?: string; dateTo?: string }) =>
   useQuery({
-    queryKey: QUERY_KEYS.RESELLERS.ANALYTICS,
-    queryFn: resellersApi.getAnalyticsOverview,
+    queryKey: QUERY_KEYS.RESELLERS.ANALYTICS(params),
+    queryFn: () => resellersApi.getAnalyticsOverview({
+      date_from: params?.dateFrom,
+      date_to: params?.dateTo,
+    }),
     ...DEFAULT_QUERY_CONFIG,
   });
 
 export const useResellerCommissions = (params?: CommissionListParams) =>
   useQuery({
     queryKey: QUERY_KEYS.RESELLERS.COMMISSIONS(params),
-    queryFn: () => resellersApi.getCommissions(params),
+    queryFn: async () => {
+      const data = await resellersApi.getCommissions(params);
+      // Handle both paginated and array responses
+      if (Array.isArray(data)) {
+        return { results: data, next: null, previous: null, count: data.length };
+      }
+      return data;
+    },
     ...DEFAULT_QUERY_CONFIG,
   });
 
 export const useResellerCommissionSummary = () =>
   useQuery({
     queryKey: QUERY_KEYS.RESELLERS.COMMISSION_SUMMARY,
-    queryFn: resellersApi.getCommissionSummary,
+    queryFn: async () => {
+      const data = await resellersApi.getCommissionSummary();
+      // Handle both object and array formats
+      if (Array.isArray(data)) {
+        // Transform array to object format for backward compatibility
+        const thisMonth = data.find((item: any) => item.period === 'this_month' || item.period?.toLowerCase().includes('month'));
+        const last30Days = data.find((item: any) => item.period === 'last_30_days' || item.period?.toLowerCase().includes('30'));
+        return {
+          this_month: thisMonth || { orders_count: 0, gmv: '0', commission_amount: '0' },
+          last_30_days: last30Days || { orders_count: 0, gmv: '0', commission_amount: '0' },
+        };
+      }
+      return data;
+    },
     ...DEFAULT_QUERY_CONFIG,
   });
 
-export const useResellerStorefronts = () =>
+export const useResellerStorefronts = (params?: { search?: string; ordering?: string; pageSize?: number }) =>
   useQuery({
-    queryKey: QUERY_KEYS.RESELLERS.STOREFRONTS,
+    queryKey: QUERY_KEYS.RESELLERS.STOREFRONTS(params),
     queryFn: async () => {
-      const data = await resellersApi.getStorefronts();
+      const data = await resellersApi.getStorefronts({
+        search: params?.search,
+        ordering: params?.ordering,
+        page_size: params?.pageSize,
+      });
       // Handle both array and paginated response
       if (Array.isArray(data)) {
         return data;
@@ -100,11 +127,18 @@ export const useResellerStorefronts = () =>
     ...DEFAULT_QUERY_CONFIG,
   });
 
-export const useResellerStorefrontProducts = (storefrontId: string, enabled = true) =>
+export const useResellerStorefrontProducts = (
+  storefrontId: string, 
+  enabled = true,
+  params?: { ordering?: string; pageSize?: number }
+) =>
   useQuery({
-    queryKey: QUERY_KEYS.RESELLERS.STOREFRONT_PRODUCTS(storefrontId),
+    queryKey: QUERY_KEYS.RESELLERS.STOREFRONT_PRODUCTS(storefrontId, params),
     queryFn: async () => {
-      const data = await resellersApi.getStorefrontProducts(storefrontId);
+      const data = await resellersApi.getStorefrontProducts(storefrontId, {
+        ordering: params?.ordering,
+        page_size: params?.pageSize,
+      });
       // Ensure we always return an array
       if (Array.isArray(data)) {
         return data;
@@ -123,11 +157,15 @@ export const useResellerStorefrontProducts = (storefrontId: string, enabled = tr
     ...DEFAULT_QUERY_CONFIG,
   });
 
-export const useResellerMarketingAssets = () =>
+export const useResellerMarketingAssets = (params?: { search?: string; ordering?: string; pageSize?: number }) =>
   useQuery({
-    queryKey: QUERY_KEYS.RESELLERS.MARKETING_ASSETS,
+    queryKey: QUERY_KEYS.RESELLERS.MARKETING_ASSETS(params),
     queryFn: async () => {
-      const data = await resellersApi.getMarketingAssets();
+      const data = await resellersApi.getMarketingAssets({
+        search: params?.search,
+        ordering: params?.ordering,
+        page_size: params?.pageSize,
+      });
       // Handle both array and paginated response
       if (Array.isArray(data)) {
         return data;

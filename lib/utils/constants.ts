@@ -104,14 +104,15 @@ export const QUERY_KEYS = {
     },
     RESELLERS: {
         ME: ['resellers', 'me'] as const,
-        ANALYTICS: ['resellers', 'analytics', 'overview'] as const,
+        ANALYTICS: (params?: any) => ['resellers', 'analytics', 'overview', params] as const,
         COMMISSIONS: (params?: any) => ['resellers', 'commissions', params] as const,
         COMMISSION_SUMMARY: ['resellers', 'commissions', 'summary'] as const,
-        STOREFRONTS: ['resellers', 'storefronts'] as const,
-        STOREFRONT_PRODUCTS: (storefrontId: string) => ['resellers', 'storefronts', storefrontId, 'products'] as const,
-        MARKETING_ASSETS: ['resellers', 'marketing-assets'] as const,
+        STOREFRONTS: (params?: any) => ['resellers', 'storefronts', params] as const,
+        STOREFRONT_PRODUCTS: (storefrontId: string, params?: any) => ['resellers', 'storefronts', storefrontId, 'products', params] as const,
+        MARKETING_ASSETS: (params?: any) => ['resellers', 'marketing-assets', params] as const,
         MARKETING_ASSET: (id: string) => ['resellers', 'marketing-assets', id] as const,
         APPLICATION: ['resellers', 'application'] as const,
+        STOREFRONT_SHARING: (storefrontId: string) => ['resellers', 'storefronts', storefrontId, 'sharing'] as const,
     },
     MARKETING: {
         LOYALTY: {

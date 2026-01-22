@@ -16,8 +16,8 @@ import dynamic from 'next/dynamic';
 
 // Dynamically import QR code to avoid SSR issues
 // react-qr-code exports QRCodeSVG as named export
-const QRCodeSVG = dynamic(
-  () => import('react-qr-code').then((mod) => mod.QRCodeSVG),
+const QRCode = dynamic(
+  () => import("react-qr-code").then((mod) => mod.default),
   {
     ssr: false,
     loading: () => (
@@ -27,7 +27,6 @@ const QRCodeSVG = dynamic(
     ),
   }
 );
-
 interface StorefrontSharingProps {
   storefrontId: string;
   storefrontSlug: string;
@@ -269,12 +268,12 @@ export default function StorefrontSharing({
               <div className="space-y-4">
                 <div className="flex flex-col items-center justify-center p-6 bg-[#0f172a] rounded-lg border border-gray-800">
                   <div className="bg-white p-4 rounded-lg mb-4">
-                    <QRCodeSVG
+                        <QRCode
                       id="qr-code-svg"
                       value={qrCodeData}
                       size={200}
                       level="H"
-                      includeMargin={true}
+                      // includeMargin={true}
                     />
                   </div>
                   <p className="text-sm text-gray-400 text-center mb-4">

@@ -60,6 +60,7 @@ import {
   Storefront,
 } from "@/hooks/useResellers";
 import { useProducts, useCategories } from "@/hooks/useProducts";
+import { useOrders } from "@/hooks/useOrders";
 import StorefrontSharing from "@/components/reseller/StorefrontSharing";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils/formatters";
@@ -97,8 +98,18 @@ export default function ResellerDashboard() {
   const [commissionPage, setCommissionPage] = useState(1);
   const [commissionStatus, setCommissionStatus] = useState<string | undefined>(undefined);
   const [commissionStorefront, setCommissionStorefront] = useState<string | undefined>(undefined);
+  const [commissionDateFrom, setCommissionDateFrom] = useState<string | undefined>(undefined);
+  const [commissionDateTo, setCommissionDateTo] = useState<string | undefined>(undefined);
+  const [analyticsDateFrom, setAnalyticsDateFrom] = useState<string | undefined>(undefined);
+  const [analyticsDateTo, setAnalyticsDateTo] = useState<string | undefined>(undefined);
   const [profileForm, setProfileForm] = useState<Record<string, string>>({});
   const [selectedStorefront, setSelectedStorefront] = useState<string | null>(null);
+  const [marketingAssetsSearch, setMarketingAssetsSearch] = useState<string>("");
+  const [marketingAssetsOrdering, setMarketingAssetsOrdering] = useState<string>("");
+  const [selectedMarketingAsset, setSelectedMarketingAsset] = useState<string | null>(null);
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
+  const [orderDateFrom, setOrderDateFrom] = useState<string | undefined>(undefined);
+  const [orderDateTo, setOrderDateTo] = useState<string | undefined>(undefined);
   
   // Storefront management state
   const [createStorefrontOpen, setCreateStorefrontOpen] = useState(false);
@@ -119,19 +130,36 @@ export default function ResellerDashboard() {
   const [sharingStorefrontSlug, setSharingStorefrontSlug] = useState<string>("");
 
   const { data: profile, isLoading: loadingProfile } = useResellerProfile();
-  const { data: analytics, isLoading: loadingAnalytics } = useResellerAnalytics();
+  const { data: analytics, isLoading: loadingAnalytics } = useResellerAnalytics({
+    dateFrom: analyticsDateFrom,
+    dateTo: analyticsDateTo,
+  });
   const { data: summary, isLoading: loadingSummary } = useResellerCommissionSummary();
   const { data: commissions, isLoading: loadingCommissions } = useResellerCommissions({
     page: commissionPage,
     status: commissionStatus as any,
     storefront: commissionStorefront,
+    date_from: commissionDateFrom,
+    date_to: commissionDateTo,
   });
   const { data: storefronts, isLoading: loadingStorefronts } = useResellerStorefronts();
   const { data: storefrontProducts, isLoading: loadingStorefrontProducts } = useResellerStorefrontProducts(
     selectedStorefront || "",
-    !!selectedStorefront
+    !!selectedStorefront,
+    {
+      ordering: 'position', // Order by position like the public storefront
+      pageSize: 200, // Fetch up to 200 products to show all products
+    }
   );
-  const { data: marketingAssets, isLoading: loadingMarketing } = useResellerMarketingAssets();
+  const { data: marketingAssets, isLoading: loadingMarketing } = useResellerMarketingAssets({
+    search: marketingAssetsSearch || undefined,
+    ordering: marketingAssetsOrdering || undefined,
+  });
+  const { data: ordersData, isLoading: loadingOrders } = useOrders({
+    status: orderStatusFilter === "all" ? undefined : orderStatusFilter,
+    date_from: orderDateFrom,
+    date_to: orderDateTo,
+  });
   const updateProfileMutation = useUpdateResellerProfile();
   
   // Storefront mutations
@@ -601,7 +629,15 @@ export default function ResellerDashboard() {
                         <CardHeader className="pb-2 flex flex-row items-center justify-between">
                           <div>
                             <CardTitle className="text-base text-white">{sf.name}</CardTitle>
-                            <CardDescription className="text-xs text-gray-500">Slug: {sf.slug}</CardDescription>
+                            <CardDescription className="text-xs text-gray-500">
+                              Slug: {sf.slug}
+                              {sf.resellerCompanyName && ` • ${sf.resellerCompanyName}`}
+                            </CardDescription>
+                            {sf.resellerId && (
+                              <CardDescription className="text-xs text-gray-600 mt-1">
+                                Reseller ID: {sf.resellerId.substring(0, 8)}...
+                              </CardDescription>
+                            )}
                           </div>
                           <Badge variant="secondary" className="bg-[#0b1224] text-white border border-[#1f2a44]">
                             {sf.type}
@@ -800,38 +836,143 @@ export default function ResellerDashboard() {
 
           {/* Order Tab */}
           <TabsContent value="order" className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Orders</h2>
+                <p className={mutedText}>View orders attributed to your storefronts.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+                  <SelectTrigger className="w-40 bg-[#0f172a] border-gray-800 text-white">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="shipped">Shipped</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={orderDateFrom || ""}
+                    onChange={(e) => setOrderDateFrom(e.target.value || undefined)}
+                    placeholder="From Date"
+                    className="w-40 bg-[#0f172a] border-gray-800 text-white"
+                  />
+                  <span className="text-gray-400">to</span>
+                  <Input
+                    type="date"
+                    value={orderDateTo || ""}
+                    onChange={(e) => setOrderDateTo(e.target.value || undefined)}
+                    placeholder="To Date"
+                    className="w-40 bg-[#0f172a] border-gray-800 text-white"
+                  />
+                  {(orderDateFrom || orderDateTo) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setOrderDateFrom(undefined);
+                        setOrderDateTo(undefined);
+                      }}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <Card className={cardBase}>
               <CardHeader>
-                <CardTitle className="text-lg text-white">Orders</CardTitle>
-                <CardDescription className={mutedText}>View orders attributed to your storefronts.</CardDescription>
+                <CardTitle className="text-lg text-white">Order List</CardTitle>
+                <CardDescription className={mutedText}>Orders with reseller attribution.</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
-                <p className={mutedText}>Order management coming soon.</p>
+                {loadingOrders ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : !ordersData || (Array.isArray(ordersData) ? ordersData.length === 0 : ordersData.results?.length === 0) ? (
+                  <p className={mutedText}>No orders found.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-gray-800">
+                          <TableHead className="text-gray-300">Order ID</TableHead>
+                          <TableHead className="text-gray-300">Storefront</TableHead>
+                          <TableHead className="text-gray-300">Total</TableHead>
+                          <TableHead className="text-gray-300">Status</TableHead>
+                          <TableHead className="text-gray-300">Payment</TableHead>
+                          <TableHead className="text-gray-300">Date</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(Array.isArray(ordersData) ? ordersData : ordersData.results || []).map((order: any) => (
+                          <TableRow key={order.id} className="border-gray-800">
+                            <TableCell className="font-medium text-white">{order.id}</TableCell>
+                            <TableCell>
+                              {order.storefrontSlug || order.storefront_slug ? (
+                                <Badge variant="outline" className="border-gray-700 text-gray-300">
+                                  {order.storefrontSlug || order.storefront_slug}
+                                </Badge>
+                              ) : (
+                                <span className="text-gray-500">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-white">{formatCurrency(parseFloat(order.total || "0"))}</TableCell>
+                            <TableCell>
+                              <Badge className={statusBadgeMap[order.status] || "bg-muted text-muted-foreground"}>
+                                {order.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={statusBadgeMap[order.payment_status] || "bg-muted text-muted-foreground"}>
+                                {order.payment_status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-400">
+                              {new Date(order.created_at).toLocaleDateString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* Earning Tab */}
           <TabsContent value="earning" className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-white">Commission Ledger</h2>
                 <p className={mutedText}>Track earned, paid, and pending commissions.</p>
               </div>
-              <div className="flex gap-2">
-                <Select onValueChange={(v) => setCommissionStatus(v === "all" ? undefined : v)}>
+              <div className="flex flex-wrap items-center gap-3">
+                <Select value={commissionStatus || "all"} onValueChange={(v) => setCommissionStatus(v === "all" ? undefined : v)}>
                   <SelectTrigger className="w-40 bg-[#0f172a] border-gray-800 text-white">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="earned">Earned</SelectItem>
                     <SelectItem value="paid">Paid</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="voided">Voided</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select onValueChange={(v) => setCommissionStorefront(v === "all" ? undefined : v)}>
+                <Select value={commissionStorefront || "all"} onValueChange={(v) => setCommissionStorefront(v === "all" ? undefined : v)}>
                   <SelectTrigger className="w-40 bg-[#0f172a] border-gray-800 text-white">
                     <SelectValue placeholder="Storefront" />
                   </SelectTrigger>
@@ -844,6 +985,36 @@ export default function ResellerDashboard() {
                     ))}
                   </SelectContent>
                 </Select>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={commissionDateFrom || ""}
+                    onChange={(e) => setCommissionDateFrom(e.target.value || undefined)}
+                    placeholder="From Date"
+                    className="w-40 bg-[#0f172a] border-gray-800 text-white"
+                  />
+                  <span className="text-gray-400">to</span>
+                  <Input
+                    type="date"
+                    value={commissionDateTo || ""}
+                    onChange={(e) => setCommissionDateTo(e.target.value || undefined)}
+                    placeholder="To Date"
+                    className="w-40 bg-[#0f172a] border-gray-800 text-white"
+                  />
+                  {(commissionDateFrom || commissionDateTo) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setCommissionDateFrom(undefined);
+                        setCommissionDateTo(undefined);
+                      }}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -901,18 +1072,35 @@ export default function ResellerDashboard() {
                     <Table>
                       <TableHeader>
                         <TableRow className="border-gray-800">
-                          <TableHead className="text-gray-300">Order</TableHead>
+                          <TableHead className="text-gray-300">Order ID</TableHead>
+                          <TableHead className="text-gray-300">Storefront</TableHead>
                           <TableHead className="text-gray-300">Status</TableHead>
-                          <TableHead className="text-gray-300">Base</TableHead>
+                          <TableHead className="text-gray-300">Base Amount</TableHead>
                           <TableHead className="text-gray-300">Rate</TableHead>
                           <TableHead className="text-gray-300">Commission</TableHead>
-                          <TableHead className="text-gray-300">Date</TableHead>
+                          <TableHead className="text-gray-300">Earned At</TableHead>
+                          <TableHead className="text-gray-300">Paid At</TableHead>
+                          <TableHead className="text-gray-300">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {commissionsList.map((item: ResellerCommission) => (
                           <TableRow key={item.id} className="border-gray-800">
-                            <TableCell className="font-medium text-white">{item.order}</TableCell>
+                            <TableCell className="font-medium text-white">
+                              <div className="flex flex-col">
+                                <span className="text-xs text-gray-400">Order:</span>
+                                <span>{item.orderId || item.order}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-white">
+                              {item.storefrontSlug ? (
+                                <Badge variant="outline" className="border-gray-700 text-gray-300">
+                                  {item.storefrontSlug}
+                                </Badge>
+                              ) : (
+                                <span className="text-gray-500">—</span>
+                              )}
+                            </TableCell>
                             <TableCell>{renderCommissionStatus(item.status)}</TableCell>
                             <TableCell className="text-white">{formatCurrency(parseFloat(item.base_amount || "0"))}</TableCell>
                             <TableCell className="text-white">{(parseFloat(item.commission_rate || "0") * 100).toFixed(1)}%</TableCell>
@@ -920,7 +1108,45 @@ export default function ResellerDashboard() {
                               {formatCurrency(parseFloat(item.commission_amount || "0"))}
                             </TableCell>
                             <TableCell className="text-sm text-gray-400">
-                              {new Date(item.earned_at || item.created_at).toLocaleDateString()}
+                              {item.earned_at ? (
+                                <div className="flex flex-col">
+                                  <span>{new Date(item.earned_at).toLocaleDateString()}</span>
+                                  <span className="text-xs text-gray-500">{new Date(item.earned_at).toLocaleTimeString()}</span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-500">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-400">
+                              {item.paid_at ? (
+                                <div className="flex flex-col">
+                                  <span>{new Date(item.paid_at).toLocaleDateString()}</span>
+                                  <span className="text-xs text-gray-500">{new Date(item.paid_at).toLocaleTimeString()}</span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-500">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {(item.void_reason || item.metadata) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    // Show details in a dialog
+                                    const details = [];
+                                    if (item.void_reason) details.push(`Void Reason: ${item.void_reason}`);
+                                    if (item.metadata) details.push(`Metadata: ${JSON.stringify(item.metadata, null, 2)}`);
+                                    toast({
+                                      title: "Commission Details",
+                                      description: details.join("\n"),
+                                    });
+                                  }}
+                                  className="h-7 w-7 p-0 text-gray-400 hover:text-white"
+                                >
+                                  <FileText className="h-3 w-3" />
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -961,88 +1187,374 @@ export default function ResellerDashboard() {
 
           {/* Analytic Tab */}
           <TabsContent value="analytic" className="space-y-6">
-            <Card className={cardBase}>
-              <CardHeader>
-                <CardTitle className="text-lg text-white">Analytics</CardTitle>
-                <CardDescription className={mutedText}>Detailed analytics and insights.</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6">
-                {loadingAnalytics ? (
-                  <Skeleton className="h-64 w-full" />
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Card className={cardBase}>
-                        <CardHeader>
-                          <CardTitle className="text-base text-white">Lifetime Stats</CardTitle>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Analytics Dashboard</h2>
+                <p className={mutedText}>Comprehensive performance metrics and insights</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={analyticsDateFrom || ""}
+                  onChange={(e) => setAnalyticsDateFrom(e.target.value || undefined)}
+                  placeholder="From Date"
+                  className="w-40 bg-[#0f172a] border-gray-800 text-white"
+                />
+                <span className="text-gray-400">to</span>
+                <Input
+                  type="date"
+                  value={analyticsDateTo || ""}
+                  onChange={(e) => setAnalyticsDateTo(e.target.value || undefined)}
+                  placeholder="To Date"
+                  className="w-40 bg-[#0f172a] border-gray-800 text-white"
+                />
+                {(analyticsDateFrom || analyticsDateTo) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setAnalyticsDateFrom(undefined);
+                      setAnalyticsDateTo(undefined);
+                    }}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Key Metrics Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {loadingAnalytics ? (
+                <>
+                  <Skeleton className="h-32 w-full" />
+                  <Skeleton className="h-32 w-full" />
+                  <Skeleton className="h-32 w-full" />
+                  <Skeleton className="h-32 w-full" />
+                </>
+              ) : (
+                <>
+                  {metricCard(
+                    "Lifetime GMV",
+                    formatCurrency(parseFloat(analytics?.lifetime?.gmv || "0")),
+                    TrendingUp,
+                    `${analytics?.lifetime?.orders_count || 0} orders`
+                  )}
+                  {metricCard(
+                    "Lifetime Commission",
+                    formatCurrency(parseFloat(analytics?.lifetime?.commission_amount || "0")),
+                    DollarSign,
+                    `${analytics?.lifetime?.new_customers_count || 0} new customers`
+                  )}
+                  {metricCard(
+                    "This Month GMV",
+                    formatCurrency(parseFloat(analytics?.month_to_date?.gmv || "0")),
+                    BarChart3,
+                    `${analytics?.month_to_date?.orders_count || 0} orders`
+                  )}
+                  {metricCard(
+                    "Last 30 Days GMV",
+                    formatCurrency(parseFloat(analytics?.last_30_days?.gmv || "0")),
+                    ShoppingCart,
+                    `${analytics?.last_30_days?.orders_count || 0} orders`
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Detailed Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className={cardBase}>
+                <CardHeader>
+                  <CardTitle className="text-base text-white flex items-center gap-2">
+                    <Users className="h-4 w-4 text-[#00bfff]" />
+                    Lifetime Performance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">Total GMV</span>
+                      <span className="text-white font-semibold">
+                        {formatCurrency(parseFloat(analytics?.lifetime?.gmv || "0"))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">Total Commission</span>
+                      <span className="text-white font-semibold">
+                        {formatCurrency(parseFloat(analytics?.lifetime?.commission_amount || "0"))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">Total Orders</span>
+                      <span className="text-white font-semibold">{analytics?.lifetime?.orders_count || 0}</span>
+                    </div>
+                    {analytics?.lifetime?.new_customers_count !== undefined && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400 text-sm">New Customers</span>
+                        <span className="text-white font-semibold">{analytics.lifetime.new_customers_count}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className={cardBase}>
+                <CardHeader>
+                  <CardTitle className="text-base text-white flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-[#00bfff]" />
+                    This Month (MTD)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">GMV</span>
+                      <span className="text-white font-semibold">
+                        {formatCurrency(parseFloat(analytics?.month_to_date?.gmv || "0"))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">Commission</span>
+                      <span className="text-white font-semibold">
+                        {formatCurrency(parseFloat(analytics?.month_to_date?.commission_amount || "0"))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">Orders</span>
+                      <span className="text-white font-semibold">{analytics?.month_to_date?.orders_count || 0}</span>
+                    </div>
+                    {analytics?.month_to_date?.new_customers_count !== undefined && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400 text-sm">New Customers</span>
+                        <span className="text-white font-semibold">{analytics.month_to_date.new_customers_count}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className={cardBase}>
+                <CardHeader>
+                  <CardTitle className="text-base text-white flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-[#00bfff]" />
+                    Last 30 Days
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">GMV</span>
+                      <span className="text-white font-semibold">
+                        {formatCurrency(parseFloat(analytics?.last_30_days?.gmv || "0"))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">Commission</span>
+                      <span className="text-white font-semibold">
+                        {formatCurrency(parseFloat(analytics?.last_30_days?.commission_amount || "0"))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">Orders</span>
+                      <span className="text-white font-semibold">{analytics?.last_30_days?.orders_count || 0}</span>
+                    </div>
+                    {analytics?.last_30_days?.new_customers_count !== undefined && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400 text-sm">New Customers</span>
+                        <span className="text-white font-semibold">{analytics.last_30_days.new_customers_count}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Top Storefronts */}
+            {analytics?.top_storefronts && analytics.top_storefronts.length > 0 && (
+              <Card className={cardBase}>
+                <CardHeader>
+                  <CardTitle className="text-lg text-white flex items-center gap-2">
+                    <Store className="h-5 w-5 text-[#00bfff]" />
+                    Top Performing Storefronts
+                  </CardTitle>
+                  <CardDescription className={mutedText}>Best performing storefronts by GMV and commission</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {analytics.top_storefronts.map((storefront) => (
+                      <Card key={storefront.id} className={`${cardBase} border border-gray-800`}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base text-white">{storefront.name}</CardTitle>
+                          <CardDescription className="text-xs text-gray-500">Slug: {storefront.slug}</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Total GMV:</span>
+                        <CardContent className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">GMV</span>
+                            <span className="text-white font-semibold">{formatCurrency(parseFloat(storefront.gmv || "0"))}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">Commission</span>
                             <span className="text-white font-semibold">
-                              {formatCurrency(parseFloat(analytics?.lifetime?.gmv || "0"))}
+                              {formatCurrency(parseFloat(storefront.commission_amount || "0"))}
                             </span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Total Commission:</span>
-                            <span className="text-white font-semibold">
-                              {formatCurrency(parseFloat(analytics?.lifetime?.commission_amount || "0"))}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Total Orders:</span>
-                            <span className="text-white font-semibold">{analytics?.lifetime?.orders_count || 0}</span>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">Orders</span>
+                            <span className="text-white font-semibold">{storefront.orders_count}</span>
                           </div>
                         </CardContent>
                       </Card>
-                      <Card className={cardBase}>
-                        <CardHeader>
-                          <CardTitle className="text-base text-white">This Month</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">GMV:</span>
-                            <span className="text-white font-semibold">
-                              {formatCurrency(parseFloat(analytics?.month_to_date?.gmv || "0"))}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Commission:</span>
-                            <span className="text-white font-semibold">
-                              {formatCurrency(parseFloat(analytics?.month_to_date?.commission_amount || "0"))}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Orders:</span>
-                            <span className="text-white font-semibold">{analytics?.month_to_date?.orders_count || 0}</span>
-                          </div>
-                        </CardContent>
-                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Recent Commissions */}
+            {analytics?.recent_commissions && analytics.recent_commissions.length > 0 && (
+              <Card className={cardBase}>
+                <CardHeader>
+                  <CardTitle className="text-lg text-white flex items-center gap-2">
+                    <Receipt className="h-5 w-5 text-[#00bfff]" />
+                    Recent Commissions
+                  </CardTitle>
+                  <CardDescription className={mutedText}>Latest commission entries</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-gray-800">
+                          <TableHead className="text-gray-300">Order</TableHead>
+                          <TableHead className="text-gray-300">Status</TableHead>
+                          <TableHead className="text-gray-300">Commission</TableHead>
+                          <TableHead className="text-gray-300">Date</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {analytics.recent_commissions.slice(0, 10).map((commission: ResellerCommission) => (
+                          <TableRow key={commission.id} className="border-gray-800">
+                            <TableCell className="font-medium text-white">
+                              {commission.orderId || commission.order}
+                            </TableCell>
+                            <TableCell>{renderCommissionStatus(commission.status)}</TableCell>
+                            <TableCell className="font-semibold text-white">
+                              {formatCurrency(parseFloat(commission.commission_amount || "0"))}
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-400">
+                              {new Date(commission.earned_at || commission.created_at).toLocaleDateString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Performance Comparison */}
+            {analytics && (
+              <Card className={cardBase}>
+                <CardHeader>
+                  <CardTitle className="text-lg text-white">Performance Comparison</CardTitle>
+                  <CardDescription className={mutedText}>Compare different time periods</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-400">Lifetime vs This Month</p>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">GMV Ratio</span>
+                          <span className="text-white">
+                            {parseFloat(analytics.lifetime?.gmv || "0") > 0
+                              ? ((parseFloat(analytics.month_to_date?.gmv || "0") / parseFloat(analytics.lifetime.gmv)) * 100).toFixed(1)
+                              : "0"}
+                            %
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Commission Ratio</span>
+                          <span className="text-white">
+                            {parseFloat(analytics.lifetime?.commission_amount || "0") > 0
+                              ? ((parseFloat(analytics.month_to_date?.commission_amount || "0") / parseFloat(analytics.lifetime.commission_amount)) * 100).toFixed(1)
+                              : "0"}
+                            %
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-400">This Month vs Last 30 Days</p>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">GMV Difference</span>
+                          <span className="text-white">
+                            {formatCurrency(
+                              parseFloat(analytics.month_to_date?.gmv || "0") - parseFloat(analytics.last_30_days?.gmv || "0")
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Commission Difference</span>
+                          <span className="text-white">
+                            {formatCurrency(
+                              parseFloat(analytics.month_to_date?.commission_amount || "0") -
+                              parseFloat(analytics.last_30_days?.commission_amount || "0")
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-400">Average Metrics</p>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Avg Order Value (Lifetime)</span>
+                          <span className="text-white">
+                            {analytics.lifetime?.orders_count && analytics.lifetime.orders_count > 0
+                              ? formatCurrency(parseFloat(analytics.lifetime.gmv || "0") / analytics.lifetime.orders_count)
+                              : "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Commission Rate</span>
+                          <span className="text-white">
+                            {parseFloat(analytics.lifetime?.gmv || "0") > 0
+                              ? ((parseFloat(analytics.lifetime.commission_amount || "0") / parseFloat(analytics.lifetime.gmv)) * 100).toFixed(2)
+                              : "0"}
+                            %
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Pricing Tab */}
           <TabsContent value="pricing" className="space-y-6">
             <Card className={cardBase}>
               <CardHeader>
-                <CardTitle className="text-lg text-white">Pricing</CardTitle>
-                <CardDescription className={mutedText}>View your commission rates and pricing structure.</CardDescription>
+                <CardTitle className="text-lg text-white">Profile & Pricing</CardTitle>
+                <CardDescription className={mutedText}>View your reseller profile, tier information, and commission rates.</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 {loadingProfile ? (
                   <Skeleton className="h-32 w-full" />
                 ) : profile ? (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Card className={cardBase}>
                         <CardHeader>
                           <CardTitle className="text-base text-white">Tier Information</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
+                        <CardContent className="space-y-3 text-sm">
                           <div className="flex justify-between">
                             <span className="text-gray-400">Tier:</span>
                             <span className="text-white font-semibold">{profile.tier?.display_name || profile.tier?.name || "N/A"}</span>
@@ -1055,9 +1567,113 @@ export default function ResellerDashboard() {
                                 : "N/A"}
                             </span>
                           </div>
+                          {profile.tier?.min_payout_threshold && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Min Payout:</span>
+                              <span className="text-white font-semibold">
+                                {formatCurrency(parseFloat(profile.tier.min_payout_threshold))}
+                              </span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                      <Card className={cardBase}>
+                        <CardHeader>
+                          <CardTitle className="text-base text-white">Account Status</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Status:</span>
+                            <Badge className={statusBadgeMap[profile.status] || "bg-muted text-muted-foreground"}>
+                              {profile.status}
+                            </Badge>
+                          </div>
+                          {profile.userEmail && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Email:</span>
+                              <span className="text-white font-semibold">{profile.userEmail}</span>
+                            </div>
+                          )}
+                          {profile.approved_at && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Approved At:</span>
+                              <span className="text-white font-semibold">
+                                {new Date(profile.approved_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                          {profile.created_at && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Created:</span>
+                              <span className="text-white font-semibold">
+                                {new Date(profile.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     </div>
+                    <Card className={cardBase}>
+                      <CardHeader>
+                        <CardTitle className="text-base text-white">Company Information</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3 text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {profile.company_name && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Company Name:</span>
+                              <span className="text-white font-semibold">{profile.company_name}</span>
+                            </div>
+                          )}
+                          {profile.legal_name && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Legal Name:</span>
+                              <span className="text-white font-semibold">{profile.legal_name}</span>
+                            </div>
+                          )}
+                          {profile.vat_number && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">VAT Number:</span>
+                              <span className="text-white font-semibold">{profile.vat_number}</span>
+                            </div>
+                          )}
+                          {profile.website_url && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Website:</span>
+                              <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="text-[#00bfff] hover:underline">
+                                {profile.website_url}
+                              </a>
+                            </div>
+                          )}
+                          {profile.contact_name && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Contact Name:</span>
+                              <span className="text-white font-semibold">{profile.contact_name}</span>
+                            </div>
+                          )}
+                          {profile.contact_email && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Contact Email:</span>
+                              <span className="text-white font-semibold">{profile.contact_email}</span>
+                            </div>
+                          )}
+                          {profile.contact_phone && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Contact Phone:</span>
+                              <span className="text-white font-semibold">{profile.contact_phone}</span>
+                            </div>
+                          )}
+                          {profile.default_commission_rate && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Default Commission:</span>
+                              <span className="text-white font-semibold">
+                                {(parseFloat(profile.default_commission_rate) * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 ) : (
                   <p className={mutedText}>Profile unavailable.</p>
@@ -1077,6 +1693,174 @@ export default function ResellerDashboard() {
                 <p className={mutedText}>Messages feature coming soon.</p>
               </CardContent>
             </Card>
+
+            {/* Marketing Assets Section */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Marketing Assets</h2>
+                <p className={mutedText}>Download marketing materials for your tier.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1 max-w-xs">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search assets..."
+                    value={marketingAssetsSearch}
+                    onChange={(e) => setMarketingAssetsSearch(e.target.value)}
+                    className="pl-10 bg-[#0f172a] border-gray-700 text-white"
+                  />
+                </div>
+                <Select value={marketingAssetsOrdering || "created_at"} onValueChange={setMarketingAssetsOrdering}>
+                  <SelectTrigger className="w-40 bg-[#0f172a] border-gray-800 text-white">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_at">Newest First</SelectItem>
+                    <SelectItem value="-created_at">Oldest First</SelectItem>
+                    <SelectItem value="title">Title (A-Z)</SelectItem>
+                    <SelectItem value="-title">Title (Z-A)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Card className={cardBase}>
+              <CardContent className="pt-6">
+                {loadingMarketing ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Skeleton className="h-48 w-full" />
+                    <Skeleton className="h-48 w-full" />
+                    <Skeleton className="h-48 w-full" />
+                  </div>
+                ) : !marketingAssets || marketingAssets.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileText className="h-12 w-12 mx-auto text-gray-600 mb-4" />
+                    <p className={mutedText}>No marketing assets available for your tier.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {marketingAssets.map((asset) => (
+                      <Card key={asset.id} className={`${cardBase} border border-gray-800 hover:border-gray-700 transition-colors`}>
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <CardTitle className="text-base text-white">{asset.title}</CardTitle>
+                            <Badge variant="outline" className="border-gray-700 text-gray-300 text-xs">
+                              {asset.asset_type}
+                            </Badge>
+                          </div>
+                          {asset.description && (
+                            <CardDescription className={mutedText}>{asset.description}</CardDescription>
+                          )}
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {asset.min_tier && (
+                            <div className="text-xs text-gray-500">
+                              Min Tier: {asset.min_tier.display_name || asset.min_tier.name}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2">
+                            {asset.file && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  window.open(asset.file || '', '_blank');
+                                }}
+                                className="flex-1 border-gray-700 bg-[#0f172a] text-white hover:bg-[#111a2f]"
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                            )}
+                            {asset.url && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  window.open(asset.url || '', '_blank');
+                                }}
+                                className="flex-1 border-gray-700 bg-[#0f172a] text-white hover:bg-[#111a2f]"
+                              >
+                                View Link
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedMarketingAsset(asset.id)}
+                              className="h-9 w-9 p-0 text-gray-400 hover:text-white"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Marketing Asset Detail Dialog */}
+            {selectedMarketingAsset && (
+              <Dialog open={!!selectedMarketingAsset} onOpenChange={(open) => !open && setSelectedMarketingAsset(null)}>
+                <DialogContent className="bg-[#0b0b0f] border-gray-800 text-white max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Marketing Asset Details</DialogTitle>
+                  </DialogHeader>
+                  {(() => {
+                    const asset = marketingAssets?.find(a => a.id === selectedMarketingAsset);
+                    if (!asset) return null;
+                    return (
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-gray-400">Title</Label>
+                          <p className="text-white">{asset.title}</p>
+                        </div>
+                        {asset.description && (
+                          <div>
+                            <Label className="text-gray-400">Description</Label>
+                            <p className="text-white">{asset.description}</p>
+                          </div>
+                        )}
+                        <div>
+                          <Label className="text-gray-400">Type</Label>
+                          <Badge variant="outline" className="border-gray-700 text-gray-300">
+                            {asset.asset_type}
+                          </Badge>
+                        </div>
+                        {asset.min_tier && (
+                          <div>
+                            <Label className="text-gray-400">Minimum Tier</Label>
+                            <p className="text-white">{asset.min_tier.display_name || asset.min_tier.name}</p>
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          {asset.file && (
+                            <Button
+                              onClick={() => window.open(asset.file || '', '_blank')}
+                              className="bg-[#00bfff] text-black hover:bg-[#00a8e6]"
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download File
+                            </Button>
+                          )}
+                          {asset.url && (
+                            <Button
+                              variant="outline"
+                              onClick={() => window.open(asset.url || '', '_blank')}
+                              className="border-gray-700 text-white"
+                            >
+                              Open URL
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </DialogContent>
+              </Dialog>
+            )}
           </TabsContent>
 
           {/* Licensing Tab */}

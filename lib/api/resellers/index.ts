@@ -16,6 +16,7 @@ export interface ResellerTier {
 export interface ResellerProfile {
   id: string;
   user: string;
+  userEmail?: string; // From API: user_email (transformed to camelCase)
   tier: ResellerTier;
   company_name?: string;
   legal_name?: string;
@@ -25,6 +26,8 @@ export interface ResellerProfile {
   contact_email?: string;
   contact_phone?: string;
   status: ResellerStatus;
+  approved_at?: string; // From API
+  approved_by?: string; // From API
   payout_method?: string;
   payout_details?: Record<string, any>;
   default_commission_rate?: string | null;
@@ -57,13 +60,20 @@ export interface ResellerAnalyticsOverview {
   recent_commissions?: ResellerCommission[];
 }
 
+export interface AnalyticsOverviewParams {
+  date_from?: string; // YYYY-MM-DD
+  date_to?: string; // YYYY-MM-DD
+}
+
 export type CommissionStatus = 'pending' | 'earned' | 'voided' | 'paid';
 
 export interface ResellerCommission {
   id: string;
   order: string;
+  orderId?: string; // From API: order_id (transformed to camelCase)
   reseller: string;
   storefront?: string | null;
+  storefrontSlug?: string; // From API: storefront_slug (transformed to camelCase)
   base_amount: string;
   commission_rate: string;
   commission_amount: string;
@@ -73,15 +83,18 @@ export interface ResellerCommission {
   void_reason?: string | null;
   metadata?: Record<string, any>;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface CommissionListParams {
+  cursor?: string; // For cursor pagination
   page?: number;
   page_size?: number;
+  ordering?: string; // Ordering field
   status?: CommissionStatus;
   storefront?: string;
-  date_from?: string;
-  date_to?: string;
+  date_from?: string; // YYYY-MM-DD
+  date_to?: string; // YYYY-MM-DD
 }
 
 export interface PaginatedResponse<T> {
@@ -91,16 +104,29 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
-export interface CommissionSummary {
-  this_month: ResellerSummaryStats;
-  last_30_days: ResellerSummaryStats;
+// Commission Summary can be an array of period summaries
+export interface CommissionSummaryPeriod {
+  period: string; // e.g., "this_month", "last_30_days"
+  orders_count: number;
+  gmv: string;
+  commission_amount: string;
 }
+
+// Support both object and array formats
+export type CommissionSummary = 
+  | {
+      this_month: ResellerSummaryStats;
+      last_30_days: ResellerSummaryStats;
+    }
+  | CommissionSummaryPeriod[];
 
 export type StorefrontType = 'online' | 'physical_screen' | 'link';
 
 export interface Storefront {
   id: string;
   reseller: string;
+  resellerId?: string; // From API: reseller_id (transformed to camelCase)
+  resellerCompanyName?: string; // From API: reseller_company_name (transformed to camelCase)
   name: string;
   slug: string;
   type: StorefrontType;
@@ -112,6 +138,13 @@ export interface Storefront {
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface StorefrontListParams {
+  cursor?: string;
+  ordering?: string;
+  page_size?: number;
+  search?: string;
 }
 
 export interface StorefrontProduct {
@@ -148,6 +181,13 @@ export interface MarketingAsset {
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface MarketingAssetsParams {
+  cursor?: string;
+  ordering?: string;
+  page_size?: number;
+  search?: string;
 }
 
 export interface UpdateProfilePayload {
@@ -205,14 +245,16 @@ export const resellersApi = {
   // Check application status (requires authentication)
   getMyApplication: () => api.get<ResellerApplication>('/resellers/applications/me/'),
 
-  getAnalyticsOverview: () => api.get<ResellerAnalyticsOverview>('/resellers/analytics/overview/'),
+  getAnalyticsOverview: (params?: AnalyticsOverviewParams) => 
+    api.get<ResellerAnalyticsOverview>('/resellers/analytics/overview/', { params }),
 
   getCommissions: (params?: CommissionListParams) =>
     api.get<PaginatedResponse<ResellerCommission>>('/resellers/commissions/', { params }),
 
   getCommissionSummary: () => api.get<CommissionSummary>('/resellers/commissions/summary/'),
 
-  getStorefronts: () => api.get<Storefront[]>('/resellers/storefronts/'),
+  getStorefronts: (params?: StorefrontListParams) => 
+    api.get<PaginatedResponse<Storefront> | Storefront[]>('/resellers/storefronts/', { params }),
 
   getStorefront: (id: string) => api.get<Storefront>(`/resellers/storefronts/${id}/`),
 
@@ -222,8 +264,8 @@ export const resellersApi = {
   updateStorefront: (id: string, data: Partial<Storefront>) =>
     api.patch<Storefront>(`/resellers/storefronts/${id}/`, data),
 
-  getStorefrontProducts: (storefrontId: string) =>
-    api.get<StorefrontProduct[]>(`/resellers/storefronts/${storefrontId}/products/`),
+  getStorefrontProducts: (storefrontId: string, params?: { cursor?: string; ordering?: string; page_size?: number }) =>
+    api.get<PaginatedResponse<StorefrontProduct> | StorefrontProduct[]>(`/resellers/storefronts/${storefrontId}/products/`, { params }),
 
   bulkAddStorefrontProducts: (storefrontId: string, product_ids: string[]) =>
     api.post(`/resellers/storefronts/${storefrontId}/products/bulk-add/`, { product_ids }),
@@ -231,7 +273,8 @@ export const resellersApi = {
   removeStorefrontProduct: (storefrontId: string, productId: string) =>
     api.delete(`/resellers/storefronts/${storefrontId}/products/${productId}/`),
 
-  getMarketingAssets: () => api.get<MarketingAsset[]>('/resellers/marketing-assets/'),
+  getMarketingAssets: (params?: MarketingAssetsParams) => 
+    api.get<PaginatedResponse<MarketingAsset> | MarketingAsset[]>('/resellers/marketing-assets/', { params }),
 
   getMarketingAsset: (id: string) => api.get<MarketingAsset>(`/resellers/marketing-assets/${id}/`),
 };

@@ -29,7 +29,9 @@ export default function Cart() {
   const remaining = Math.max(FREE_SHIPPING_THRESHOLD - subtotal, 0);
   
   // Calculate discounted subtotal for display
-  const discountedSubtotal = Math.max(0, subtotal - (totalDiscount || 0));
+  // Ensure totalDiscount is a number
+  const discountAmount = typeof totalDiscount === 'string' ? parseFloat(totalDiscount) || 0 : (totalDiscount || 0);
+  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
 
   // ✅ Don't render if cart is closed
   if (!isCartOpen) return null;
@@ -263,23 +265,24 @@ export default function Cart() {
                 </span>
               </div>
               
-              {/* Show discounts if any */}
-              {totalDiscount && totalDiscount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Discount</span>
-                  <span className="text-green-400 font-medium">
-                    -£{Number(totalDiscount).toFixed(2)}
-                  </span>
-                </div>
-              )}
-              
-              {totalDiscount && totalDiscount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Discounted Subtotal</span>
-                  <span className="text-white font-medium">
-                    £{discountedSubtotal.toFixed(2)}
-                  </span>
-                </div>
+              {/* Show discounts if any - only show when there's an actual discount */}
+              {discountAmount > 0 && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Discount</span>
+                    <span className="text-green-400 font-medium">
+                      -£{discountAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  {Math.abs(discountedSubtotal - subtotal) > 0.01 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Discounted Subtotal</span>
+                      <span className="text-white font-medium">
+                        £{discountedSubtotal.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
               
               <div className="flex justify-between text-sm">

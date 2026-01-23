@@ -1,5 +1,5 @@
 // components/ProductCard.tsx - Production-Ready Version
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,6 +8,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Product } from '@/lib/api/products';
 import RatingStars from './RatingStars';
 import WishlistButton from './WishlistButton';
+import ProductVariantModal from './ProductVariantModal';
 
 interface ProductCardProps {
   product: Product | {
@@ -32,6 +33,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { addToCart } = useCart();
 
   const isApiProduct = 'title' in product;
@@ -85,10 +87,46 @@ export default function ProductCard({
       is_active: true
     };
 
+  // Check if product has multiple variants with different colors or sizes
+  const hasMultipleVariants = useMemo(() => {
+    if (!isApiProduct || !product?.variants || product.variants.length <= 1) {
+      return false;
+    }
+
+    const activeVariants = product.variants.filter(v => v?.is_active);
+    if (activeVariants.length <= 1) {
+      return false;
+    }
+
+    // Check if there are different colors
+    const colors = new Set(
+      activeVariants
+        .map(v => (v.attributes as any)?.color)
+        .filter(Boolean)
+    );
+
+    // Check if there are different sizes
+    const sizes = new Set(
+      activeVariants
+        .map(v => (v.attributes as any)?.size)
+        .filter(Boolean)
+    );
+
+    // Show modal if there are multiple colors OR multiple sizes
+    return colors.size > 1 || sizes.size > 1;
+  }, [isApiProduct, product?.variants]);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
+    // If product has multiple variants, open modal instead
+    if (hasMultipleVariants) {
+      setIsModalOpen(true);
+      return;
+    }
+
+    // Otherwise, add directly to cart (existing behavior)
     if (!defaultVariant || (isApiProduct && (defaultVariant as any)?.stock <= 0)) return;
 
     // Fix: Pass only the IDs as strings, not objects
@@ -271,6 +309,15 @@ export default function ProductCard({
           </div>
         )}
       </div>
+
+      {/* Variant Selection Modal */}
+      {isApiProduct && (
+        <ProductVariantModal
+          productId={productId}
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+        />
+      )}
     </div>
   );
 }

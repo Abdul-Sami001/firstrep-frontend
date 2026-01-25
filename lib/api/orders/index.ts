@@ -18,7 +18,9 @@ export interface OrderItem {
 
 export interface Order {
     id: string;
-    user: string; // User ID
+    user: string | null; // User ID (null for guest orders)
+    guest_email?: string | null; // Guest email for guest orders
+    guest_tracking_token?: string | null; // Tracking token for guest orders
     total: string; // Changed to string to match API
     vat: string; // Changed to string to match API
     status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
@@ -28,6 +30,7 @@ export interface Order {
     created_at: string;
     shipping_address?: string;
     billing_address?: string;
+    tracking_number?: string | null; // Shipping carrier tracking number
     items: OrderItem[];
     // Reseller attribution fields (from backend)
     reseller_id?: string | null;
@@ -61,6 +64,10 @@ export const ordersApi = {
     // Get single order details
     getOrder: (id: string) =>
         api.get<Order>(`/orders/${id}/`),
+
+    // Track order by guest tracking token (public endpoint, no auth required)
+    trackOrder: (trackingToken: string) =>
+        api.get<Order>(`/orders/track/${trackingToken}/`),
 
     // Cancel order
     cancelOrder: (id: string) =>

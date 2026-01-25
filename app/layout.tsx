@@ -9,11 +9,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PromoBanner from "@/components/PromoBanner";
 import Cart from "@/components/Cart";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
+import CookieSettingsModal from "@/components/CookieSettingsModal";
 import { ReactNode, useState } from "react";
 
 const geistSans = Geist({
@@ -56,24 +59,28 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning={true}>
       <body className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} bg-[#000000] text-white`}>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <ThemeProvider>
-              <TooltipProvider>
-                <CartProvider>
-                  <WishlistProvider>
-                    <PromoBanner />
-                    <Header />
-                    <main>
-                      {children}
-                    </main>
-                    <Footer />
-                    <Cart />
-                    <Toaster />
-                  </WishlistProvider>
-                </CartProvider>
-              </TooltipProvider>
-            </ThemeProvider>
-          </AuthProvider>
+          <CookieConsentProvider>
+            <AuthProvider>
+              <ThemeProvider>
+                <TooltipProvider>
+                  <CartProvider>
+                    <WishlistProvider>
+                      <PromoBanner />
+                      <Header />
+                      <main>
+                        {children}
+                      </main>
+                      <Footer />
+                      <Cart />
+                      <CookieConsentBanner />
+                      <CookieSettingsModal />
+                      <Toaster />
+                    </WishlistProvider>
+                  </CartProvider>
+                </TooltipProvider>
+              </ThemeProvider>
+            </AuthProvider>
+          </CookieConsentProvider>
         </QueryClientProvider>
       </body>
     </html>

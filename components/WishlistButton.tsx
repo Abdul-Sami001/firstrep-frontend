@@ -52,35 +52,38 @@ export default function WishlistButton({
         toggleWishlist(productId, variantId, itemId || undefined);
     };
 
+    const buttonContent = (
+        <Button
+            variant={variant}
+            size={size === "md" ? "default" : size}
+            onClick={handleToggle}
+            disabled={isLoading}
+            className={cn(
+                'gap-2',
+                className
+            )}
+            data-testid={testId}
+        >
+            {isLoading ? (
+                <Loader2 className={sizeClasses[size]} />
+            ) : (
+                <Heart 
+                    className={cn(
+                        sizeClasses[size],
+                        isWishlisted && 'fill-current text-red-500'
+                    )} 
+                />
+            )}
+            {isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+        </Button>
+    );
+
     if (showText) {
-        return (
-            <Button
-                variant={variant}
-                size={size === "md" ? "default" : size}
-                onClick={handleToggle}
-                disabled={isLoading}
-                className={cn(
-                    'gap-2',
-                    className
-                )}
-                data-testid={testId}
-            >
-                {isLoading ? (
-                    <Loader2 className={sizeClasses[size]} />
-                ) : (
-                    <Heart 
-                        className={cn(
-                            sizeClasses[size],
-                            isWishlisted && 'fill-current text-red-500'
-                        )} 
-                    />
-                )}
-                {isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
-            </Button>
-        );
+        return buttonContent;
     }
 
-    return (
+    // Icon-only button
+    const iconButton = (
         <Button
             variant={variant}
             size={size === "md" ? "default" : size}
@@ -111,4 +114,6 @@ export default function WishlistButton({
             )}
         </Button>
     );
+
+    return iconButton;
 }

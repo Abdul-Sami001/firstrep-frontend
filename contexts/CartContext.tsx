@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cartApi, CartItem } from '@/lib/api/cart';
 import { QUERY_KEYS } from '@/lib/utils/constants';
 import { logError } from '@/lib/utils/errors';
+import { useToast } from '@/hooks/use-toast';
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -59,6 +60,7 @@ interface CartProviderProps {
 export const CartProvider = ({ children }: CartProviderProps) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Get cart data - Cart is public (session-based for guests)
   const { data: apiCart, isLoading, error } = useQuery({
@@ -91,9 +93,19 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     mutationFn: cartApi.addToCart,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CART.ALL });
+      toast({
+        title: "Added to cart",
+        description: "Item has been added to your cart.",
+        variant: "default",
+      });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       logError(error, 'AddToCart');
+      toast({
+        title: "Failed to add to cart",
+        description: error?.response?.data?.detail || error?.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -102,9 +114,19 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     mutationFn: cartApi.removeFromCart,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CART.ALL });
+      toast({
+        title: "Removed from cart",
+        description: "Item has been removed from your cart.",
+        variant: "default",
+      });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       logError(error, 'RemoveFromCart');
+      toast({
+        title: "Failed to remove from cart",
+        description: error?.response?.data?.detail || error?.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 

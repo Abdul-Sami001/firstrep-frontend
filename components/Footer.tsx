@@ -1,9 +1,24 @@
 // components/Footer.tsx - Redesigned to match reference site
+'use client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Instagram, Facebook, Twitter, Youtube, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useCookieConsent } from '@/contexts/CookieConsentContext';
+
+function CookieSettingsButton() {
+  const { openSettings } = useCookieConsent();
+  return (
+    <button
+      onClick={openSettings}
+      className="hover:text-white transition-colors py-1 touch-target whitespace-nowrap bg-transparent border-0 m-0 cursor-pointer text-inherit font-inherit leading-normal inline-block"
+      type="button"
+    >
+      Cookie Settings
+    </button>
+  );
+}
 
 export default function Footer() {
   return (
@@ -341,28 +356,29 @@ export default function Footer() {
               </div>
 
               {/* Legal Links */}
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 text-sm md:text-base text-gray-400">
+              <div className="flex flex-col sm:flex-row sm:flex-nowrap items-center gap-4 sm:gap-6 text-sm md:text-base text-gray-400">
                 <Link
                   href="/privacy-policy"
-                  className="hover:text-white transition-colors py-1 touch-target"
+                  className="hover:text-white transition-colors py-1 touch-target whitespace-nowrap"
                 >
                   Privacy Policy
                 </Link>
                 <Link
                   href="/terms-of-service"
-                  className="hover:text-white transition-colors py-1 touch-target"
+                  className="hover:text-white transition-colors py-1 touch-target whitespace-nowrap"
                 >
                   Terms of Service
                 </Link>
                 <Link
                   href="/cookie-policy"
-                  className="hover:text-white transition-colors py-1 touch-target"
+                  className="hover:text-white transition-colors py-1 touch-target whitespace-nowrap"
                 >
                   Cookie Policy
                 </Link>
+                <CookieSettingsButton />
                 <Link
                   href="/contact-support"
-                  className="hover:text-white transition-colors py-1 touch-target"
+                  className="hover:text-white transition-colors py-1 touch-target whitespace-nowrap"
                 >
                   Accessibility
                 </Link>

@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCart } from '@/contexts/CartContext';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function Cart() {
   const {
@@ -22,6 +23,18 @@ export default function Cart() {
     isLoading,
     error
   } = useCart();
+  const router = useRouter();
+  
+  // Handle navigation and close cart
+  const handleCheckout = () => {
+    closeCart();
+    router.push('/checkout');
+  };
+
+  const handleContinueShopping = () => {
+    closeCart();
+    router.push('/shop-clean');
+  };
   
   // Free shipping threshold
   const FREE_SHIPPING_THRESHOLD = 75;
@@ -308,31 +321,29 @@ export default function Cart() {
                 </span>
               </div>
             </div>
-            <Link href="/checkout" className="block">
-              <Button
-                className="w-full bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white font-semibold uppercase text-sm shadow-lg shadow-[#00bfff]/30 hover:shadow-[#00bfff]/40 transition-all duration-300 border-0 h-12"
-                size="lg"
-                disabled={isLoading}
-                data-testid="button-checkout"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  'Proceed to Checkout'
-                )}
-              </Button>
-            </Link>
-            <Link href="/shop-clean" className="block">
-              <Button
-                variant="outline"
-                className="w-full border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white hover:border-gray-600"
-              >
-                Continue Shopping
-              </Button>
-            </Link>
+            <Button
+              onClick={handleCheckout}
+              className="w-full bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white font-semibold uppercase text-sm shadow-lg shadow-[#00bfff]/30 hover:shadow-[#00bfff]/40 transition-all duration-300 border-0 h-12"
+              size="lg"
+              disabled={isLoading}
+              data-testid="button-checkout"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Proceed to Checkout'
+              )}
+            </Button>
+            <Button
+              onClick={handleContinueShopping}
+              variant="outline"
+              className="w-full border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white hover:border-gray-600"
+            >
+              Continue Shopping
+            </Button>
           </div>
         )}
       </div>

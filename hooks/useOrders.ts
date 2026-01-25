@@ -31,6 +31,18 @@ export const useOrder = (id: string) => {
     });
 };
 
+// Track order by guest tracking token (public endpoint, no auth required)
+export const useTrackOrder = (trackingToken: string | null) => {
+    return useQuery({
+        queryKey: ['orders', 'track', trackingToken],
+        queryFn: () => ordersApi.trackOrder(trackingToken!),
+        enabled: !!trackingToken,
+        staleTime: DEFAULT_STALE_TIME,
+        gcTime: DEFAULT_CACHE_TIME,
+        retry: 2,
+    });
+};
+
 // Cancel order
 export const useCancelOrder = () => {
     const queryClient = useQueryClient();

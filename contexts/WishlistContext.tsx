@@ -2,11 +2,13 @@
 'use client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { wishlistApi, Wishlist, WishlistItem } from '@/lib/api/wishlist';
 import { useAuth } from '@/contexts/AuthContext';
 import { QUERY_KEYS } from '@/lib/utils/constants';
-import { isExpectedError, logError } from '@/lib/utils/errors';
+import { isExpectedError, logError, UnauthorizedError } from '@/lib/utils/errors';
 import { isGuestCapableEndpoint } from '@/lib/utils/api-endpoints';
+import { useToast } from '@/hooks/use-toast';
 
 interface WishlistContextType {
     wishlist: Wishlist | null | undefined;
@@ -39,6 +41,8 @@ interface WishlistProviderProps {
 export const WishlistProvider = ({ children }: WishlistProviderProps) => {
     const { isAuthenticated, user } = useAuth();
     const queryClient = useQueryClient();
+    const { toast } = useToast();
+    const router = useRouter();
 
     // Get wishlist data with silent error handling
     const { data: wishlist, isLoading, error } = useQuery({
@@ -79,9 +83,36 @@ export const WishlistProvider = ({ children }: WishlistProviderProps) => {
         mutationFn: wishlistApi.addToWishlist,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.WISHLIST.ALL });
+            toast({
+                title: "Added to wishlist",
+                description: "Product has been added to your wishlist.",
+                variant: "default",
+            });
         },
-        onError: (error) => {
+        onError: (error: any) => {
             logError(error, 'AddToWishlist');
+            // Check if it's an authentication error
+            if (error instanceof UnauthorizedError || error?.response?.status === 401) {
+                toast({
+                    title: "Login required",
+                    description: "Please login to add items to your wishlist.",
+                    variant: "destructive",
+                    action: (
+                        <button
+                            onClick={() => router.push('/CustomerLogin')}
+                            className="text-sm font-medium underline underline-offset-4 hover:no-underline"
+                        >
+                            Login
+                        </button>
+                    ),
+                });
+            } else {
+                toast({
+                    title: "Failed to add to wishlist",
+                    description: error?.response?.data?.detail || error?.message || "Something went wrong. Please try again.",
+                    variant: "destructive",
+                });
+            }
         },
     });
 
@@ -90,9 +121,19 @@ export const WishlistProvider = ({ children }: WishlistProviderProps) => {
         mutationFn: wishlistApi.removeFromWishlist,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.WISHLIST.ALL });
+            toast({
+                title: "Removed from wishlist",
+                description: "Product has been removed from your wishlist.",
+                variant: "default",
+            });
         },
-        onError: (error) => {
+        onError: (error: any) => {
             logError(error, 'RemoveFromWishlist');
+            toast({
+                title: "Failed to remove from wishlist",
+                description: error?.response?.data?.detail || error?.message || "Something went wrong. Please try again.",
+                variant: "destructive",
+            });
         },
     });
 
@@ -101,9 +142,19 @@ export const WishlistProvider = ({ children }: WishlistProviderProps) => {
         mutationFn: wishlistApi.clearWishlist,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.WISHLIST.ALL });
+            toast({
+                title: "Wishlist cleared",
+                description: "All items have been removed from your wishlist.",
+                variant: "default",
+            });
         },
-        onError: (error) => {
+        onError: (error: any) => {
             logError(error, 'ClearWishlist');
+            toast({
+                title: "Failed to clear wishlist",
+                description: error?.response?.data?.detail || error?.message || "Something went wrong. Please try again.",
+                variant: "destructive",
+            });
         },
     });
 
@@ -130,14 +181,65 @@ export const WishlistProvider = ({ children }: WishlistProviderProps) => {
     }, [isAuthenticated, user, queryClient, mergeGuestWishlistMutation]);
 
     const addToWishlist = (productId: string, variantId?: string) => {
+        // Check authentication before adding to wishlist
+        if (!isAuthenticated) {
+            toast({
+                title: "Login required",
+                description: "Please login to add items to your wishlist.",
+                variant: "destructive",
+                action: (
+                    <button
+                        onClick={() => router.push('/CustomerLogin')}
+                        className="text-sm font-medium underline underline-offset-4 hover:no-underline"
+                    >
+                        Login
+                    </button>
+                ),
+            });
+            return;
+        }
         addToWishlistMutation.mutate({ product: productId, variant: variantId });
     };
 
     const removeFromWishlist = (itemId: string) => {
+        // Check authentication before removing from wishlist
+        if (!isAuthenticated) {
+            toast({
+                title: "Login required",
+                description: "Please login to manage your wishlist.",
+                variant: "destructive",
+                action: (
+                    <button
+                        onClick={() => router.push('/CustomerLogin')}
+                        className="text-sm font-medium underline underline-offset-4 hover:no-underline"
+                    >
+                        Login
+                    </button>
+                ),
+            });
+            return;
+        }
         removeFromWishlistMutation.mutate(itemId);
     };
 
     const toggleWishlist = (productId: string, variantId?: string, itemId?: string) => {
+        // Check authentication before toggling wishlist
+        if (!isAuthenticated) {
+            toast({
+                title: "Login required",
+                description: "Please login to add items to your wishlist.",
+                variant: "destructive",
+                action: (
+                    <button
+                        onClick={() => router.push('/CustomerLogin')}
+                        className="text-sm font-medium underline underline-offset-4 hover:no-underline"
+                    >
+                        Login
+                    </button>
+                ),
+            });
+            return;
+        }
         if (itemId) {
             removeFromWishlist(itemId);
         } else {

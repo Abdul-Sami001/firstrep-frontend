@@ -165,7 +165,7 @@ export default function ReferralsPage() {
                                         <div className="flex-1">
                                             <p className="text-sm text-gray-400 mb-2">Referral Code</p>
                                             <p className="text-2xl font-bold text-white font-mono">
-                                                {myCode.referral_code}
+                                                {myCode?.referral_code || 'Loading...'}
                                             </p>
                                         </div>
                                         <Button
@@ -209,20 +209,20 @@ export default function ReferralsPage() {
                                 <div className="grid grid-cols-2 gap-4 pt-2">
                                     <div className="p-3 bg-gray-800 rounded-lg">
                                         <p className="text-xs text-gray-400 mb-1">Total Referrals</p>
-                                        <p className="text-2xl font-bold text-white">{myCode.total_referrals}</p>
+                                        <p className="text-2xl font-bold text-white">{myCode?.total_referrals ?? 0}</p>
                                     </div>
                                     <div className="p-3 bg-gray-800 rounded-lg">
                                         <p className="text-xs text-gray-400 mb-1">Completed</p>
-                                        <p className="text-2xl font-bold text-white">{myCode.completed_referrals}</p>
+                                        <p className="text-2xl font-bold text-white">{myCode?.completed_referrals ?? 0}</p>
                                     </div>
                                 </div>
 
                                 <div className="pt-2">
                                     <p className="text-xs text-gray-500">
-                                        Status: <span className="text-white capitalize">{myCode.status}</span>
+                                        Status: <span className="text-white capitalize">{myCode?.status || 'N/A'}</span>
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                        Created: {format(new Date(myCode.created_at), 'MMM dd, yyyy')}
+                                        Created: {myCode?.created_at ? format(new Date(myCode.created_at), 'MMM dd, yyyy') : 'N/A'}
                                     </p>
                                 </div>
                             </CardContent>

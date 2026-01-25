@@ -1,6 +1,6 @@
 // app/(site)/checkout/page.tsx
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,18 @@ interface AddressForm {
 }
 
 export default function Checkout() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
+            </div>
+        }>
+            <CheckoutContent />
+        </Suspense>
+    );
+}
+
+function CheckoutContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
@@ -265,10 +277,10 @@ export default function Checkout() {
             setAddressForm({
                 email: profile.email || "",
                 address: profile.address || "",
-                city: profile.city || "",
-                state: profile.state || "",
-                zip_code: profile.zip_code || "",
-                country: profile.country || "UK"
+                city: "",
+                state: "",
+                zip_code: "",
+                country: "UK"
             });
         }
     }, [profile]);
@@ -321,21 +333,20 @@ export default function Checkout() {
         try {
             // Update user profile with new address if changed (only for authenticated users)
             if (isAuthenticated && profile) {
-                const hasAddressChanged = (
-                    profile.address !== addressForm.address ||
-                    profile.city !== addressForm.city ||
-                    profile.state !== addressForm.state ||
-                    profile.zip_code !== addressForm.zip_code ||
-                    profile.country !== addressForm.country
-                );
+                // Combine address fields into a single string for profile storage
+                const combinedAddress = [
+                    addressForm.address,
+                    addressForm.city,
+                    addressForm.state,
+                    addressForm.zip_code,
+                    addressForm.country
+                ].filter(Boolean).join(", ");
+
+                const hasAddressChanged = profile.address !== combinedAddress;
 
                 if (hasAddressChanged) {
                     await updateProfileMutation.mutateAsync({
-                        address: addressForm.address,
-                        city: addressForm.city,
-                        state: addressForm.state,
-                        zip_code: addressForm.zip_code,
-                        country: addressForm.country
+                        address: combinedAddress
                     });
                 }
             }
@@ -1080,7 +1091,7 @@ export default function Checkout() {
                                                         £{totalSavings.toFixed(2)}
                                                     </p>
                                                 </div>
-                                                {totalSavingsFromSales > 0 && totalDiscount > 0 && (
+                                                {totalSavingsFromSales > 0 && totalDiscount && totalDiscount > 0 && (
                                                     <div className="mt-1.5 pt-1.5 border-t border-green-500/20">
                                                         <div className="flex justify-between text-xs text-green-400/80">
                                                             <span>From sales:</span>

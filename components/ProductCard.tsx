@@ -114,7 +114,7 @@ export default function ProductCard({
 
     // Show modal if there are multiple colors OR multiple sizes
     return colors.size > 1 || sizes.size > 1;
-  }, [isApiProduct, product?.variants]);
+  }, [isApiProduct, isApiProduct ? (product as Product).variants : undefined]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();

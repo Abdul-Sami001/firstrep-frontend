@@ -173,7 +173,7 @@ export default function Header() {
                     suppressHydrationWarning
                   >
                     <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
-                      <AvatarImage src={profile?.avatar} alt={user?.first_name || 'User'} />
+                      <AvatarImage src={profile?.avatar || undefined} alt={user?.first_name || 'User'} />
                       <AvatarFallback className="bg-primary text-primary-foreground text-xs sm:text-sm font-semibold">
                         {user?.first_name?.[0] || ''}{user?.last_name?.[0] || ''}
                       </AvatarFallback>

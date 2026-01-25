@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { MessageSquare, Plus, Loader2, AlertCircle, Filter, Search } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useSupportTickets } from '@/hooks/useSupport';
+import { TicketStatus, TicketPriority, TicketChannel } from '@/lib/api/support';
 import { mergeCursorPages } from '@/lib/utils/pagination';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,9 +86,9 @@ export default function SupportTicketsPage() {
 
   const filters = useMemo(
     () => ({
-      status: status === 'all' ? undefined : status,
-      priority: priority === 'all' ? undefined : priority,
-      channel: channel === 'all' ? undefined : channel,
+      status: status === 'all' ? undefined : status as TicketStatus,
+      priority: priority === 'all' ? undefined : priority as TicketPriority,
+      channel: channel === 'all' ? undefined : channel as TicketChannel,
       ordering,
       search: debouncedSearch || undefined,
     }),

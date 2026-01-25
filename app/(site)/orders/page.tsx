@@ -16,7 +16,9 @@ export default function OrdersPage() {
     // Handle different response formats (array or paginated response)
     const orders = Array.isArray(ordersData) 
         ? ordersData 
-        : ordersData?.results || ordersData || [];
+        : (ordersData && typeof ordersData === 'object' && 'results' in ordersData 
+            ? (ordersData as any).results 
+            : []);
 
     if (isLoading) {
         return (

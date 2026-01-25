@@ -254,8 +254,8 @@ export const useCreateStorefront = () => {
   return useMutation({
     mutationFn: (payload: CreateStorefrontPayload) => resellersApi.createStorefront(payload),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.RESELLERS.STOREFRONTS });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.RESELLERS.ANALYTICS });
+      queryClient.invalidateQueries({ queryKey: ['resellers', 'storefronts'] });
+      queryClient.invalidateQueries({ queryKey: ['resellers', 'analytics'] });
       toast({
         title: 'Storefront created',
         description: 'Your storefront has been created successfully.',
@@ -284,13 +284,9 @@ export const useUpdateStorefront = () => {
     mutationFn: ({ id, data }: { id: string; data: Partial<Storefront> }) => 
       resellersApi.updateStorefront(id, data),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.RESELLERS.STOREFRONTS });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.RESELLERS.ANALYTICS });
-      // Optionally update the specific storefront in cache
-      queryClient.setQueryData([QUERY_KEYS.RESELLERS.STOREFRONTS], (old: Storefront[] | undefined) => {
-        if (!old) return old;
-        return old.map(sf => sf.id === variables.id ? data : sf);
-      });
+      queryClient.invalidateQueries({ queryKey: ['resellers', 'storefronts'] });
+      queryClient.invalidateQueries({ queryKey: ['resellers', 'analytics'] });
+      // Queries will be refetched after invalidation
       toast({
         title: 'Storefront updated',
         description: 'Your storefront has been updated successfully.',

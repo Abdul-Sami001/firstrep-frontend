@@ -183,7 +183,7 @@ export default function ProfilePage() {
                         <Card className="bg-gray-900 border-gray-800">
                             <CardHeader className="text-center pb-4">
                                 <Avatar className="h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 mx-auto mb-3 sm:mb-4">
-                                    <AvatarImage src={profile?.avatar} alt={user?.first_name} />
+                                    <AvatarImage src={profile?.avatar || undefined} alt={user?.first_name} />
                                     <AvatarFallback className="bg-white text-black text-lg sm:text-xl lg:text-2xl font-semibold">
                                         {user?.first_name?.[0]}{user?.last_name?.[0]}
                                     </AvatarFallback>

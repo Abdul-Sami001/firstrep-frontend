@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Package, Truck, CreditCard, MapPin, Calendar, User, Loader2, CheckCircle, Clock, AlertCircle, XCircle, Gift, Users, Coins } from 'lucide-react';
+import { ArrowLeft, Package, Truck, CreditCard, MapPin, Calendar, User, Loader2, CheckCircle, Clock, AlertCircle, XCircle, Gift, Users, Coins, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -151,14 +151,25 @@ export default function OrderDetailPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex items-center gap-4 flex-wrap">
-                                <Badge className={`${getStatusColor(order.status)} border`}>
-                                    <StatusIcon className="h-3 w-3 mr-1" />
-                                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                                </Badge>
-                                <Badge className={`${getPaymentStatusColor(order.payment_status)} border`}>
-                                    Payment: {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
-                                </Badge>
+                            <div className="flex items-center justify-between flex-wrap gap-4">
+                                <div className="flex items-center gap-4 flex-wrap">
+                                    <Badge className={`${getStatusColor(order.status)} border`}>
+                                        <StatusIcon className="h-3 w-3 mr-1" />
+                                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                    </Badge>
+                                    <Badge className={`${getPaymentStatusColor(order.payment_status)} border`}>
+                                        Payment: {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
+                                    </Badge>
+                                </div>
+                                {/* Review Products Button - Only show for delivered and paid orders */}
+                                {order.status === 'delivered' && order.payment_status === 'paid' && (
+                                    <Link href={`/orders/${order.id}/review`}>
+                                        <Button className="bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white">
+                                            <Star className="h-4 w-4 mr-2" />
+                                            Review Products
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

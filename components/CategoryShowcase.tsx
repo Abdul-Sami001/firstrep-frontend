@@ -84,7 +84,7 @@ export default function CategoryShowcase({
                     src={displayImage}
                     alt={category.name}
                     fill
-                    className={`object-contain transition-all duration-700 ${
+                    className={`object-cover object-center transition-all duration-700 ${
                       hoverImage ? 'group-hover:opacity-0' : 'group-hover:scale-105'
                     }`}
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 50vw"
@@ -97,7 +97,7 @@ export default function CategoryShowcase({
                       src={hoverImage}
                       alt={`${category.name} hover`}
                       fill
-                      className="object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+                      className="object-cover object-center opacity-0 group-hover:opacity-100 transition-opacity duration-700"
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 50vw"
                       quality={90}
                     />

@@ -65,6 +65,7 @@ export const CookieConsentProvider = ({ children }: CookieConsentProviderProps) 
             const consentTimestamp = localStorage.getItem(COOKIE_CONSENT_TIMESTAMP_KEY);
 
             if (savedPrefs && consentTimestamp) {
+                // User has previously consented
                 const parsedPrefs = JSON.parse(savedPrefs) as CookiePreferences;
                 // Ensure essential is always true
                 parsedPrefs.essential = true;
@@ -72,11 +73,25 @@ export const CookieConsentProvider = ({ children }: CookieConsentProviderProps) 
                 setHasConsented(true);
                 setShowBanner(false);
             } else {
-                // No consent given yet, show banner
+                // ✅ FIX: Auto-accept essential cookies immediately
+                // Essential cookies must work for site functionality (cart, session)
+                // This ensures cart works in incognito mode before user clicks "Accept All"
+                const essentialOnly: CookiePreferences = {
+                    essential: true,
+                    analytics: false,
+                    functional: false,
+                    marketing: false,
+                };
+                setPreferences(essentialOnly);
+                setHasConsented(true); // Mark as consented for essential cookies
+                // Still show banner for non-essential cookies (analytics, marketing, etc.)
                 setShowBanner(true);
             }
         } catch (error) {
             console.error('Error loading cookie preferences:', error);
+            // Auto-accept essential on error too
+            setPreferences(DEFAULT_PREFERENCES);
+            setHasConsented(true);
             setShowBanner(true);
         } finally {
             setIsInitialized(true);

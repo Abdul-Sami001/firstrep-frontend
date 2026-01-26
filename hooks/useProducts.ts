@@ -101,7 +101,7 @@ export const useInfiniteProducts = (filters?: ProductFilters) => {
     });
 };
 
-export const useProduct = (id: string) => {
+export const useProduct = (id: string, options?: { enabled?: boolean }) => {
     return useQuery({
         queryKey: QUERY_KEYS.PRODUCTS.DETAIL(id),
         queryFn: async () => {
@@ -113,7 +113,7 @@ export const useProduct = (id: string) => {
                 throw error;
             }
         },
-        enabled: !!id,
+        enabled: options?.enabled !== undefined ? options.enabled && !!id : !!id,
         staleTime: 10 * 60 * 1000, // 10 minutes for product details
         gcTime: 15 * 60 * 1000,
         retry: (failureCount, error) => {

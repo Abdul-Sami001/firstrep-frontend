@@ -27,7 +27,8 @@ export default function ProductVariantModal({
   open,
   onOpenChange,
 }: ProductVariantModalProps) {
-  const { data: product, isLoading, error } = useProduct(productId);
+  // Only fetch product data when modal is open to prevent unnecessary requests
+  const { data: product, isLoading, error } = useProduct(productId, { enabled: open });
   const { addToCart } = useCart();
   const { toast } = useToast();
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);

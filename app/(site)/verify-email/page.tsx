@@ -1,6 +1,6 @@
 // app/(site)/verify-email/page.tsx - Email Verification Page
 "use client";
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useVerifyEmail } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ function VerifyEmailContent() {
     const router = useRouter();
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState('');
+    const hasVerifiedRef = useRef(false); // Use ref to prevent re-renders
 
     const verifyEmailMutation = useVerifyEmail();
 
@@ -19,32 +20,42 @@ function VerifyEmailContent() {
     const token = searchParams.get('token');
 
     useEffect(() => {
-        if (uid && token) {
-            verifyEmailMutation.mutate(
-                { uid, token },
-                {
-                    onSuccess: (data) => {
-                        setStatus('success');
-                        setMessage(data?.detail || 'Your email has been verified successfully! You can now log in.');
-                        // Auto-redirect to login after 3 seconds
-                        setTimeout(() => {
-                            router.push('/CustomerLogin');
-                        }, 3000);
-                    },
-                    onError: (error: any) => {
-                        setStatus('error');
-                        const errorMessage = error.response?.data?.detail || 
-                            error.response?.data?.message || 
-                            'Verification failed. The link may be expired or invalid.';
-                        setMessage(errorMessage);
-                    },
-                }
-            );
-        } else {
+        // Only verify once, and only if we have both uid and token
+        if (hasVerifiedRef.current) {
+            return; // Already verified, don't run again
+        }
+
+        if (!uid || !token) {
             setStatus('error');
             setMessage('Invalid verification link. Please check your email and try again.');
+            return;
         }
-    }, [uid, token, verifyEmailMutation, router]);
+
+        // Mark as verified to prevent re-running
+        hasVerifiedRef.current = true;
+
+        verifyEmailMutation.mutate(
+            { uid, token },
+            {
+                onSuccess: (data) => {
+                    setStatus('success');
+                    setMessage(data?.detail || 'Your email has been verified successfully! You can now log in.');
+                    // Auto-redirect to login after 3 seconds
+                    setTimeout(() => {
+                        router.push('/CustomerLogin');
+                    }, 3000);
+                },
+                onError: (error: any) => {
+                    setStatus('error');
+                    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.message || 
+                        'Verification failed. The link may be expired or invalid.';
+                    setMessage(errorMessage);
+                },
+            }
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Empty dependency array - only run once on mount
 
     return (
         <div className="min-h-screen bg-[#000000] flex items-center justify-center p-4">

@@ -87,7 +87,9 @@ export const usersApi = {
 
     // Email verification
     verifyEmail: (uid: string, token: string): Promise<{ detail: string }> =>
-        api.get<{ detail: string }>(`/auth/verify-email/?uid=${uid}&token=${token}`),
+        api.get<{ detail: string }>('/auth/verify-email/', {
+            params: { uid, token }
+        }),
 
     // Password reset
     requestPasswordReset: (data: PasswordResetRequest): Promise<{ detail: string }> =>

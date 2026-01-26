@@ -32,7 +32,10 @@ export default function OrderReviewPage() {
     const { toast } = useToast();
 
     const { data: order, isLoading: orderLoading, error: orderError } = useOrder(orderId);
-    const { data: myReviews } = useMyReviews({ page_size: 100 }); // Get all reviews to check
+    // Only fetch reviews if order is loaded and user is authenticated
+    const { data: myReviews } = useMyReviews({ 
+        page_size: 100 
+    }); // Get all reviews to check which products have been reviewed
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -48,28 +51,39 @@ export default function OrderReviewPage() {
 
     // Get products that can be reviewed from this order
     const reviewableProducts = useMemo(() => {
-        if (!order?.items || !myReviews?.results) return [];
+        if (!order?.items) return [];
+        
+        // Wait for reviews to load, but don't block if it fails
+        const reviewedProductIds = myReviews?.results 
+            ? new Set(myReviews.results.map(review => review.product))
+            : new Set();
 
-        const reviewedProductIds = new Set(
-            myReviews.results.map(review => review.product)
-        );
+        // Filter items that have a product ID (required for reviews)
+        const itemsWithProducts = order.items.filter(item => {
+            // Must have a product ID to create a review
+            return item.product && item.product.trim() !== '';
+        });
 
-        return order.items
-            .filter(item => item.product) // Only items with product IDs
-            .map(item => {
-                const hasReview = reviewedProductIds.has(item.product!);
-                const review = myReviews.results.find(r => r.product === item.product);
-                
-                return {
-                    productId: item.product!,
-                    productName: item.product_name || 'Unknown Product',
-                    productImage: item.product_image,
-                    variantId: item.variant || null,
-                    quantity: item.quantity,
-                    hasReview,
-                    reviewId: review?.id,
-                } as ReviewableProduct;
-            });
+        // Debug: Log if items are being filtered out
+        if (order.items.length > 0 && itemsWithProducts.length === 0) {
+            console.warn('Order review page: All items filtered out. Order items:', order.items);
+            console.warn('Items without product IDs:', order.items.filter(item => !item.product || item.product.trim() === ''));
+        }
+
+        return itemsWithProducts.map(item => {
+            const hasReview = reviewedProductIds.has(item.product!);
+            const review = myReviews?.results?.find(r => r.product === item.product);
+            
+            return {
+                productId: item.product!,
+                productName: item.product_name || 'Unknown Product',
+                productImage: item.product_image,
+                variantId: item.variant || null,
+                quantity: item.quantity,
+                hasReview,
+                reviewId: review?.id,
+            } as ReviewableProduct;
+        });
     }, [order?.items, myReviews?.results]);
 
     const unreviewedCount = reviewableProducts.filter(p => !p.hasReview).length;
@@ -185,6 +199,20 @@ export default function OrderReviewPage() {
                         </Card>
                     )}
 
+                    {/* Debug Info - Remove in production */}
+                    {process.env.NODE_ENV === 'development' && order.items && (
+                        <Alert className="bg-gray-800 border-gray-700">
+                            <AlertDescription className="text-gray-300 text-xs">
+                                <strong>Debug Info:</strong> Order has {order.items.length} item(s). 
+                                {reviewableProducts.length === 0 && order.items.length > 0 && (
+                                    <span className="text-yellow-400 block mt-1">
+                                        ⚠️ No items have product IDs. Items: {JSON.stringify(order.items.map(i => ({ id: i.id, product: i.product, product_name: i.product_name })), null, 2)}
+                                    </span>
+                                )}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
                     {/* Products List */}
                     {canReview && reviewableProducts.length > 0 ? (
                         <div className="space-y-4">
@@ -277,9 +305,24 @@ export default function OrderReviewPage() {
                                 <h2 className="text-xl font-semibold text-white mb-2">
                                     No Products to Review
                                 </h2>
-                                <p className="text-gray-400 mb-6">
-                                    This order doesn't contain any reviewable products.
+                                <p className="text-gray-400 mb-4">
+                                    {order.items && order.items.length > 0 
+                                        ? 'This order contains items, but they don\'t have product IDs assigned. This is likely a backend data issue. Please contact support.'
+                                        : 'This order doesn\'t contain any reviewable products.'}
                                 </p>
+                                {order.items && order.items.length > 0 && (
+                                    <div className="mb-6 p-4 bg-yellow-900/20 border border-yellow-800 rounded-lg text-left">
+                                        <p className="text-yellow-300 text-sm font-semibold mb-2">Order Items Found:</p>
+                                        <ul className="text-yellow-200 text-xs space-y-1">
+                                            {order.items.map((item, idx) => (
+                                                <li key={idx}>
+                                                    • {item.product_name || 'Unknown'} 
+                                                    {item.product ? ` (ID: ${item.product})` : ' ⚠️ No Product ID'}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                                 <Link href={`/orders/${orderId}`}>
                                     <Button variant="outline" className="border-gray-700 text-white hover:bg-gray-800">
                                         Back to Order Details

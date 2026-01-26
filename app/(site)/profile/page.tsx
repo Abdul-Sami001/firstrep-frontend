@@ -10,12 +10,15 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile, useUpdateProfile } from '@/hooks/useAuth';
 import { useWishlist } from '@/contexts/WishlistContext';
-import { useMyReviews } from '@/hooks/useReviews';
+import { useMyReviews, useUpdateReview, useDeleteReview } from '@/hooks/useReviews';
 import { useLoyaltyAccount, useMyReferralCode } from '@/hooks/useMarketing';
 import { User, Mail, Phone, MapPin, Calendar, Save, ArrowLeft, Heart, Star, ExternalLink, Coins, Users, Gift } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import WishlistItem from '@/components/WishlistItem';
 import ReviewCard from '@/components/ReviewCard';
+import ReviewForm from '@/components/ReviewForm';
+import { Review } from '@/lib/api/reviews';
 import Link from 'next/link';
 
 export default function ProfilePage() {
@@ -24,11 +27,16 @@ export default function ProfilePage() {
     const { data: profile, isLoading: profileLoading } = useUserProfile();
     const updateProfileMutation = useUpdateProfile();
     const { wishlistItems, totalItems: wishlistTotal } = useWishlist();
-    const { data: myReviews } = useMyReviews({ page_size: 5 });
+    const { isAuthenticated } = useAuth();
+    const { data: myReviews, isLoading: reviewsLoading, error: reviewsError } = useMyReviews({ page_size: 5 });
     const { data: loyaltyAccount } = useLoyaltyAccount();
     const { data: myReferralCode } = useMyReferralCode();
+    const updateReviewMutation = useUpdateReview();
+    const deleteReviewMutation = useDeleteReview();
 
     const [isEditing, setIsEditing] = useState(false);
+    const [editingReview, setEditingReview] = useState<Review | null>(null);
+    const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
     
     // Parse full_name into first_name and last_name for UI
     const parseFullName = (fullName: string = '') => {
@@ -551,7 +559,29 @@ export default function ProfilePage() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            {!myReviews || !myReviews.results || myReviews.results.length === 0 ? (
+                            {reviewsLoading ? (
+                                <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+                                    <p className="text-gray-400">Loading reviews...</p>
+                                </div>
+                            ) : reviewsError ? (
+                                <div className="text-center py-8">
+                                    <Star className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                                    <h3 className="text-lg font-semibold text-white mb-2">
+                                        Error Loading Reviews
+                                    </h3>
+                                    <p className="text-gray-400 mb-4">
+                                        {(reviewsError as any)?.response?.data?.detail || 'Failed to load reviews. Please try again later.'}
+                                    </p>
+                                    <Button 
+                                        onClick={() => window.location.reload()} 
+                                        variant="outline" 
+                                        className="border-gray-700 text-white hover:bg-gray-800"
+                                    >
+                                        Retry
+                                    </Button>
+                                </div>
+                            ) : !myReviews || !myReviews.results || myReviews.results.length === 0 ? (
                                 <div className="text-center py-8">
                                     <Star className="h-12 w-12 text-gray-600 mx-auto mb-4" />
                                     <h3 className="text-lg font-semibold text-white mb-2">
@@ -570,7 +600,20 @@ export default function ProfilePage() {
                                         <ReviewCard
                                             key={review.id}
                                             review={review}
-                                            showActions={false}
+                                            showActions={true}
+                                            onEdit={(review) => {
+                                                setEditingReview(review);
+                                                setIsReviewFormOpen(true);
+                                            }}
+                                            onDelete={async (reviewId) => {
+                                                if (confirm('Are you sure you want to delete this review? This action cannot be undone.')) {
+                                                    try {
+                                                        await deleteReviewMutation.mutateAsync(reviewId);
+                                                    } catch (error) {
+                                                        console.error('Failed to delete review:', error);
+                                                    }
+                                                }
+                                            }}
                                             data-testid={`profile-review-${review.id}`}
                                         />
                                     ))}
@@ -588,6 +631,41 @@ export default function ProfilePage() {
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Edit Review Dialog */}
+                <Dialog open={isReviewFormOpen} onOpenChange={setIsReviewFormOpen}>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-800">
+                        <DialogHeader>
+                            <DialogTitle className="text-white">Edit Review</DialogTitle>
+                        </DialogHeader>
+                        {editingReview && (
+                            <ReviewForm
+                                productId={editingReview.product}
+                                productName={editingReview.product_name}
+                                initialData={editingReview}
+                                onSubmit={async (data) => {
+                                    if (!editingReview) return;
+                                    try {
+                                        await updateReviewMutation.mutateAsync({
+                                            id: editingReview.id,
+                                            data: data as any,
+                                        });
+                                        setEditingReview(null);
+                                        setIsReviewFormOpen(false);
+                                    } catch (error) {
+                                        console.error('Failed to update review:', error);
+                                    }
+                                }}
+                                onCancel={() => {
+                                    setEditingReview(null);
+                                    setIsReviewFormOpen(false);
+                                }}
+                                isLoading={updateReviewMutation.isPending}
+                                error={updateReviewMutation.error?.message}
+                            />
+                        )}
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     );

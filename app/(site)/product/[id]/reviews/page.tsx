@@ -95,10 +95,10 @@ export default function ProductReviewsPage() {
 
     if (productLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p>Loading reviews...</p>
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-white" />
+                    <p className="text-white">Loading reviews...</p>
                 </div>
             </div>
         );
@@ -106,12 +106,12 @@ export default function ProductReviewsPage() {
 
     if (!product) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
                 <div className="text-center">
-                    <h1 className="text-4xl font-bold mb-4">Product Not Found</h1>
-                    <p className="text-muted-foreground mb-8">The product you're looking for doesn't exist.</p>
+                    <h1 className="text-4xl font-bold mb-4 text-white">Product Not Found</h1>
+                    <p className="text-gray-400 mb-8">The product you're looking for doesn't exist.</p>
                     <Link href="/">
-                        <Button>Return Home</Button>
+                        <Button className="bg-white text-black hover:bg-gray-200">Return Home</Button>
                     </Link>
                 </div>
             </div>
@@ -119,35 +119,35 @@ export default function ProductReviewsPage() {
     }
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-[#000000]">
             {/* Header */}
-            <div className="border-b bg-background">
+            <div className="border-b border-gray-800 bg-[#000000]">
                 <div className="mobile-container tablet-container desktop-container">
-                    <div className="py-6">
+                    <div className="py-8 md:py-12">
                         {/* Breadcrumb */}
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                            <Link href="/" className="hover:text-foreground transition-colors">
+                        <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
+                            <Link href="/" className="hover:text-white transition-colors">
                                 Home
                             </Link>
                             <span>/</span>
-                            <Link href={`/product/${id}`} className="hover:text-foreground transition-colors">
+                            <Link href={`/product/${id}`} className="hover:text-white transition-colors">
                                 {product.title}
                             </Link>
                             <span>/</span>
-                            <span>Reviews</span>
+                            <span className="text-gray-300">Reviews</span>
                         </div>
 
                         <div className="flex items-center justify-between">
                             <div>
-                                <h1 className="text-2xl md:text-3xl font-bold">Customer Reviews</h1>
-                                <p className="text-muted-foreground mt-1">
+                                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">Customer Reviews</h1>
+                                <p className="text-gray-400 mt-2">
                                     {product.title}
                                 </p>
                             </div>
 
                             <div className="flex items-center gap-3">
                                 <Link href={`/product/${id}`}>
-                                    <Button variant="outline" className="gap-2">
+                                    <Button variant="outline" className="gap-2 border-gray-700 text-white hover:bg-gray-800">
                                         <ArrowLeft className="h-4 w-4" />
                                         Back to Product
                                     </Button>
@@ -156,14 +156,14 @@ export default function ProductReviewsPage() {
                                 {isAuthenticated && (
                                     <Dialog open={isReviewFormOpen} onOpenChange={setIsReviewFormOpen}>
                                         <DialogTrigger asChild>
-                                            <Button className="gap-2">
+                                            <Button className="gap-2 bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white">
                                                 <Plus className="h-4 w-4" />
                                                 Write Review
                                             </Button>
                                         </DialogTrigger>
-                                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-800">
                                             <DialogHeader>
-                                                <DialogTitle>
+                                                <DialogTitle className="text-white">
                                                     {editingReview ? 'Edit Review' : 'Write a Review'}
                                                 </DialogTitle>
                                             </DialogHeader>
@@ -189,13 +189,13 @@ export default function ProductReviewsPage() {
             </div>
 
             {/* Main Content */}
-            <div className="mobile-container tablet-container desktop-container py-8">
+            <div className="mobile-container tablet-container desktop-container py-8 md:py-12">
                 {/* Guest User Alert */}
                 {!isAuthenticated && (
-                    <Alert className="mb-6">
-                        <AlertDescription>
+                    <Alert className="mb-6 bg-blue-900/20 border-blue-800">
+                        <AlertDescription className="text-blue-300">
                             You need to be signed in to write reviews. 
-                            <Link href="/CustomerLogin" className="text-primary hover:underline ml-1">
+                            <Link href="/CustomerLogin" className="text-[#00bfff] hover:underline ml-1">
                                 Sign in
                             </Link> to share your experience.
                         </AlertDescription>

@@ -1,6 +1,6 @@
 // hooks/useReviews.ts - Production-Ready Review Hooks
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { reviewsApi, Review, ReviewFilters, CreateReviewRequest, UpdateReviewRequest, RatingStats } from '@/lib/api/reviews';
+import { reviewsApi, Review, ReviewFilters, CreateReviewRequest, UpdateReviewRequest, RatingStats, PaginatedReviews } from '@/lib/api/reviews';
 import { QUERY_KEYS } from '@/lib/utils/constants';
 import { logError } from '@/lib/utils/errors';
 
@@ -16,6 +16,8 @@ export const useProductReviews = (productId: string, filters?: ReviewFilters & {
         enabled: !!productId,
         staleTime: DEFAULT_STALE_TIME,
         gcTime: 10 * 60 * 1000, // 10 minutes
+        // Don't refetch on window focus to prevent excessive calls
+        refetchOnWindowFocus: false,
         retry: (failureCount, error) => {
             // Reviews are public - retry on network errors, not on 4xx
             if (error && typeof error === 'object' && 'response' in error) {
@@ -44,11 +46,26 @@ export const useReview = (id: string) => {
 // Get current user's reviews
 export const useMyReviews = (params?: { page?: number; page_size?: number }) => {
     return useQuery({
-        queryKey: QUERY_KEYS.REVIEWS.MY(),
-        queryFn: () => reviewsApi.getMyReviews(params),
+        queryKey: [...QUERY_KEYS.REVIEWS.MY(), params], // Include params in query key for proper caching
+        queryFn: async () => {
+            const response = await reviewsApi.getMyReviews(params);
+            // Backend returns array directly, normalize to paginated format
+            if (Array.isArray(response)) {
+                return {
+                    count: response.length,
+                    next: null,
+                    previous: null,
+                    results: response,
+                } as PaginatedReviews;
+            }
+            // If already paginated, return as is
+            return response;
+        },
         staleTime: DEFAULT_STALE_TIME,
         gcTime: 10 * 60 * 1000,
         retry: 2,
+        // Don't refetch on window focus to prevent excessive calls
+        refetchOnWindowFocus: false,
     });
 };
 

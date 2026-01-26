@@ -149,11 +149,11 @@ export default function ReviewForm({
         >
             {/* Header */}
             <div>
-                <h3 className="text-lg font-semibold">
+                <h3 className="text-lg font-semibold text-white">
                     {isEditing ? 'Edit Review' : 'Write a Review'}
                 </h3>
                 {productName && (
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-sm text-gray-400 mt-1">
                         for {productName}
                     </p>
                 )}
@@ -161,15 +161,15 @@ export default function ReviewForm({
 
             {/* Error Alert */}
             {error && (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="bg-red-900/20 border-red-800">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription className="text-red-300">{error}</AlertDescription>
                 </Alert>
             )}
 
             {/* Rating */}
             <div className="space-y-2">
-                <Label htmlFor="rating">Rating *</Label>
+                <Label htmlFor="rating" className="text-white">Rating *</Label>
                 <div className="flex items-center gap-2">
                     <RatingStars
                         rating={rating}
@@ -178,18 +178,18 @@ export default function ReviewForm({
                         size="lg"
                         data-testid="rating-input"
                     />
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-gray-400">
                         {rating > 0 ? `${rating} star${rating !== 1 ? 's' : ''}` : 'Select rating'}
                     </span>
                 </div>
                 {validationErrors.rating && (
-                    <p className="text-sm text-red-600">{validationErrors.rating}</p>
+                    <p className="text-sm text-red-400">{validationErrors.rating}</p>
                 )}
             </div>
 
             {/* Title */}
             <div className="space-y-2">
-                <Label htmlFor="title">Review Title *</Label>
+                <Label htmlFor="title" className="text-white">Review Title *</Label>
                 <Input
                     id="title"
                     value={title}
@@ -197,16 +197,17 @@ export default function ReviewForm({
                     placeholder="Summarize your experience"
                     maxLength={200}
                     data-testid="title-input"
+                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff]"
                 />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{validationErrors.title}</span>
+                <div className="flex justify-between text-xs text-gray-400">
+                    <span className="text-red-400">{validationErrors.title}</span>
                     <span>{title.length}/200</span>
                 </div>
             </div>
 
             {/* Content */}
             <div className="space-y-2">
-                <Label htmlFor="content">Your Review *</Label>
+                <Label htmlFor="content" className="text-white">Your Review *</Label>
                 <Textarea
                     id="content"
                     value={content}
@@ -215,27 +216,28 @@ export default function ReviewForm({
                     rows={6}
                     maxLength={2000}
                     data-testid="content-input"
+                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] resize-none"
                 />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{validationErrors.content}</span>
+                <div className="flex justify-between text-xs text-gray-400">
+                    <span className="text-red-400">{validationErrors.content}</span>
                     <span>{content.length}/2000</span>
                 </div>
             </div>
 
             {/* Media Upload */}
             <div className="space-y-2">
-                <Label>Photos/Videos (Optional)</Label>
+                <Label className="text-white">Photos/Videos (Optional)</Label>
                 <div className="space-y-4">
                     {/* File Input */}
                     <div
-                        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                        className="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center hover:border-gray-600 transition-colors cursor-pointer bg-gray-800/50"
                         onClick={() => fileInputRef.current?.click()}
                     >
                         <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-300">
                             Click to upload photos or videos
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-gray-500 mt-1">
                             Images: JPG, PNG, WebP (max 5MB) • Videos: MP4, WebM (max 50MB)
                         </p>
                     </div>
@@ -253,7 +255,7 @@ export default function ReviewForm({
                     {mediaFiles.length > 0 && (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                             {mediaFiles.map((media, index) => (
-                                <div key={index} className="relative aspect-square bg-gray-100 rounded-md overflow-hidden">
+                                <div key={index} className="relative aspect-square bg-gray-800 rounded-md overflow-hidden border border-gray-700">
                                     {media.type === 'image' ? (
                                         <img
                                             src={media.preview}
@@ -284,12 +286,12 @@ export default function ReviewForm({
                     {/* Existing Media (for editing) */}
                     {initialData?.media && initialData.media.length > 0 && (
                         <div className="space-y-2">
-                            <Label className="text-sm">Current Media</Label>
+                            <Label className="text-sm text-white">Current Media</Label>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                                 {initialData.media
                                     .filter(media => !mediaToRemove.includes(media.id))
                                     .map((media) => (
-                                    <div key={media.id} className="relative aspect-square bg-gray-100 rounded-md overflow-hidden">
+                                    <div key={media.id} className="relative aspect-square bg-gray-800 rounded-md overflow-hidden border border-gray-700">
                                         {media.media_type === 'image' ? (
                                             <img
                                                 src={media.file}
@@ -324,7 +326,7 @@ export default function ReviewForm({
                     )}
 
                     {validationErrors.media && (
-                        <p className="text-sm text-red-600">{validationErrors.media}</p>
+                        <p className="text-sm text-red-400">{validationErrors.media}</p>
                     )}
                 </div>
             </div>
@@ -334,7 +336,7 @@ export default function ReviewForm({
                 <Button
                     type="submit"
                     disabled={isLoading || rating === 0}
-                    className="flex-1"
+                    className="flex-1 bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white"
                     data-testid="submit-review"
                 >
                     {isLoading ? (
@@ -353,6 +355,7 @@ export default function ReviewForm({
                         variant="outline"
                         onClick={handleCancel}
                         disabled={isLoading}
+                        className="border-gray-700 text-white hover:bg-gray-800"
                     >
                         Cancel
                     </Button>

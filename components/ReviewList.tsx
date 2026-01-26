@@ -147,8 +147,8 @@ export default function ReviewList({
     const renderEmptyState = () => (
         <div className="text-center py-12">
             <div className="text-6xl mb-4">⭐</div>
-            <h3 className="text-lg font-semibold mb-2">No reviews yet</h3>
-            <p className="text-muted-foreground mb-4">
+            <h3 className="text-lg font-semibold mb-2 text-white">No reviews yet</h3>
+            <p className="text-gray-400 mb-4">
                 Be the first to share your experience with this product.
             </p>
         </div>
@@ -178,12 +178,12 @@ export default function ReviewList({
                             variant="outline"
                             size="sm"
                             onClick={() => setShowFilters(!showFilters)}
-                            className="gap-2"
+                            className="gap-2 border-gray-700 text-white hover:bg-gray-800"
                         >
                             <Filter className="h-4 w-4" />
                             Filters
                             {activeFiltersCount > 0 && (
-                                <Badge variant="secondary" className="ml-1">
+                                <Badge variant="secondary" className="ml-1 bg-[#00bfff]/20 text-[#00bfff] border-[#00bfff]/30">
                                     {activeFiltersCount}
                                 </Badge>
                             )}
@@ -192,12 +192,12 @@ export default function ReviewList({
 
                     <div className="flex items-center gap-2">
                         <Select value={filters.ordering || '-created_at'} onValueChange={handleSortChange}>
-                            <SelectTrigger className="w-40">
+                            <SelectTrigger className="w-40 border-gray-700 text-white bg-gray-900">
                                 <SelectValue placeholder="Sort by" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-gray-900 border-gray-800">
                                 {SORT_OPTIONS.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>
+                                    <SelectItem key={option.value} value={option.value} className="text-white hover:bg-gray-800">
                                         {option.label}
                                     </SelectItem>
                                 ))}
@@ -208,18 +208,18 @@ export default function ReviewList({
 
                 {/* Filter Options */}
                 {showFilters && (
-                    <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
+                    <div className="border border-gray-800 rounded-lg p-4 space-y-4 bg-gray-900">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {/* Rating Filter */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Rating</label>
+                                <label className="text-sm font-medium text-white">Rating</label>
                                 <Select value={filters.rating?.toString() || ''} onValueChange={handleRatingFilter}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="border-gray-700 text-white bg-gray-900">
                                         <SelectValue placeholder="All ratings" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-gray-900 border-gray-800">
                                         {RATING_FILTERS.map((option) => (
-                                            <SelectItem key={option.value} value={option.value}>
+                                            <SelectItem key={option.value} value={option.value} className="text-white hover:bg-gray-800">
                                                 {option.label}
                                             </SelectItem>
                                         ))}
@@ -229,7 +229,7 @@ export default function ReviewList({
 
                             {/* Verified Purchase Filter */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Verified Purchase</label>
+                                <label className="text-sm font-medium text-white">Verified Purchase</label>
                                 <Select 
                                     value={
                                         filters.is_verified_purchase === true ? 'verified' :
@@ -237,13 +237,13 @@ export default function ReviewList({
                                     } 
                                     onValueChange={handleVerifiedFilter}
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger className="border-gray-700 text-white bg-gray-900">
                                         <SelectValue placeholder="All reviews" />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Reviews</SelectItem>
-                                        <SelectItem value="verified">Verified Only</SelectItem>
-                                        <SelectItem value="unverified">Unverified Only</SelectItem>
+                                    <SelectContent className="bg-gray-900 border-gray-800">
+                                        <SelectItem value="all" className="text-white hover:bg-gray-800">All Reviews</SelectItem>
+                                        <SelectItem value="verified" className="text-white hover:bg-gray-800">Verified Only</SelectItem>
+                                        <SelectItem value="unverified" className="text-white hover:bg-gray-800">Unverified Only</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -254,7 +254,7 @@ export default function ReviewList({
                                     variant="outline"
                                     size="sm"
                                     onClick={() => onFiltersChange({})}
-                                    className="w-full"
+                                    className="w-full border-gray-700 text-white hover:bg-gray-800"
                                 >
                                     Clear Filters
                                 </Button>
@@ -265,8 +265,8 @@ export default function ReviewList({
             </div>
 
             {/* Reviews Count */}
-            {reviews && (
-                <div className="text-sm text-muted-foreground">
+            {reviews && reviews.results && (
+                <div className="text-sm text-gray-400">
                     Showing {reviews.results.length} of {reviews.count} review{reviews.count !== 1 ? 's' : ''}
                 </div>
             )}
@@ -274,7 +274,7 @@ export default function ReviewList({
             {/* Reviews List */}
             {isLoading ? (
                 renderLoadingSkeletons()
-            ) : !reviews || reviews.results.length === 0 ? (
+            ) : !reviews || !reviews.results || reviews.results.length === 0 ? (
                 renderEmptyState()
             ) : (
                 <div className="space-y-4">
@@ -292,7 +292,7 @@ export default function ReviewList({
             )}
 
             {/* Pagination */}
-            {reviews && reviews.results.length > 0 && (
+            {reviews && reviews.results && reviews.results.length > 0 && (
                 <div className="pt-6">
                     {renderPagination()}
                 </div>

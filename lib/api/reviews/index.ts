@@ -165,8 +165,9 @@ export const reviewsApi = {
         api.delete(`/reviews/${id}/unmark_helpful/`),
 
     // Get current user's reviews
+    // Note: Backend returns array directly, not paginated format
     getMyReviews: (params?: { page?: number; page_size?: number }) =>
-        api.get<PaginatedReviews>('/reviews/my_reviews/', {
+        api.get<Review[] | PaginatedReviews>('/reviews/my_reviews/', {
             params: {
                 ...params,
                 page_size: params?.page_size || 20,

@@ -61,7 +61,7 @@ export default function ReviewCard({
     return (
         <div 
             className={cn(
-                'border rounded-lg p-4 space-y-3',
+                'border border-gray-800 rounded-lg p-4 md:p-6 space-y-3 bg-gray-900',
                 className
             )}
             data-testid={testId}
@@ -71,25 +71,25 @@ export default function ReviewCard({
                 <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
                         <AvatarImage src="" alt={review.user_name || 'User'} />
-                        <AvatarFallback>
+                        <AvatarFallback className="bg-gray-800 text-white">
                             {getUserInitials(review.user_name)}
                         </AvatarFallback>
                     </Avatar>
                     
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">
+                            <span className="font-medium text-sm text-white">
                                 {review.user_name || 'Anonymous'}
                             </span>
                             {review.is_verified_purchase && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="text-xs bg-green-900/30 text-green-400 border-green-800">
                                     Verified Purchase
                                 </Badge>
                             )}
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                             <RatingStars rating={review.rating} size="sm" />
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-gray-400">
                                 {formatDate(review.created_at)}
                             </span>
                         </div>
@@ -100,20 +100,20 @@ export default function ReviewCard({
                 {showActions && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-800">
                                 <MoreVertical className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="bg-gray-900 border-gray-800">
                             {isOwnReview && (
                                 <>
-                                    <DropdownMenuItem onClick={() => onEdit?.(review)}>
+                                    <DropdownMenuItem onClick={() => onEdit?.(review)} className="text-white hover:bg-gray-800">
                                         <Edit className="h-4 w-4 mr-2" />
                                         Edit Review
                                     </DropdownMenuItem>
                                     <DropdownMenuItem 
                                         onClick={() => onDelete?.(review.id)}
-                                        className="text-red-600"
+                                        className="text-red-400 hover:bg-gray-800"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Delete Review
@@ -121,7 +121,7 @@ export default function ReviewCard({
                                 </>
                             )}
                             {!isOwnReview && (
-                                <DropdownMenuItem onClick={() => onFlag?.(review.id)}>
+                                <DropdownMenuItem onClick={() => onFlag?.(review.id)} className="text-white hover:bg-gray-800">
                                     <Flag className="h-4 w-4 mr-2" />
                                     Report Review
                                 </DropdownMenuItem>
@@ -133,8 +133,8 @@ export default function ReviewCard({
 
             {/* Review Content */}
             <div className="space-y-2">
-                <h4 className="font-medium text-sm">{review.title}</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <h4 className="font-medium text-sm text-white">{review.title}</h4>
+                <p className="text-sm text-gray-300 leading-relaxed">
                     {review.content}
                 </p>
             </div>
@@ -143,7 +143,7 @@ export default function ReviewCard({
             {review.media && review.media.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {review.media.map((media) => (
-                        <div key={media.id} className="relative aspect-square bg-gray-100 rounded-md overflow-hidden">
+                        <div key={media.id} className="relative aspect-square bg-gray-800 rounded-md overflow-hidden">
                             {media.media_type === 'image' ? (
                                 <img
                                     src={media.file}
@@ -168,15 +168,15 @@ export default function ReviewCard({
             )}
 
             {/* Helpful Votes */}
-            <div className="flex items-center justify-between pt-2 border-t">
+            <div className="flex items-center justify-between pt-2 border-t border-gray-800">
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleToggleHelpful}
                     disabled={toggleHelpfulMutation.isPending}
                     className={cn(
-                        'gap-2 text-xs',
-                        hasVotedHelpful && 'text-primary'
+                        'gap-2 text-xs text-gray-400 hover:text-white hover:bg-gray-800',
+                        hasVotedHelpful && 'text-[#00bfff]'
                     )}
                 >
                     <ThumbsUp className={cn('h-3 w-3', hasVotedHelpful && 'fill-current')} />
@@ -184,7 +184,7 @@ export default function ReviewCard({
                 </Button>
 
                 {review.is_flagged && (
-                    <Badge variant="destructive" className="text-xs">
+                    <Badge variant="destructive" className="text-xs bg-red-900/30 text-red-400 border-red-800">
                         Flagged
                     </Badge>
                 )}

@@ -66,40 +66,40 @@ export default function ProfileReviewsPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen bg-[#000000] flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p>Loading your reviews...</p>
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-white" />
+                    <p className="text-white">Loading your reviews...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-[#000000]">
             {/* Header */}
-            <div className="border-b bg-background">
+            <div className="border-b border-gray-800 bg-[#000000]">
                 <div className="mobile-container tablet-container desktop-container">
-                    <div className="py-6">
+                    <div className="py-8 md:py-12">
                         {/* Breadcrumb */}
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                            <Link href="/profile" className="hover:text-foreground transition-colors">
+                        <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
+                            <Link href="/profile" className="hover:text-white transition-colors">
                                 Profile
                             </Link>
                             <span>/</span>
-                            <span>My Reviews</span>
+                            <span className="text-gray-300">My Reviews</span>
                         </div>
 
                         <div className="flex items-center justify-between">
                             <div>
-                                <h1 className="text-2xl md:text-3xl font-bold">My Reviews</h1>
-                                <p className="text-muted-foreground mt-1">
+                                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">My Reviews</h1>
+                                <p className="text-gray-400 mt-2">
                                     Reviews you've written for products
                                 </p>
                             </div>
 
                             <Link href="/profile">
-                                <Button variant="outline" className="gap-2">
+                                <Button variant="outline" className="gap-2 border-gray-700 text-white hover:bg-gray-800">
                                     <ArrowLeft className="h-4 w-4" />
                                     Back to Profile
                                 </Button>
@@ -110,33 +110,33 @@ export default function ProfileReviewsPage() {
             </div>
 
             {/* Main Content */}
-            <div className="mobile-container tablet-container desktop-container py-8">
+            <div className="mobile-container tablet-container desktop-container py-8 md:py-12">
                 {/* Stats */}
-                {reviews && reviews.results.length > 0 && (
-                    <Card className="mb-6">
+                {reviews && reviews.results && reviews.results.length > 0 && (
+                    <Card className="mb-6 bg-gray-900 border-gray-800">
                         <CardHeader>
-                            <CardTitle className="text-lg">Review Statistics</CardTitle>
+                            <CardTitle className="text-lg text-white">Review Statistics</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="text-center">
-                                    <div className="text-2xl font-bold">{reviews.count}</div>
-                                    <div className="text-sm text-muted-foreground">Total Reviews</div>
+                                    <div className="text-2xl font-bold text-white">{reviews.count}</div>
+                                    <div className="text-sm text-gray-400">Total Reviews</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="text-2xl font-bold">
+                                    <div className="text-2xl font-bold text-white">
                                         {reviews.results.length > 0 
                                             ? (reviews.results.reduce((sum, review) => sum + review.rating, 0) / reviews.results.length).toFixed(1)
                                             : '0.0'
                                         }
                                     </div>
-                                    <div className="text-sm text-muted-foreground">Average Rating Given</div>
+                                    <div className="text-sm text-gray-400">Average Rating Given</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="text-2xl font-bold">
+                                    <div className="text-2xl font-bold text-white">
                                         {reviews.results.filter(review => review.is_verified_purchase).length}
                                     </div>
-                                    <div className="text-sm text-muted-foreground">Verified Reviews</div>
+                                    <div className="text-sm text-gray-400">Verified Reviews</div>
                                 </div>
                             </div>
                         </CardContent>
@@ -144,20 +144,20 @@ export default function ProfileReviewsPage() {
                 )}
 
                 {/* Reviews List */}
-                {!reviews || reviews.results.length === 0 ? (
+                {!reviews || !reviews.results || reviews.results.length === 0 ? (
                     /* Empty State */
-                    <Card>
+                    <Card className="bg-gray-900 border-gray-800">
                         <CardContent className="text-center py-12">
-                            <Star className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                            <Star className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+                            <h2 className="text-xl font-semibold text-white mb-2">
                                 No reviews yet
                             </h2>
-                            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                            <p className="text-gray-400 mb-6 max-w-md mx-auto">
                                 You haven't written any reviews yet. Share your experience with products 
                                 you've purchased to help other customers make informed decisions.
                             </p>
-                            <Link href="/shop">
-                                <Button>
+                            <Link href="/shop-clean">
+                                <Button className="bg-white text-black hover:bg-gray-200">
                                     Browse Products
                                 </Button>
                             </Link>
@@ -180,9 +180,9 @@ export default function ProfileReviewsPage() {
 
                 {/* Edit Review Dialog */}
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-800">
                         <DialogHeader>
-                            <DialogTitle>Edit Review</DialogTitle>
+                            <DialogTitle className="text-white">Edit Review</DialogTitle>
                         </DialogHeader>
                         {editingReview && (
                             <ReviewForm

@@ -26,12 +26,15 @@ export default function ProductReviewPage() {
     const [error, setError] = useState<string | null>(null);
 
     const { data: product, isLoading: productLoading } = useProduct(productId);
-    const { data: myReviews } = useMyReviews({ page_size: 100 });
+    // Only fetch reviews if authenticated - to check if user already reviewed this product
+    const { data: myReviews } = useMyReviews({ 
+        page_size: 100 
+    });
     const createReviewMutation = useCreateReview();
     const updateReviewMutation = useUpdateReview();
 
     // Find existing review for this product
-    const existingReview = myReviews?.results.find(review => review.product === productId);
+    const existingReview = myReviews?.results?.find(review => review.product === productId) || null;
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -221,7 +224,7 @@ export default function ProductReviewPage() {
                     <div className="text-center">
                         <p className="text-sm text-gray-500">
                             Your review helps other customers make informed decisions.{' '}
-                            <Link href="/product/[id]" className="text-[#00bfff] hover:text-[#0ea5e9] underline">
+                            <Link href="/faq" className="text-[#00bfff] hover:text-[#0ea5e9] underline">
                                 Learn more about our review policy
                             </Link>
                         </p>

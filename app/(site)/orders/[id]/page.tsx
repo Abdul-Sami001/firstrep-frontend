@@ -4,19 +4,25 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Package, Truck, CreditCard, MapPin, Calendar, User, Loader2, CheckCircle, Clock, AlertCircle, XCircle, Gift, Users, Coins, Star } from 'lucide-react';
+import { ArrowLeft, Package, Truck, CreditCard, MapPin, Calendar, User, Loader2, CheckCircle, Clock, AlertCircle, XCircle, Gift, Users, Coins, Star, X, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useOrder } from '@/hooks/useOrders';
 import { useToast } from '@/hooks/use-toast';
+import CancellationRequestModal from '@/components/orders/CancellationRequestModal';
+import ReturnRequestModal from '@/components/orders/ReturnRequestModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function OrderDetailPage() {
     const params = useParams();
     const orderId = params?.id as string;
     const { toast } = useToast();
+    const { isAuthenticated } = useAuth();
     const { data: order, isLoading, error } = useOrder(orderId);
     const [hasShownSuccessToast, setHasShownSuccessToast] = useState(false);
+    const [showCancellationModal, setShowCancellationModal] = useState(false);
+    const [showReturnModal, setShowReturnModal] = useState(false);
 
     // Helper function to handle string prices
     const computedPrice = (price: any): number => {
@@ -117,6 +123,56 @@ export default function OrderDetailPage() {
 
     const StatusIcon = getStatusIcon(order.status);
 
+    // Check if cancellation is possible
+    const canCancel = (order.status === 'pending' || order.status === 'processing') &&
+        !order.cancellation_requests?.some(
+            req => req.status === 'pending' || req.status === 'approved'
+        );
+
+    // Check if return is possible
+    const canReturn = (order.status === 'shipped' || order.status === 'delivered') &&
+        !order.return_requests?.some(
+            req => ['pending', 'approved', 'returned'].includes(req.status)
+        );
+
+    // Get latest cancellation request
+    const latestCancellationRequest = order.cancellation_requests
+        ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+    // Get latest return request
+    const latestReturnRequest = order.return_requests
+        ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+    const getCancellationStatusDisplay = (status: string) => {
+        switch (status) {
+            case 'pending':
+                return { text: 'Under Review', color: 'text-yellow-400' };
+            case 'approved':
+                return { text: 'Approved - Order Cancelled', color: 'text-green-400' };
+            case 'rejected':
+                return { text: 'Rejected', color: 'text-red-400' };
+            default:
+                return { text: status, color: 'text-gray-400' };
+        }
+    };
+
+    const getReturnStatusDisplay = (status: string) => {
+        switch (status) {
+            case 'pending':
+                return { text: 'Under Review', color: 'text-yellow-400' };
+            case 'approved':
+                return { text: 'Approved - Return Label Sent', color: 'text-green-400' };
+            case 'returned':
+                return { text: 'Items Returned - Awaiting Refund', color: 'text-blue-400' };
+            case 'refunded':
+                return { text: 'Refund Processed', color: 'text-green-400' };
+            case 'rejected':
+                return { text: 'Rejected', color: 'text-red-400' };
+            default:
+                return { text: status, color: 'text-gray-400' };
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#000000]">
             {/* Enhanced Header */}
@@ -151,25 +207,106 @@ export default function OrderDetailPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex items-center justify-between flex-wrap gap-4">
-                                <div className="flex items-center gap-4 flex-wrap">
-                                    <Badge className={`${getStatusColor(order.status)} border`}>
-                                        <StatusIcon className="h-3 w-3 mr-1" />
-                                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                                    </Badge>
-                                    <Badge className={`${getPaymentStatusColor(order.payment_status)} border`}>
-                                        Payment: {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
-                                    </Badge>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between flex-wrap gap-4">
+                                    <div className="flex items-center gap-4 flex-wrap">
+                                        <Badge className={`${getStatusColor(order.status)} border`}>
+                                            <StatusIcon className="h-3 w-3 mr-1" />
+                                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                        </Badge>
+                                        <Badge className={`${getPaymentStatusColor(order.payment_status)} border`}>
+                                            Payment: {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
+                                        </Badge>
+                                    </div>
+                                    {/* Review Products Button - Only show for delivered and paid orders */}
+                                    {order.status === 'delivered' && order.payment_status === 'paid' && (
+                                        <Link href={`/orders/${order.id}/review`}>
+                                            <Button className="bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white">
+                                                <Star className="h-4 w-4 mr-2" />
+                                                Review Products
+                                            </Button>
+                                        </Link>
+                                    )}
                                 </div>
-                                {/* Review Products Button - Only show for delivered and paid orders */}
-                                {order.status === 'delivered' && order.payment_status === 'paid' && (
-                                    <Link href={`/orders/${order.id}/review`}>
-                                        <Button className="bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white">
-                                            <Star className="h-4 w-4 mr-2" />
-                                            Review Products
-                                        </Button>
-                                    </Link>
+
+                                {/* Cancellation Request Status */}
+                                {latestCancellationRequest && (
+                                    <div className="pt-3 border-t border-gray-800">
+                                        <div className="flex items-center justify-between flex-wrap gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <X className="h-4 w-4 text-gray-400" />
+                                                <span className="text-sm text-gray-400">Cancellation Request:</span>
+                                                <span className={`text-sm font-medium ${getCancellationStatusDisplay(latestCancellationRequest.status).color}`}>
+                                                    {getCancellationStatusDisplay(latestCancellationRequest.status).text}
+                                                </span>
+                                            </div>
+                                            {latestCancellationRequest.admin_notes && (
+                                                <p className="text-xs text-gray-500 mt-1 w-full">
+                                                    Note: {latestCancellationRequest.admin_notes}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
                                 )}
+
+                                {/* Return Request Status */}
+                                {latestReturnRequest && (
+                                    <div className={`pt-3 ${latestCancellationRequest ? '' : 'border-t border-gray-800'}`}>
+                                        <div className="flex items-center justify-between flex-wrap gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <RotateCcw className="h-4 w-4 text-gray-400" />
+                                                <span className="text-sm text-gray-400">Return Request:</span>
+                                                <span className={`text-sm font-medium ${getReturnStatusDisplay(latestReturnRequest.status).color}`}>
+                                                    {getReturnStatusDisplay(latestReturnRequest.status).text}
+                                                </span>
+                                            </div>
+                                            {latestReturnRequest.return_label_url && (
+                                                <a
+                                                    href={latestReturnRequest.return_label_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-sm text-[#3c83f6] hover:underline"
+                                                >
+                                                    View Return Label
+                                                </a>
+                                            )}
+                                            {latestReturnRequest.refund_amount && (
+                                                <span className="text-sm text-green-400 font-medium">
+                                                    Refund: £{parseFloat(latestReturnRequest.refund_amount).toFixed(2)}
+                                                </span>
+                                            )}
+                                            {latestReturnRequest.admin_notes && (
+                                                <p className="text-xs text-gray-500 mt-1 w-full">
+                                                    Note: {latestReturnRequest.admin_notes}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-3 flex-wrap pt-3 border-t border-gray-800">
+                                    {canCancel && (
+                                        <Button
+                                            onClick={() => setShowCancellationModal(true)}
+                                            variant="outline"
+                                            className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                                        >
+                                            <X className="h-4 w-4 mr-2" />
+                                            Request Cancellation
+                                        </Button>
+                                    )}
+                                    {canReturn && (
+                                        <Button
+                                            onClick={() => setShowReturnModal(true)}
+                                            variant="outline"
+                                            className="border-[#3c83f6] text-[#3c83f6] hover:bg-[#3c83f6] hover:text-white"
+                                        >
+                                            <RotateCcw className="h-4 w-4 mr-2" />
+                                            Request Return
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -369,6 +506,22 @@ export default function OrderDetailPage() {
                     </Card>
                 </div>
             </div>
+
+            {/* Modals */}
+            {order && order.id && (
+                <>
+                    <CancellationRequestModal
+                        order={order}
+                        open={showCancellationModal}
+                        onOpenChange={setShowCancellationModal}
+                    />
+                    <ReturnRequestModal
+                        order={order}
+                        open={showReturnModal}
+                        onOpenChange={setShowReturnModal}
+                    />
+                </>
+            )}
         </div>
     );
 }

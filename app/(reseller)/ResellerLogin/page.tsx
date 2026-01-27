@@ -379,10 +379,10 @@ export default function ResellerLogin() {
                         <>
                             <div className="space-y-2">
                                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
-                                    Choose Your Role
+                                    Become a Reseller
                                 </h2>
                                 <p className="text-gray-400 text-lg">
-                                    Select how you want to grow your business
+                                    Join our partner program and start earning commission
                                 </p>
                             </div>
 
@@ -421,41 +421,6 @@ export default function ResellerLogin() {
                                                 className="w-full border border-white/20 bg-transparent hover:bg-white/10 text-white font-semibold"
                                             >
                                                 Apply as Reseller
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Wholesaler Card */}
-                                <div className="border border-gray-800 rounded-lg p-6 bg-gray-900/50 hover:border-[#00bfff]/50 transition-all duration-300">
-                                    <div className="flex items-start gap-4 mb-4">
-                                        <div className="p-3 bg-white/10 rounded-lg">
-                                            <Zap className="h-6 w-6 text-white" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-xl font-bold text-white mb-2">Apply as Wholesaler</h3>
-                                            <p className="text-gray-300 text-sm leading-relaxed mb-4">
-                                                Sell our premium athleisure range via wholesale pricing, with flexible credit terms and tiered discounts.
-                                            </p>
-                                            <ul className="space-y-2 mb-4">
-                                                <li className="flex items-center gap-2 text-sm text-gray-300">
-                                                    <Check className="h-4 w-4 text-[#00bfff] flex-shrink-0" />
-                                                    <span>Up to 35% wholesale discount</span>
-                                                </li>
-                                                <li className="flex items-center gap-2 text-sm text-gray-300">
-                                                    <Check className="h-4 w-4 text-[#00bfff] flex-shrink-0" />
-                                                    <span>Tiered wholesale structure</span>
-                                                </li>
-                                                <li className="flex items-center gap-2 text-sm text-gray-300">
-                                                    <Check className="h-4 w-4 text-[#00bfff] flex-shrink-0" />
-                                                    <span>Dedicated account manager</span>
-                                                </li>
-                                            </ul>
-                                            <Button
-                                                onClick={() => handleRoleSelect('wholesaler')}
-                                                className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold"
-                                            >
-                                                Apply as Wholesaler
                                             </Button>
                                         </div>
                                     </div>

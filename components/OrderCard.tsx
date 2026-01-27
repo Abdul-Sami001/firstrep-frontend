@@ -245,11 +245,19 @@ export default function OrderCard({ order }: OrderCardProps) {
                 )}
 
                 {/* Action Button */}
-                <Link href={`/orders/${order.id}`}>
-                    <button className="w-full mt-4 px-4 py-2 text-sm font-medium text-white border border-[#00bfff] rounded-md hover:bg-[#00bfff] hover:text-black transition-all duration-200 hover:shadow-md hover:shadow-[#00bfff]/30">
-                        View Details
-                    </button>
-                </Link>
+                {order.guest_tracking_token ? (
+                    <Link href={`/track-order/${order.guest_tracking_token}/detail`}>
+                        <button className="w-full mt-4 px-4 py-2 text-sm font-medium text-white border border-[#00bfff] rounded-md hover:bg-[#00bfff] hover:text-black transition-all duration-200 hover:shadow-md hover:shadow-[#00bfff]/30">
+                            View Details
+                        </button>
+                    </Link>
+                ) : (
+                    <Link href={`/orders/${order.id}`}>
+                        <button className="w-full mt-4 px-4 py-2 text-sm font-medium text-white border border-[#00bfff] rounded-md hover:bg-[#00bfff] hover:text-black transition-all duration-200 hover:shadow-md hover:shadow-[#00bfff]/30">
+                            View Details
+                        </button>
+                    </Link>
+                )}
             </CardContent>
         </Card>
     );

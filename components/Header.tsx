@@ -34,7 +34,7 @@ export default function Header() {
 
   const navigationItems = [
     { name: 'ACTIVE RANGE', href: '/shop-clean', id: null },
-    { name: '1R COLLECTION', href: '/1r-collection', id: null },
+    { name: '1R COLLECTION', href: '/shop-clean?collection=1R', id: null },
     { name: 'RESELLERS', href: '/ResellerLogin', id: null },
     { name: 'ABOUT US', href: '/about', id: null },
   ];

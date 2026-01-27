@@ -123,7 +123,7 @@ export default function AboutPage() {
             their performance needs.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/shop">
+            <a href="/shop-clean">
               <button className="px-6 py-3 bg-[#3c83f6] text-white rounded-md hover:bg-[#2563eb] transition-colors font-semibold">
                 Shop Now
               </button>

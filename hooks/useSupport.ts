@@ -7,11 +7,12 @@ import { useToast } from './use-toast';
 const DEFAULT_STALE_TIME = 5 * 60 * 1000;
 const DEFAULT_CACHE_TIME = 10 * 60 * 1000;
 
-export const useSupportTickets = (filters?: TicketFilters) =>
+export const useSupportTickets = (filters?: TicketFilters, options?: { enabled?: boolean }) =>
     useInfiniteQuery({
         queryKey: QUERY_KEYS.SUPPORT.TICKETS(filters),
         queryFn: ({ pageParam = null }) =>
             supportApi.getTickets({ ...filters, cursor: pageParam }),
+        enabled: options?.enabled !== false,
         initialPageParam: null as string | null,
         getNextPageParam: (lastPage) => extractCursor(lastPage?.next),
         getPreviousPageParam: (lastPage) => extractCursor(lastPage?.previous),

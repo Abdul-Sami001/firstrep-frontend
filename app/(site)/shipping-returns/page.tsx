@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Package, RefreshCw, Truck } from 'lucide-react';
 import StaticPageLayout from '@/components/StaticPageLayout';
+import TrackOrderButton from '@/components/TrackOrderButton';
 
 export const metadata: Metadata = {
   title: 'Shipping & Returns',
@@ -24,15 +25,13 @@ export default function ShippingReturnsPage() {
             Our customer care team is ready to assist you with any questions or concerns about your order.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link href="/orders">
-              <Button
-                variant="outline"
-                className="w-full sm:w-auto border-white/20 text-white hover:bg-white hover:text-black transition-all duration-300"
-              >
-                <Truck className="mr-2 h-4 w-4" />
-                Track Order
-              </Button>
-            </Link>
+            <TrackOrderButton
+              variant="outline"
+              className="w-full sm:w-auto border-white/20 text-white hover:bg-white hover:text-black transition-all duration-300"
+            >
+              <Truck className="mr-2 h-4 w-4" />
+              Track Order
+            </TrackOrderButton>
             <Link href="/returns">
               <Button
                 variant="outline"

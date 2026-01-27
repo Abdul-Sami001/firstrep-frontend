@@ -143,8 +143,17 @@ export default function ProductCard({
       ? toNum(defaultVariant.price_override)
       : toNum(productPrice);
 
+  const formatCurrency = (currency: string) => {
+    // Convert currency code to symbol
+    if (currency === 'GBP') return '£';
+    if (currency === 'USD') return '$';
+    if (currency === 'EUR') return '€';
+    return currency; // Fallback to code if unknown
+  };
+
   const formatPrice = () => {
     const currency = isApiProduct ? product?.currency || 'GBP' : 'GBP';
+    const currencySymbol = formatCurrency(currency);
     const displayPrice = computedPrice;
     const showOriginalPrice = isOnSale && retailPrice > displayPrice;
 
@@ -152,17 +161,17 @@ export default function ProductCard({
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-base md:text-lg font-semibold text-white">
-            {currency} {Number(displayPrice).toFixed(2)}
+            {currencySymbol}{Number(displayPrice).toFixed(2)}
           </span>
           {showOriginalPrice && (
             <span className="text-sm text-gray-500 line-through">
-              {currency} {Number(retailPrice).toFixed(2)}
+              {currencySymbol}{Number(retailPrice).toFixed(2)}
             </span>
           )}
         </div>
         {isOnSale && saleInfo && (
           <span className="text-xs text-green-400 font-medium">
-            Save {currency} {Number(saleInfo.discount_amount || 0).toFixed(2)} 
+            Save {currencySymbol}{Number(saleInfo.discount_amount || 0).toFixed(2)} 
             {saleInfo.discount_percentage && ` (${Number(saleInfo.discount_percentage).toFixed(0)}% off)`}
           </span>
         )}
@@ -283,8 +292,8 @@ export default function ProductCard({
           {formatPrice()}
         </div>
 
-        {/* Rating Display */}
-        {isApiProduct && product?.average_rating && product.average_rating > 0 && (
+        {/* Rating Display - Only show if there are reviews */}
+        {isApiProduct && product?.average_rating && product.average_rating > 0 && product?.review_count && product.review_count > 0 && (
           <div className="flex items-center gap-2">
             <RatingStars 
               rating={product.average_rating} 
@@ -292,7 +301,7 @@ export default function ProductCard({
               data-testid={`rating-stars-${productId}`}
             />
             <span className="text-xs text-gray-400">
-              ({product?.review_count || 0})
+              ({product.review_count})
             </span>
           </div>
         )}

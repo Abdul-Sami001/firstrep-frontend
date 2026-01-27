@@ -35,6 +35,15 @@ export default function Cart() {
     closeCart();
     router.push('/shop-clean');
   };
+
+  const handleStartShopping = () => {
+    // Close cart with smooth transition
+    closeCart();
+    // Small delay to allow cart animation to complete before navigation
+    setTimeout(() => {
+      router.push('/shop-clean');
+    }, 300); // 300ms delay for smooth cart close animation
+  };
   
   // Free shipping threshold
   const FREE_SHIPPING_THRESHOLD = 75;
@@ -53,14 +62,18 @@ export default function Cart() {
     <>
       {/* Dark Overlay */}
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 transition-opacity"
+        className={`fixed inset-0 bg-black/70 backdrop-blur-sm z-50 transition-opacity duration-300 ${
+          isCartOpen ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={closeCart}
         data-testid="overlay-cart"
       />
       
       {/* Cart Panel - Dark Theme */}
       <div
-        className="fixed right-0 top-0 h-full w-full max-w-md bg-[#000000] border-l border-gray-800 z-50 shadow-2xl flex flex-col transition-transform"
+        className={`fixed right-0 top-0 h-full w-full max-w-md bg-[#000000] border-l border-gray-800 z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
+          isCartOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
         data-testid="panel-cart"
       >
         {/* Header */}
@@ -109,14 +122,13 @@ export default function Cart() {
                 <p className="text-gray-400 text-lg" data-testid="text-empty-cart">
                   Your cart is empty
                 </p>
-                <Link href="/shop-clean">
-                  <Button
-                    variant="outline"
-                    className="mt-6 border-white/20 text-white hover:bg-white hover:text-black"
-                  >
-                    Start Shopping
-                  </Button>
-                </Link>
+                <Button
+                  variant="outline"
+                  onClick={handleStartShopping}
+                  className="mt-6 border-white/20 text-white hover:bg-white hover:text-black transition-all duration-300"
+                >
+                  Start Shopping
+                </Button>
               </div>
             ) : (
               <div className="space-y-4">

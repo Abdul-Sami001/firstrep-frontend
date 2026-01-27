@@ -87,6 +87,7 @@ export interface ProductFilters {
     min_price?: number;
     max_price?: number;
     seller?: string;
+    collections__name?: string; // Filter by collection name
 }
 
 export interface PaginatedResponse<T> {

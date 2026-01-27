@@ -1,7 +1,7 @@
 // app/(site)/shop-clean/page.tsx - Shop Page with Filters
 'use client';
-import { Suspense, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useMemo, useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useProducts, useCategories } from '@/hooks/useProducts';
 import ShopHero from '@/components/ShopHero';
 import ProductCard from '@/components/ProductCard';
@@ -11,8 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SlidersHorizontal, Grid3x3, List, ChevronLeft, ChevronRight, Filter, X, Search } from 'lucide-react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 
 // Shop Page Content Component (wrapped in Suspense for searchParams)
 function ShopPageContent() {
@@ -23,6 +21,7 @@ function ShopPageContent() {
   // Extract URL parameters
   const categoryParam = searchParams.get('category');
   const genderParam = searchParams.get('gender') as 'men' | 'women' | 'unisex' | null;
+  const collectionParam = searchParams.get('collection');
   const searchParam = searchParams.get('search') || '';
   const sortParam = searchParams.get('sort') || 'featured';
   const pageParam = searchParams.get('page') || '1';
@@ -73,7 +72,7 @@ function ShopPageContent() {
   }, [searchTimeout]);
 
   // Determine if we should group by category (no filters except maybe sort)
-  const shouldGroupByCategory = !categoryParam && !genderParam && !searchParam;
+  const shouldGroupByCategory = !categoryParam && !genderParam && !searchParam && !collectionParam;
 
   // Build filters for API
   const filters = useMemo(() => {
@@ -94,6 +93,11 @@ function ShopPageContent() {
     } else if (categoryParam) {
       // Fallback: try to use category name as slug
       apiFilters.category__slug = categoryParam.toLowerCase().replace(/\s+/g, '-');
+    }
+
+    // Collection filter
+    if (collectionParam) {
+      apiFilters.collections__name = collectionParam;
     }
 
     // Gender filter - handle via product specifications or backend gender field
@@ -129,7 +133,10 @@ function ShopPageContent() {
     apiFilters.ordering = sortMap[sortParam] || '-popularity';
 
     return apiFilters;
-  }, [categoryParam, selectedCategory, genderParam, sortParam, pageParam, minPriceParam, maxPriceParam, searchParam, shouldGroupByCategory]);
+  }, [categoryParam, selectedCategory, genderParam, collectionParam, sortParam, pageParam, minPriceParam, maxPriceParam, searchParam, shouldGroupByCategory]);
+
+  // State to control loading delay for smooth UX
+  const [showLoadingDelay, setShowLoadingDelay] = useState(true);
 
   // Fetch products
   const {
@@ -138,12 +145,28 @@ function ShopPageContent() {
     error,
   } = useProducts(filters);
 
+  // Add a small delay when products load to ensure smooth transition from cart
+  useEffect(() => {
+    if (!isLoading && productsData) {
+      // Small delay to allow cart close animation and smooth page transition
+      const timer = setTimeout(() => {
+        setShowLoadingDelay(false);
+      }, 400); // 400ms delay for smooth UX
+      return () => clearTimeout(timer);
+    } else if (isLoading) {
+      setShowLoadingDelay(true);
+    }
+  }, [isLoading, productsData]);
+
   const products = productsData?.results || [];
   const totalCount = productsData?.count || 0;
   const currentPage = parseInt(pageParam) || 1;
   const totalPages = Math.ceil(totalCount / (filters.page_size || 24));
   const hasNextPage = !!productsData?.next;
   const hasPrevPage = !!productsData?.previous;
+  
+  // Show loading state during delay or actual loading
+  const isShowingLoading = isLoading || showLoadingDelay;
 
   // Group products by category when no filters are applied
   const groupedProducts = useMemo(() => {
@@ -175,6 +198,7 @@ function ShopPageContent() {
     // Get updated values (use update if provided, otherwise use existing)
     const updatedCategory = 'category' in updates ? updates.category : categoryParam;
     const updatedGender = 'gender' in updates ? updates.gender : genderParam;
+    const updatedCollection = 'collection' in updates ? updates.collection : collectionParam;
     const updatedSearch = 'search' in updates ? updates.search : (searchParam || null);
     const updatedSort = 'sort' in updates ? updates.sort : (sortParam && sortParam !== 'featured' ? sortParam : null);
     const updatedMinPrice = 'min_price' in updates ? updates.min_price : minPriceParam;
@@ -184,6 +208,7 @@ function ShopPageContent() {
     // Set params (only if not null)
     if (updatedCategory) params.set('category', updatedCategory);
     if (updatedGender) params.set('gender', updatedGender);
+    if (updatedCollection) params.set('collection', updatedCollection);
     if (updatedSearch) params.set('search', updatedSearch);
     if (updatedSort) params.set('sort', updatedSort);
     if (updatedMinPrice) params.set('min_price', updatedMinPrice);
@@ -213,7 +238,7 @@ function ShopPageContent() {
           {/* Results Count */}
           <div className="mb-4 md:mb-6">
             <p className="text-sm md:text-base text-gray-300">
-              {isLoading ? (
+              {isShowingLoading ? (
                 'Loading...'
               ) : error ? (
                 'Error loading products'
@@ -222,6 +247,7 @@ function ShopPageContent() {
                   Showing <span className="text-white font-semibold">{products.length}</span> of{' '}
                   <span className="text-white font-semibold">{totalCount}</span> products
                   {selectedCategory && ` in ${selectedCategory.name}`}
+                  {collectionParam && ` in ${collectionParam} Collection`}
                   {genderParam && ` for ${genderParam === 'men' ? 'Men' : genderParam === 'women' ? 'Women' : 'Unisex'}`}
                 </>
               )}
@@ -229,7 +255,7 @@ function ShopPageContent() {
           </div>
 
           {/* Active Filters */}
-          {(selectedCategory || genderParam || searchParam) && (
+          {(selectedCategory || genderParam || searchParam || collectionParam) && (
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <span className="text-xs md:text-sm text-gray-400 font-medium">Active Filters:</span>
               {searchParam && (
@@ -238,6 +264,15 @@ function ShopPageContent() {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3c83f6]/20 text-[#3c83f6] border border-[#3c83f6]/30 rounded-md text-xs md:text-sm font-medium hover:bg-[#3c83f6]/30 transition-colors"
                 >
                   <span>Search: {searchParam}</span>
+                  <X className="h-3 w-3" />
+                </Link>
+              )}
+              {collectionParam && (
+                <Link
+                  href={buildUrl({ collection: null })}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3c83f6]/20 text-[#3c83f6] border border-[#3c83f6]/30 rounded-md text-xs md:text-sm font-medium hover:bg-[#3c83f6]/30 transition-colors"
+                >
+                  <span>Collection: {collectionParam}</span>
                   <X className="h-3 w-3" />
                 </Link>
               )}
@@ -393,7 +428,7 @@ function ShopPageContent() {
       {/* Products Grid */}
       <section className="bg-[#000000] py-8 md:py-12 lg:py-16">
         <div className="mobile-container tablet-container desktop-container">
-          {isLoading ? (
+          {isShowingLoading ? (
             <ProductGridSkeleton count={12} />
           ) : error ? (
             <div className="text-center py-20">
@@ -412,11 +447,11 @@ function ShopPageContent() {
               <p className="text-gray-400 mb-6">
                 {searchParam
                   ? `No products found for "${searchParam}". Try a different search term.`
-                  : selectedCategory || genderParam
+                  : selectedCategory || genderParam || collectionParam
                   ? 'Try adjusting your filters or browse all products.'
                   : 'Check back soon for new arrivals.'}
               </p>
-              {(selectedCategory || genderParam || searchParam) ? (
+              {(selectedCategory || genderParam || searchParam || collectionParam) ? (
                 <Link href="/shop-clean">
                   <Button className="bg-[#3c83f6] hover:bg-[#2563eb] text-white">
                     View All Products

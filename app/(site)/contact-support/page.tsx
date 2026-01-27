@@ -2,10 +2,14 @@
 'use client';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Mail, MessageCircle, Phone, HelpCircle } from 'lucide-react';
+import { ArrowRight, Mail, MessageCircle, Phone, HelpCircle, Lock } from 'lucide-react';
 import StaticPageLayout from '@/components/StaticPageLayout';
+import TrackOrderLink from '@/components/TrackOrderLink';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ContactSupportPage() {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <StaticPageLayout
       title="Contact Support"
@@ -52,17 +56,31 @@ export default function ContactSupportPage() {
                 </div>
               </div>
               <p className="text-base md:text-lg text-gray-300 mb-4">
-                Open a ticket and track replies directly in your account. We respond promptly during business hours.
+                {isAuthenticated 
+                  ? "Open a ticket and track replies directly in your account. We respond promptly during business hours."
+                  : "To use our support ticket system, please log in to your account first. This allows you to track your tickets and receive responses directly."}
               </p>
-              <Link href="/support">
-                <Button
-                  variant="outline"
-                  className="w-full border-white/20 text-white hover:bg-white hover:text-black transition-all duration-300"
-                >
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  Go to Support
-                </Button>
-              </Link>
+              {isAuthenticated ? (
+                <Link href="/support">
+                  <Button
+                    variant="outline"
+                    className="w-full border-white/20 text-white hover:bg-white hover:text-black transition-all duration-300"
+                  >
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Go to Support
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/CustomerLogin">
+                  <Button
+                    variant="outline"
+                    className="w-full border-white/20 text-white hover:bg-white hover:text-black transition-all duration-300"
+                  >
+                    <Lock className="mr-2 h-4 w-4" />
+                    Login to Access Support
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </section>
@@ -74,7 +92,7 @@ export default function ContactSupportPage() {
             Find answers to common questions or get help with your order:
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <Link href="/orders">
+            <TrackOrderLink>
               <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-800 hover:border-[#3c83f6] transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
                   <HelpCircle className="h-5 w-5 text-[#3c83f6]" />
@@ -82,7 +100,7 @@ export default function ContactSupportPage() {
                   <ArrowRight className="h-4 w-4 text-gray-400 ml-auto" />
                 </div>
               </div>
-            </Link>
+            </TrackOrderLink>
             <Link href="/shipping-returns">
               <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-800 hover:border-[#3c83f6] transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">

@@ -152,7 +152,7 @@ export default function StoreLocatorPage() {
                 <p className="text-gray-400 text-lg">No stores found matching your search.</p>
                 <p className="text-gray-500 text-sm mt-2">
                   Try a different location or{' '}
-                  <a href="/shop" className="text-[#3c83f6] hover:text-white underline">
+                  <a href="/shop-clean" className="text-[#3c83f6] hover:text-white underline">
                     shop online
                   </a>
                 </p>
@@ -167,7 +167,7 @@ export default function StoreLocatorPage() {
           <p className="text-base md:text-lg text-gray-300 mb-6 max-w-2xl mx-auto">
             Shop online with free shipping on orders over £50. Same premium quality, delivered to your door.
           </p>
-          <a href="/shop">
+          <a href="/shop-clean">
             <Button className="bg-[#3c83f6] hover:bg-[#2563eb] text-white">
               Shop Online
             </Button>

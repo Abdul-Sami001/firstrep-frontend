@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { MessageSquare, Plus, Loader2, AlertCircle, Filter, Search } from 'lucide-react';
+import { MessageSquare, Plus, Loader2, AlertCircle, Filter, Search, Lock } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useSupportTickets } from '@/hooks/useSupport';
 import { TicketStatus, TicketPriority, TicketChannel } from '@/lib/api/support';
@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 
 const statusOptions = [
   { value: 'all', label: 'All' },
@@ -77,6 +78,7 @@ const priorityBadgeClass = (priority?: string) => {
 };
 
 export default function SupportTicketsPage() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [status, setStatus] = useState<string>('all');
   const [priority, setPriority] = useState<string>('all');
   const [channel, setChannel] = useState<string>('all');
@@ -103,11 +105,38 @@ export default function SupportTicketsPage() {
     hasNextPage,
     isFetchingNextPage,
     refetch,
-  } = useSupportTickets(filters);
+  } = useSupportTickets(filters, { enabled: isAuthenticated });
 
   const merged = data ? mergeCursorPages(data.pages) : { items: [], nextCursor: null, previousCursor: null };
 
-  if (isLoading) {
+  // Show login prompt for unauthenticated users
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#000000] flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <Lock className="h-16 w-16 mx-auto mb-4 text-[#3c83f6]" />
+          <h1 className="text-2xl md:text-3xl font-bold mb-2 text-white">Login Required</h1>
+          <p className="text-gray-400 mb-6">
+            To access the support ticket system, please log in to your account first. This allows you to create tickets, track responses, and manage your support requests.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild className="bg-[#3c83f6] hover:bg-[#2563eb] text-white">
+              <Link href="/CustomerLogin">
+                Login to Access Support
+              </Link>
+            </Button>
+            <Button variant="outline" className="border-gray-700 text-gray-200 hover:bg-gray-800" asChild>
+              <Link href="/contact-support">
+                Contact Support via Email
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-[#000000] flex items-center justify-center">
         <div className="text-center">

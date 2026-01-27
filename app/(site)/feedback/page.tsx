@@ -16,18 +16,50 @@ export default function FeedbackPage() {
   const [feedbackType, setFeedbackType] = useState<string>('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    setSubmitted(true);
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rating,
+          feedbackType,
+          subject,
+          message,
+          email: !user ? email : undefined,
+          name: !user ? name : undefined,
+          userEmail: user?.email,
+          userName: user?.first_name 
+            ? (user.last_name ? `${user.first_name} ${user.last_name}` : user.first_name)
+            : user?.email,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to submit feedback');
+      }
+
+      setIsSubmitting(false);
+      setSubmitted(true);
+    } catch (err: any) {
+      console.error('Error submitting feedback:', err);
+      setError(err.message || 'Failed to submit feedback. Please try again.');
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -178,6 +210,8 @@ export default function FeedbackPage() {
                 <Input
                   id="email"
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="your.email@example.com"
                   required
                   className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#3c83f6]"
@@ -190,12 +224,21 @@ export default function FeedbackPage() {
                 <Input
                   id="name"
                   type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="Your name"
                   required
                   className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#3c83f6]"
                 />
               </div>
             </section>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-900/50 border border-red-700 rounded-lg p-4">
+              <p className="text-red-300 text-sm">{error}</p>
+            </div>
           )}
 
           {/* Submit Button */}

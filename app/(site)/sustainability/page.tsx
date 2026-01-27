@@ -152,7 +152,7 @@ export default function SustainabilityPage() {
             Every purchase supports our sustainability initiatives. Together, we can create a more 
             sustainable future for performance apparel.
           </p>
-          <a href="/shop">
+          <a href="/shop-clean">
             <button className="px-6 py-3 bg-[#3c83f6] text-white rounded-md hover:bg-[#2563eb] transition-colors font-semibold">
               Shop Sustainable Products
             </button>

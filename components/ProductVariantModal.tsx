@@ -46,6 +46,14 @@ export default function ProductVariantModal({
 
   const toNum = (v: any) => (typeof v === 'number' ? v : parseFloat(String(v || 0)));
 
+  // Format currency code to symbol
+  const formatCurrency = (currency: string) => {
+    if (currency === 'GBP') return '£';
+    if (currency === 'USD') return '$';
+    if (currency === 'EUR') return '€';
+    return currency; // Fallback to code if unknown
+  };
+
   // Get pricing information using new pricing system
   const getDisplayPrice = () => {
     if (selectedVariant?.price_override != null) {
@@ -65,6 +73,7 @@ export default function ProductVariantModal({
   const saleInfo = product?.sale_info;
   const displayPrice = getDisplayPrice();
   const retailPrice = getRetailPrice();
+  const currencySymbol = formatCurrency(product?.currency || 'GBP');
 
   // Get available sizes based on selected color (if any)
   const availableSizes = useMemo(() => {
@@ -186,20 +195,17 @@ export default function ProductVariantModal({
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-2xl md:text-3xl font-bold text-white">
-                    {product?.currency || 'GBP'}{' '}
-                    {Number(displayPrice).toFixed(2)}
+                    {currencySymbol}{Number(displayPrice).toFixed(2)}
                   </span>
                   {isOnSale && retailPrice > displayPrice && (
                     <span className="text-lg md:text-xl text-gray-500 line-through">
-                      {product?.currency || 'GBP'}{' '}
-                      {Number(retailPrice).toFixed(2)}
+                      {currencySymbol}{Number(retailPrice).toFixed(2)}
                     </span>
                   )}
                 </div>
                 {isOnSale && saleInfo && (
                   <span className="text-sm text-green-400 font-medium">
-                    Save {product?.currency || 'GBP'}{' '}
-                    {Number(saleInfo.discount_amount || 0).toFixed(2)}
+                    Save {currencySymbol}{Number(saleInfo.discount_amount || 0).toFixed(2)}
                     {saleInfo.discount_percentage && (
                       <span> ({Number(saleInfo.discount_percentage).toFixed(0)}% off)</span>
                     )}

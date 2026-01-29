@@ -244,8 +244,11 @@ function ShopPageContent() {
                 'Error loading products'
               ) : (
                 <>
-                  Showing <span className="text-white font-semibold">{products.length}</span> of{' '}
-                  <span className="text-white font-semibold">{totalCount}</span> products
+                  Showing <span className="text-white font-semibold">{products.length}</span>
+                  {totalCount > 0 && totalCount !== products.length && (
+                    <> of <span className="text-white font-semibold">{totalCount}</span></>
+                  )}
+                  {' '}product{products.length !== 1 ? 's' : ''}
                   {selectedCategory && ` in ${selectedCategory.name}`}
                   {collectionParam && ` in ${collectionParam} Collection`}
                   {genderParam && ` for ${genderParam === 'men' ? 'Men' : genderParam === 'women' ? 'Women' : 'Unisex'}`}

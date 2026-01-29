@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useProduct, useProducts } from '@/hooks/useProducts';
 import { useProductRatingStats, useProductReviews } from '@/hooks/useReviews';
 import { useCart } from '@/contexts/CartContext';
-import { ProductVariant } from '@/lib/api/products';
+import { ProductVariant, ProductImage } from '@/lib/api/products';
 import RatingSummary from '@/components/RatingSummary';
 import WishlistButton from '@/components/WishlistButton';
 
@@ -86,7 +86,21 @@ export default function ProductDetailPage() {
     const retailPrice = getRetailPrice();
     const currencySymbol = formatCurrency(product?.currency || 'GBP');
 
-    const images = product?.images ?? [];
+    // Get images: use variant images if available, otherwise fall back to product images
+    // Handle both snake_case (from API) and camelCase (if transformed)
+    const images = useMemo(() => {
+        const variantImages = selectedVariant?.images || (selectedVariant as any)?.Images || [];
+        if (variantImages && variantImages.length > 0) {
+            return variantImages;
+        }
+        return product?.images ?? [];
+    }, [selectedVariant, product?.images]);
+
+    // Reset image index when variant changes
+    useEffect(() => {
+        setCurrentImageIndex(0);
+    }, [selectedVariant?.id]);
+
     const heroSrc = images[currentImageIndex]?.image || '';
     const heroAlt = images[currentImageIndex]?.alt_text || product?.title || 'Product image';
 
@@ -241,7 +255,7 @@ export default function ProductDetailPage() {
 
                         {images.length > 1 && (
                             <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-                                {images.map((img, index) => (
+                                {images.map((img: ProductImage, index: number) => (
                                     <button
                                         key={img.id ?? index}
                                         onClick={() => setCurrentImageIndex(index)}
@@ -337,7 +351,8 @@ export default function ProductDetailPage() {
                                     {availableColors.map(color => {
                                         // Find variant with this color and current size (if size is selected)
                                         const currentSize = (selectedVariant?.attributes as any)?.size;
-                                        const variant = product?.variants?.find(
+                                        // First try to find variant with matching color and size
+                                        let variant = product?.variants?.find(
                                             v => {
                                                 const variantColor = (v.attributes as any)?.color;
                                                 const variantSize = (v.attributes as any)?.size;
@@ -346,6 +361,15 @@ export default function ProductDetailPage() {
                                                        (!currentSize || variantSize === currentSize);
                                             }
                                         );
+                                        // If no variant found with current size, find any variant with this color
+                                        if (!variant && currentSize) {
+                                            variant = product?.variants?.find(
+                                                v => {
+                                                    const variantColor = (v.attributes as any)?.color;
+                                                    return variantColor === color && v.is_active;
+                                                }
+                                            );
+                                        }
                                         const isSelected = (selectedVariant?.attributes as any)?.color === color;
                                         const isOutOfStock = !variant || (variant?.stock ?? 0) <= 0;
                                         
@@ -385,7 +409,8 @@ export default function ProductDetailPage() {
                                     {availableSizes.map(size => {
                                         // Find variant with this size and current color (if color selected)
                                         const currentColor = (selectedVariant?.attributes as any)?.color;
-                                        const variant = product?.variants?.find(
+                                        // First try to find variant with matching size and color
+                                        let variant = product?.variants?.find(
                                             v => {
                                                 const variantColor = (v.attributes as any)?.color;
                                                 const variantSize = (v.attributes as any)?.size;
@@ -394,6 +419,15 @@ export default function ProductDetailPage() {
                                                        (!currentColor || variantColor === currentColor);
                                             }
                                         );
+                                        // If no variant found with current color, find any variant with this size
+                                        if (!variant && currentColor) {
+                                            variant = product?.variants?.find(
+                                                v => {
+                                                    const variantSize = (v.attributes as any)?.size;
+                                                    return variantSize === size && v.is_active;
+                                                }
+                                            );
+                                        }
                                         const isSelected = (selectedVariant?.attributes as any)?.size === size;
                                         const isOutOfStock = !variant || (variant?.stock ?? 0) <= 0;
                                         

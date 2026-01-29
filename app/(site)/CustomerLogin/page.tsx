@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useLogin, useRegister, usePasswordReset } from "@/hooks/useAuth";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, Lock, User, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 
 export default function CustomerLogin() {
     const router = useRouter();
@@ -21,9 +21,7 @@ export default function CustomerLogin() {
     const [formData, setFormData] = useState({
         email: "",
         password: "",
-        confirmPassword: "",
-        firstName: "",
-        lastName: ""
+        confirmPassword: ""
     });
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
@@ -57,26 +55,23 @@ export default function CustomerLogin() {
                     return;
                 }
 
-                if (!formData.firstName || !formData.lastName) {
-                    setError("First name and last name are required");
-                    return;
-                }
-
-                // Register user
+                // Register user - errors will be handled by useEffect watching registerMutation.error
+                // Note: first_name and last_name are sent as empty strings since they're not saved in profile
                 registerMutation.mutate({
                     email: formData.email,
                     password: formData.password,
-                    first_name: formData.firstName,
-                    last_name: formData.lastName,
+                    first_name: "",
+                    last_name: "",
                 });
             } else {
-                // Login user
+                // Login user - errors will be handled by useEffect watching loginMutation.error
                 loginMutation.mutate({
                     email: formData.email,
                     password: formData.password,
                 });
             }
         } catch (err) {
+            // This catch block handles unexpected errors (not from mutations)
             setError("Something went wrong. Please try again.");
             console.error("Auth error:", err);
         }
@@ -103,23 +98,132 @@ export default function CustomerLogin() {
         }
     }, [loginMutation.isSuccess, router]);
 
+    // Handle login errors - display backend error messages
+    useEffect(() => {
+        if (loginMutation.isError && loginMutation.error) {
+            const error = loginMutation.error as any;
+            let errorMessage = "Invalid email or password. Please try again.";
+            
+            // Extract error message from backend response
+            if (error.response?.data) {
+                const errorData = error.response.data;
+                
+                if (errorData.detail) {
+                    errorMessage = errorData.detail;
+                } else if (errorData.non_field_errors) {
+                    if (Array.isArray(errorData.non_field_errors)) {
+                        errorMessage = errorData.non_field_errors[0];
+                    } else {
+                        errorMessage = errorData.non_field_errors;
+                    }
+                }
+            }
+            
+            setError(errorMessage);
+        }
+    }, [loginMutation.isError, loginMutation.error]);
+
     // Handle successful registration
     useEffect(() => {
         if (registerMutation.isSuccess) {
             setIsLogin(true);
-            setFormData({ email: "", password: "", confirmPassword: "", firstName: "", lastName: "" });
+            setFormData({ email: "", password: "", confirmPassword: "" });
             setSuccess("Registration successful! Please check your email to verify your account.");
         }
     }, [registerMutation.isSuccess]);
+
+    // Handle registration errors - display backend error messages
+    useEffect(() => {
+        if (registerMutation.isError && registerMutation.error) {
+            const error = registerMutation.error as any;
+            let errorMessage = "Failed to create account. Please try again.";
+            
+            // Extract error message from backend response
+            if (error.response?.data) {
+                const errorData = error.response.data;
+                
+                // Check for detail field (common error format)
+                if (errorData.detail) {
+                    errorMessage = errorData.detail;
+                }
+                // Check for password field errors (validation errors)
+                else if (errorData.password) {
+                    // Handle array of errors or single error
+                    if (Array.isArray(errorData.password)) {
+                        errorMessage = errorData.password[0];
+                    } else if (typeof errorData.password === 'string') {
+                        errorMessage = errorData.password;
+                    } else if (errorData.password[0]) {
+                        errorMessage = errorData.password[0];
+                    }
+                }
+                // Check for non_field_errors
+                else if (errorData.non_field_errors) {
+                    if (Array.isArray(errorData.non_field_errors)) {
+                        errorMessage = errorData.non_field_errors[0];
+                    } else {
+                        errorMessage = errorData.non_field_errors;
+                    }
+                }
+                // Check for email errors
+                else if (errorData.email) {
+                    if (Array.isArray(errorData.email)) {
+                        errorMessage = errorData.email[0];
+                    } else {
+                        errorMessage = errorData.email;
+                    }
+                }
+                // Check for other field errors
+                else {
+                    // Try to get first error from any field
+                    const errorKeys = Object.keys(errorData);
+                    if (errorKeys.length > 0) {
+                        const firstError = errorData[errorKeys[0]];
+                        if (Array.isArray(firstError)) {
+                            errorMessage = firstError[0];
+                        } else if (typeof firstError === 'string') {
+                            errorMessage = firstError;
+                        }
+                    }
+                }
+            }
+            
+            setError(errorMessage);
+        }
+    }, [registerMutation.isError, registerMutation.error]);
 
     // Handle successful password reset
     useEffect(() => {
         if (passwordResetMutation.isSuccess) {
             setShowForgotPassword(false);
             setSuccess("Password reset link sent to your email!");
-            setFormData({ email: "", password: "", confirmPassword: "", firstName: "", lastName: "" });
+            setFormData({ email: "", password: "", confirmPassword: "" });
         }
     }, [passwordResetMutation.isSuccess]);
+
+    // Handle password reset errors
+    useEffect(() => {
+        if (passwordResetMutation.isError && passwordResetMutation.error) {
+            const error = passwordResetMutation.error as any;
+            let errorMessage = "Failed to send reset link. Please try again.";
+            
+            if (error.response?.data) {
+                const errorData = error.response.data;
+                
+                if (errorData.detail) {
+                    errorMessage = errorData.detail;
+                } else if (errorData.email) {
+                    if (Array.isArray(errorData.email)) {
+                        errorMessage = errorData.email[0];
+                    } else {
+                        errorMessage = errorData.email;
+                    }
+                }
+            }
+            
+            setError(errorMessage);
+        }
+    }, [passwordResetMutation.isError, passwordResetMutation.error]);
 
     const isLoading = loginMutation.isPending || registerMutation.isPending || passwordResetMutation.isPending;
 
@@ -284,46 +388,6 @@ export default function CustomerLogin() {
                             </div>
                         )}
 
-                        {/* First Name & Last Name (Registration only) */}
-                        {!isLogin && !showForgotPassword && (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="firstName" className="text-gray-300">First Name</Label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                        <Input
-                                            id="firstName"
-                                            name="firstName"
-                                            type="text"
-                                            placeholder="John"
-                                            className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff]"
-                                            value={formData.firstName}
-                                            onChange={handleInputChange}
-                                            required={!isLogin}
-                                            data-testid="input-first-name"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="lastName" className="text-gray-300">Last Name</Label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                        <Input
-                                            id="lastName"
-                                            name="lastName"
-                                            type="text"
-                                            placeholder="Doe"
-                                            className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff]"
-                                            value={formData.lastName}
-                                            onChange={handleInputChange}
-                                            required={!isLogin}
-                                            data-testid="input-last-name"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Email */}
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-gray-300">Email Address</Label>
@@ -453,9 +517,7 @@ export default function CustomerLogin() {
                                         setFormData({
                                             email: "",
                                             password: "",
-                                            confirmPassword: "",
-                                            firstName: "",
-                                            lastName: ""
+                                            confirmPassword: ""
                                         });
                                     }}
                                     data-testid="button-toggle-mode"

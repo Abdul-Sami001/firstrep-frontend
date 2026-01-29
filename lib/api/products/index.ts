@@ -20,6 +20,7 @@ export interface ProductVariant {
     price_override?: number;
     stock: number;
     is_active: boolean;
+    images?: ProductImage[]; // Variant-specific images
 }
 
 export interface ProductImage {

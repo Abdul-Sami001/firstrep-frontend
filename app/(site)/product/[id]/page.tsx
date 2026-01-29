@@ -104,16 +104,9 @@ export default function ProductDetailPage() {
     const heroSrc = images[currentImageIndex]?.image || '';
     const heroAlt = images[currentImageIndex]?.alt_text || product?.title || 'Product image';
 
-    // Get available sizes based on selected color (if any)
+    // Get all available sizes from all active variants (show all options)
     const availableSizes = useMemo(() => {
-        const currentColor = (selectedVariant?.attributes as any)?.color;
-        const variants = (product?.variants ?? []).filter(v => {
-            if (!v.is_active) return false;
-            if (currentColor) {
-                return (v.attributes as any)?.color === currentColor;
-            }
-            return true;
-        });
+        const variants = (product?.variants ?? []).filter(v => v.is_active);
         
         return Array.from(
             new Set(
@@ -121,19 +114,12 @@ export default function ProductDetailPage() {
                     .map(v => (v.attributes as any)?.size)
                     .filter(Boolean)
             )
-        );
-    }, [product?.variants, selectedVariant]);
+        ).sort(); // Sort for consistent display
+    }, [product?.variants]);
 
-    // Get available colors based on selected size (if any)
+    // Get all available colors from all active variants (show all options)
     const availableColors = useMemo(() => {
-        const currentSize = (selectedVariant?.attributes as any)?.size;
-        const variants = (product?.variants ?? []).filter(v => {
-            if (!v.is_active) return false;
-            if (currentSize) {
-                return (v.attributes as any)?.size === currentSize;
-            }
-            return true;
-        });
+        const variants = (product?.variants ?? []).filter(v => v.is_active);
         
         return Array.from(
             new Set(
@@ -141,8 +127,8 @@ export default function ProductDetailPage() {
                     .map(v => (v.attributes as any)?.color)
                     .filter(Boolean)
             )
-        );
-    }, [product?.variants, selectedVariant]);
+        ).sort(); // Sort for consistent display
+    }, [product?.variants]);
 
     const handleAddToCart = () => {
         if (!product || !selectedVariant || (selectedVariant?.stock ?? 0) <= 0) return;
@@ -349,9 +335,9 @@ export default function ProductDetailPage() {
                                 </label>
                                 <div className="flex gap-2 md:gap-3 flex-wrap">
                                     {availableColors.map(color => {
-                                        // Find variant with this color and current size (if size is selected)
+                                        // Find variant with this color
                                         const currentSize = (selectedVariant?.attributes as any)?.size;
-                                        // First try to find variant with matching color and size
+                                        // First try to find variant with matching color and current size (if size is selected)
                                         let variant = product?.variants?.find(
                                             v => {
                                                 const variantColor = (v.attributes as any)?.color;
@@ -362,7 +348,7 @@ export default function ProductDetailPage() {
                                             }
                                         );
                                         // If no variant found with current size, find any variant with this color
-                                        if (!variant && currentSize) {
+                                        if (!variant) {
                                             variant = product?.variants?.find(
                                                 v => {
                                                     const variantColor = (v.attributes as any)?.color;
@@ -377,15 +363,15 @@ export default function ProductDetailPage() {
                                             <button
                                                 key={color}
                                                 onClick={() => {
-                                                    if (variant && !isOutOfStock) {
+                                                    if (variant) {
                                                         setSelectedVariant(variant);
                                                     }
                                                 }}
-                                                disabled={isOutOfStock}
+                                                disabled={!variant || isOutOfStock}
                                                 className={`px-4 py-2 md:px-5 md:py-2.5 border rounded-md text-sm md:text-base font-medium touch-target transition-all ${
                                                     isSelected
                                                         ? 'border-[#3c83f6] bg-[#3c83f6]/20 text-white'
-                                                        : isOutOfStock
+                                                        : !variant || isOutOfStock
                                                         ? 'border-gray-700 text-gray-600 cursor-not-allowed opacity-50'
                                                         : 'border-gray-700 text-gray-300 hover:border-gray-600 hover:text-white bg-gray-900/50'
                                                 }`}
@@ -407,9 +393,9 @@ export default function ProductDetailPage() {
                                 </label>
                                 <div className="flex gap-2 md:gap-3 flex-wrap">
                                     {availableSizes.map(size => {
-                                        // Find variant with this size and current color (if color selected)
+                                        // Find variant with this size
                                         const currentColor = (selectedVariant?.attributes as any)?.color;
-                                        // First try to find variant with matching size and color
+                                        // First try to find variant with matching size and current color (if color is selected)
                                         let variant = product?.variants?.find(
                                             v => {
                                                 const variantColor = (v.attributes as any)?.color;
@@ -420,7 +406,7 @@ export default function ProductDetailPage() {
                                             }
                                         );
                                         // If no variant found with current color, find any variant with this size
-                                        if (!variant && currentColor) {
+                                        if (!variant) {
                                             variant = product?.variants?.find(
                                                 v => {
                                                     const variantSize = (v.attributes as any)?.size;
@@ -435,15 +421,15 @@ export default function ProductDetailPage() {
                                             <button
                                                 key={size}
                                                 onClick={() => {
-                                                    if (!isOutOfStock && variant) {
+                                                    if (variant) {
                                                         setSelectedVariant(variant);
                                                     }
                                                 }}
-                                                disabled={isOutOfStock}
+                                                disabled={!variant || isOutOfStock}
                                                 className={`px-4 py-2 md:px-5 md:py-2.5 border rounded-md text-sm md:text-base font-medium touch-target transition-all min-w-[50px] ${
                                                     isSelected
                                                         ? 'border-[#3c83f6] bg-[#3c83f6]/20 text-white'
-                                                        : isOutOfStock
+                                                        : !variant || isOutOfStock
                                                         ? 'border-gray-700 text-gray-600 cursor-not-allowed opacity-50'
                                                         : 'border-gray-700 text-gray-300 hover:border-gray-600 hover:text-white bg-gray-900/50'
                                                 }`}

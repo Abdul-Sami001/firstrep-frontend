@@ -3,41 +3,28 @@
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import ReviewList from '@/components/ReviewList';
-import ReviewForm from '@/components/ReviewForm';
-import { useProductRatingStats, useProductReviews, useCreateReview, useUpdateReview, useDeleteReview } from '@/hooks/useReviews';
+import { useProductRatingStats, useProductReviews } from '@/hooks/useReviews';
 import { useProduct } from '@/hooks/useProducts';
-import { useAuth } from '@/contexts/AuthContext';
-import { ReviewFilters, Review } from '@/lib/api/reviews';
-import { cn } from '@/lib/utils';
+import { ReviewFilters } from '@/lib/api/reviews';
 
 export default function ProductReviewsPage() {
     const { id } = useParams() as { id: string };
-    const { user, isAuthenticated } = useAuth();
     
     // State
     const [filters, setFilters] = useState<ReviewFilters>({});
     const [currentPage, setCurrentPage] = useState(1);
-    const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
-    const [editingReview, setEditingReview] = useState<Review | null>(null);
 
     // Data fetching
     const { data: product, isLoading: productLoading } = useProduct(id);
     const { data: ratingStats, isLoading: statsLoading } = useProductRatingStats(id);
-    const { data: reviews, isLoading: reviewsLoading } = useProductReviews(id, {
+    const { data: reviews, isLoading: reviewsLoading, error: reviewsError } = useProductReviews(id, {
         ...filters,
         page: currentPage,
         page_size: 20
     });
-
-    // Mutations
-    const createReviewMutation = useCreateReview();
-    const updateReviewMutation = useUpdateReview();
-    const deleteReviewMutation = useDeleteReview();
 
     const handleFiltersChange = (newFilters: ReviewFilters) => {
         setFilters(newFilters);
@@ -46,44 +33,6 @@ export default function ProductReviewsPage() {
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
-    };
-
-    const handleCreateReview = async (data: any) => {
-        try {
-            await createReviewMutation.mutateAsync({ ...data, product: id });
-            setIsReviewFormOpen(false);
-        } catch (error) {
-            console.error('Failed to create review:', error);
-        }
-    };
-
-    const handleUpdateReview = async (data: any) => {
-        if (!editingReview) return;
-        
-        try {
-            await updateReviewMutation.mutateAsync({ 
-                id: editingReview.id, 
-                data 
-            });
-            setEditingReview(null);
-        } catch (error) {
-            console.error('Failed to update review:', error);
-        }
-    };
-
-    const handleDeleteReview = async (reviewId: string) => {
-        if (!confirm('Are you sure you want to delete this review?')) return;
-        
-        try {
-            await deleteReviewMutation.mutateAsync(reviewId);
-        } catch (error) {
-            console.error('Failed to delete review:', error);
-        }
-    };
-
-    const handleEditReview = (review: Review) => {
-        setEditingReview(review);
-        setIsReviewFormOpen(true);
     };
 
     const handleFlagReview = (reviewId: string) => {
@@ -152,36 +101,6 @@ export default function ProductReviewsPage() {
                                         Back to Product
                                     </Button>
                                 </Link>
-
-                                {isAuthenticated && (
-                                    <Dialog open={isReviewFormOpen} onOpenChange={setIsReviewFormOpen}>
-                                        <DialogTrigger asChild>
-                                            <Button className="gap-2 bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white">
-                                                <Plus className="h-4 w-4" />
-                                                Write Review
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-800">
-                                            <DialogHeader>
-                                                <DialogTitle className="text-white">
-                                                    {editingReview ? 'Edit Review' : 'Write a Review'}
-                                                </DialogTitle>
-                                            </DialogHeader>
-                                            <ReviewForm
-                                                productId={id}
-                                                productName={product.title}
-                                                initialData={editingReview || undefined}
-                                                onSubmit={editingReview ? handleUpdateReview : handleCreateReview}
-                                                onCancel={() => {
-                                                    setIsReviewFormOpen(false);
-                                                    setEditingReview(null);
-                                                }}
-                                                isLoading={createReviewMutation.isPending || updateReviewMutation.isPending}
-                                                error={createReviewMutation.error?.message || updateReviewMutation.error?.message}
-                                            />
-                                        </DialogContent>
-                                    </Dialog>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -190,19 +109,14 @@ export default function ProductReviewsPage() {
 
             {/* Main Content */}
             <div className="mobile-container tablet-container desktop-container py-8 md:py-12">
-                {/* Guest User Alert */}
-                {!isAuthenticated && (
-                    <Alert className="mb-6 bg-blue-900/20 border-blue-800">
-                        <AlertDescription className="text-blue-300">
-                            You need to be signed in to write reviews. 
-                            <Link href="/CustomerLogin" className="text-[#00bfff] hover:underline ml-1">
-                                Sign in
-                            </Link> to share your experience.
-                        </AlertDescription>
-                    </Alert>
-                )}
-
                 {/* Reviews List */}
+                {reviewsError && (
+                    <div className="mb-6 p-4 bg-red-900/20 border border-red-800 rounded-lg">
+                        <p className="text-red-400 text-sm">
+                            Error loading reviews: {reviewsError instanceof Error ? reviewsError.message : 'Unknown error'}
+                        </p>
+                    </div>
+                )}
                 <ReviewList
                     reviews={reviews}
                     ratingStats={ratingStats}
@@ -210,10 +124,9 @@ export default function ProductReviewsPage() {
                     filters={filters}
                     onFiltersChange={handleFiltersChange}
                     onPageChange={handlePageChange}
-                    onEditReview={handleEditReview}
-                    onDeleteReview={handleDeleteReview}
                     onFlagReview={handleFlagReview}
                     isLoading={isLoading}
+                    showActions={false}
                 />
             </div>
         </div>

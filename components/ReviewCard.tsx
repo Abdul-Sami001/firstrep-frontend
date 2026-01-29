@@ -22,6 +22,7 @@ interface ReviewCardProps {
     onDelete?: (reviewId: string) => void;
     onFlag?: (reviewId: string) => void;
     showActions?: boolean;
+    productId?: string;
     className?: string;
     'data-testid'?: string;
 }
@@ -32,14 +33,27 @@ export default function ReviewCard({
     onDelete,
     onFlag,
     showActions = true,
+    productId,
     className,
     'data-testid': testId,
 }: ReviewCardProps) {
     const { user } = useAuth();
-    const toggleHelpfulMutation = useToggleHelpful(review.id);
+    const toggleHelpfulMutation = useToggleHelpful(review.id, productId);
     
-    const isOwnReview = user?.id === review.user;
-    const hasVotedHelpful = review.helpful_votes?.some(vote => vote.user === user?.id) || false;
+    // Compare user IDs as strings to handle type mismatches
+    // Also handle cases where user might not be loaded yet
+    const currentUserId = user?.id ? String(user.id).trim() : null;
+    const reviewUserId = review.user ? String(review.user).trim() : null;
+    
+    // If onEdit and onDelete are provided AND showActions is true, treat as own review
+    // This handles cases where user ID comparison might fail due to timing or format issues
+    // Also check if user IDs match as fallback
+    const isOwnReview = (showActions && onEdit && onDelete) || !!(currentUserId && reviewUserId && currentUserId === reviewUserId);
+    
+    const hasVotedHelpful = review.helpful_votes?.some(vote => {
+        const voteUserId = vote.user ? String(vote.user).trim() : null;
+        return currentUserId && voteUserId && currentUserId === voteUserId;
+    }) || false;
 
     const handleToggleHelpful = () => {
         toggleHelpfulMutation.mutate();
@@ -98,36 +112,45 @@ export default function ReviewCard({
 
                 {/* Actions Menu */}
                 {showActions && (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-800">
-                                <MoreVertical className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-gray-900 border-gray-800">
-                            {isOwnReview && (
-                                <>
-                                    <DropdownMenuItem onClick={() => onEdit?.(review)} className="text-white hover:bg-gray-800">
-                                        <Edit className="h-4 w-4 mr-2" />
-                                        Edit Review
+                    <div className="flex items-center gap-2">
+                        {/* If onEdit and onDelete are provided, show edit/delete buttons (user's own review) */}
+                        {onEdit && onDelete ? (
+                            <>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onEdit(review)}
+                                    className="h-8 px-3 text-gray-400 hover:text-white hover:bg-gray-800"
+                                >
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onDelete(review.id)}
+                                    className="h-8 px-3 text-red-400 hover:text-red-300 hover:bg-gray-800"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                </Button>
+                            </>
+                        ) : (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-800">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="bg-gray-900 border-gray-800">
+                                    <DropdownMenuItem onClick={() => onFlag?.(review.id)} className="text-white hover:bg-gray-800">
+                                        <Flag className="h-4 w-4 mr-2" />
+                                        Report Review
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                        onClick={() => onDelete?.(review.id)}
-                                        className="text-red-400 hover:bg-gray-800"
-                                    >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete Review
-                                    </DropdownMenuItem>
-                                </>
-                            )}
-                            {!isOwnReview && (
-                                <DropdownMenuItem onClick={() => onFlag?.(review.id)} className="text-white hover:bg-gray-800">
-                                    <Flag className="h-4 w-4 mr-2" />
-                                    Report Review
-                                </DropdownMenuItem>
-                            )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+                    </div>
                 )}
             </div>
 
@@ -167,28 +190,39 @@ export default function ReviewCard({
                 </div>
             )}
 
-            {/* Helpful Votes */}
-            <div className="flex items-center justify-between pt-2 border-t border-gray-800">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleToggleHelpful}
-                    disabled={toggleHelpfulMutation.isPending}
-                    className={cn(
-                        'gap-2 text-xs text-gray-400 hover:text-white hover:bg-gray-800',
-                        hasVotedHelpful && 'text-[#00bfff]'
-                    )}
-                >
-                    <ThumbsUp className={cn('h-3 w-3', hasVotedHelpful && 'fill-current')} />
-                    Helpful ({review.helpful_count})
-                </Button>
+            {/* Helpful Votes - Hide for own reviews (when onEdit/onDelete are provided) */}
+            {!(onEdit && onDelete) && (
+                <div className="flex items-center justify-between pt-2 border-t border-gray-800">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleToggleHelpful}
+                        disabled={toggleHelpfulMutation.isPending}
+                        className={cn(
+                            'gap-2 text-xs text-gray-400 hover:text-white hover:bg-gray-800',
+                            hasVotedHelpful && 'text-[#00bfff]'
+                        )}
+                    >
+                        <ThumbsUp className={cn('h-3 w-3', hasVotedHelpful && 'fill-current')} />
+                        Helpful ({review.helpful_count})
+                    </Button>
 
-                {review.is_flagged && (
+                    {review.is_flagged && (
+                        <Badge variant="destructive" className="text-xs bg-red-900/30 text-red-400 border-red-800">
+                            Flagged
+                        </Badge>
+                    )}
+                </div>
+            )}
+            
+            {/* Show flagged badge even for own reviews */}
+            {(onEdit && onDelete) && review.is_flagged && (
+                <div className="flex items-center justify-between pt-2 border-t border-gray-800">
                     <Badge variant="destructive" className="text-xs bg-red-900/30 text-red-400 border-red-800">
                         Flagged
                     </Badge>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }

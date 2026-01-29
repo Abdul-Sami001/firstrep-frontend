@@ -33,10 +33,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const { data: user, isLoading, error } = useCurrentUser(hasToken);
     const logoutMutation = useLogout();
 
+    // Check for token on mount
     useEffect(() => {
         const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
         setHasToken(!!token);
         setIsAuthenticated(!!token);
+    }, []);
+
+    // Listen for storage changes (e.g., when login happens in another component)
+    useEffect(() => {
+        const handleStorageChange = () => {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const newHasToken = !!token;
+            setHasToken(newHasToken);
+            setIsAuthenticated(newHasToken);
+        };
+
+        // Listen for storage events (from other tabs/windows)
+        window.addEventListener('storage', handleStorageChange);
+        
+        // Also listen for custom events (from same tab)
+        window.addEventListener('auth-token-changed', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('auth-token-changed', handleStorageChange);
+        };
     }, []);
 
     useEffect(() => {
@@ -50,7 +72,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 localStorage.removeItem('access_token');
             }
         }
-    }, [user, error, isLoading]);
+    }, [user, error, isLoading, hasToken]);
 
     const logout = () => {
         logoutMutation.mutate();

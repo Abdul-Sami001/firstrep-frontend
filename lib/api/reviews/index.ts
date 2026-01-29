@@ -175,8 +175,9 @@ export const reviewsApi = {
         }),
 
     // Get product reviews (public - works for anonymous users)
+    // Note: Backend may return array or paginated format
     getProductReviews: (productId: string, params?: Omit<ReviewFilters, 'product'> & { page?: number; page_size?: number }) =>
-        api.get<PaginatedReviews>(`/reviews/products/${productId}/`, {
+        api.get<Review[] | PaginatedReviews>(`/reviews/products/${productId}/`, {
             params: {
                 ...params,
                 page_size: params?.page_size || 20,

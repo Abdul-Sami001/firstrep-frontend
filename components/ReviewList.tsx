@@ -21,6 +21,7 @@ interface ReviewListProps {
     onDeleteReview?: (reviewId: string) => void;
     onFlagReview?: (reviewId: string) => void;
     isLoading?: boolean;
+    showActions?: boolean;
     className?: string;
     'data-testid'?: string;
 }
@@ -54,6 +55,7 @@ export default function ReviewList({
     onDeleteReview,
     onFlagReview,
     isLoading = false,
+    showActions = true,
     className,
     'data-testid': testId,
 }: ReviewListProps) {
@@ -274,8 +276,20 @@ export default function ReviewList({
             {/* Reviews List */}
             {isLoading ? (
                 renderLoadingSkeletons()
-            ) : !reviews || !reviews.results || reviews.results.length === 0 ? (
+            ) : (!reviews || !reviews.results || reviews.results.length === 0) && (!ratingStats || ratingStats.review_count === 0) ? (
                 renderEmptyState()
+            ) : !reviews || !reviews.results || reviews.results.length === 0 ? (
+                // Show message if rating stats indicate reviews exist but query returned none
+                <div className="text-center py-12">
+                    <div className="text-6xl mb-4">📝</div>
+                    <h3 className="text-lg font-semibold mb-2 text-white">Reviews are being processed</h3>
+                    <p className="text-gray-400 mb-4">
+                        {ratingStats?.review_count ? 
+                            `There ${ratingStats.review_count === 1 ? 'is' : 'are'} ${ratingStats.review_count} review${ratingStats.review_count !== 1 ? 's' : ''} for this product, but ${ratingStats.review_count === 1 ? 'it is' : 'they are'} not yet visible.` :
+                            'Reviews may be pending approval or not yet available.'
+                        }
+                    </p>
+                </div>
             ) : (
                 <div className="space-y-4">
                     {reviews.results.map((review) => (
@@ -285,6 +299,8 @@ export default function ReviewList({
                             onEdit={onEditReview}
                             onDelete={onDeleteReview}
                             onFlag={onFlagReview}
+                            showActions={showActions && (onEditReview !== undefined || onDeleteReview !== undefined)}
+                            productId={productId}
                             data-testid={`review-card-${review.id}`}
                         />
                     ))}

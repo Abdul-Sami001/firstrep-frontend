@@ -1,8 +1,8 @@
 // app/(site)/profile/reviews/page.tsx - User's Reviews Page
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Star, Edit, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Star, Edit, Trash2, Loader2, Package, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -10,9 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import ReviewCard from '@/components/ReviewCard';
 import ReviewForm from '@/components/ReviewForm';
 import { useMyReviews, useUpdateReview, useDeleteReview } from '@/hooks/useReviews';
+import { useOrders } from '@/hooks/useOrders';
 import { useAuth } from '@/contexts/AuthContext';
 import { Review } from '@/lib/api/reviews';
+import { OrderItem, Order } from '@/lib/api/orders';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function ProfileReviewsPage() {
     const router = useRouter();
@@ -23,11 +26,65 @@ export default function ProfileReviewsPage() {
     const [isFormOpen, setIsFormOpen] = useState(false);
 
     // Data fetching
-    const { data: reviews, isLoading } = useMyReviews({ page_size: 20 });
+    const { data: reviews, isLoading: reviewsLoading } = useMyReviews({ page_size: 100 });
+    const { data: ordersData, isLoading: ordersLoading } = useOrders();
 
     // Mutations
     const updateReviewMutation = useUpdateReview();
     const deleteReviewMutation = useDeleteReview();
+
+    // Handle different response formats (array or paginated response)
+    const orders = Array.isArray(ordersData) 
+        ? ordersData 
+        : (ordersData && typeof ordersData === 'object' && 'results' in ordersData 
+            ? (ordersData as any).results 
+            : []);
+
+    // Get products that can be reviewed (purchased but not yet reviewed)
+    // Only from orders that are paid and delivered
+    const reviewableProducts = useMemo(() => {
+        if (!Array.isArray(orders) || orders.length === 0 || !reviews?.results) return [];
+
+        // Filter orders to only include paid and delivered orders
+        const eligibleOrders = orders.filter(order => 
+            order.payment_status === 'paid' && order.status === 'delivered'
+        );
+
+        if (eligibleOrders.length === 0) return [];
+
+        // Get all reviewed product IDs
+        const reviewedProductIds = new Set(reviews.results.map(review => review.product));
+
+        // Get all unique products from eligible orders
+        const purchasedProducts = new Map<string, {
+            productId: string;
+            productName: string;
+            productImage?: string | null;
+            orderId: string;
+        }>();
+
+        eligibleOrders.forEach((order: Order) => {
+            if (order.items && Array.isArray(order.items)) {
+                order.items.forEach((item: OrderItem) => {
+                    if (item.product && !reviewedProductIds.has(item.product)) {
+                        // Only add if not already in map (to avoid duplicates)
+                        if (!purchasedProducts.has(item.product)) {
+                            purchasedProducts.set(item.product, {
+                                productId: item.product,
+                                productName: item.product_name || 'Unknown Product',
+                                productImage: item.product_image,
+                                orderId: order.id,
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
+        return Array.from(purchasedProducts.values());
+    }, [orders, reviews?.results]);
+
+    const isLoading = reviewsLoading || ordersLoading;
 
     const handleEditReview = (review: Review) => {
         setEditingReview(review);
@@ -143,6 +200,69 @@ export default function ProfileReviewsPage() {
                     </Card>
                 )}
 
+                {/* Products You Can Review */}
+                {reviewableProducts.length > 0 && (
+                    <Card className="mb-6 bg-gray-900 border-gray-800">
+                        <CardHeader>
+                            <CardTitle className="text-lg text-white flex items-center gap-2">
+                                <ShoppingCart className="h-5 w-5" />
+                                Products You Can Review
+                            </CardTitle>
+                            <CardDescription className="text-gray-400">
+                                Share your experience with products you've purchased
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {reviewableProducts.slice(0, 6).map((product) => (
+                                    <Card key={product.productId} className="bg-gray-800 border-gray-700">
+                                        <CardContent className="p-4">
+                                            <div className="flex items-start gap-3">
+                                                {product.productImage && (
+                                                    <div className="relative w-16 h-16 flex-shrink-0 rounded-md overflow-hidden bg-gray-700">
+                                                        <Image
+                                                            src={product.productImage}
+                                                            alt={product.productName}
+                                                            fill
+                                                            className="object-cover"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-medium text-white text-sm mb-2 line-clamp-2">
+                                                        {product.productName}
+                                                    </h4>
+                                                    <Link href={`/product/${product.productId}/review`}>
+                                                        <Button 
+                                                            size="sm" 
+                                                            className="w-full bg-gradient-to-r from-[#00bfff] via-[#0ea5e9] to-[#3b82f6] hover:from-[#0099cc] hover:via-[#00bfff] hover:to-[#0ea5e9] text-white"
+                                                        >
+                                                            <Star className="h-3 w-3 mr-1" />
+                                                            Write Review
+                                                        </Button>
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                            {reviewableProducts.length > 6 && (
+                                <div className="mt-4 text-center">
+                                    <p className="text-sm text-gray-400 mb-2">
+                                        And {reviewableProducts.length - 6} more product{reviewableProducts.length - 6 !== 1 ? 's' : ''} you can review
+                                    </p>
+                                    <Link href="/orders">
+                                        <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
+                                            View All Orders
+                                        </Button>
+                                    </Link>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Reviews List */}
                 {!reviews || !reviews.results || reviews.results.length === 0 ? (
                     /* Empty State */
@@ -153,14 +273,18 @@ export default function ProfileReviewsPage() {
                                 No reviews yet
                             </h2>
                             <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                                You haven't written any reviews yet. Share your experience with products 
-                                you've purchased to help other customers make informed decisions.
+                                {reviewableProducts.length > 0 
+                                    ? 'Start reviewing products you\'ve purchased to help other customers make informed decisions.'
+                                    : 'You haven\'t written any reviews yet. Share your experience with products you\'ve purchased to help other customers make informed decisions.'
+                                }
                             </p>
-                            <Link href="/shop-clean">
-                                <Button className="bg-white text-black hover:bg-gray-200">
-                                    Browse Products
-                                </Button>
-                            </Link>
+                            {reviewableProducts.length === 0 && (
+                                <Link href="/shop-clean">
+                                    <Button className="bg-white text-black hover:bg-gray-200">
+                                        Browse Products
+                                    </Button>
+                                </Link>
+                            )}
                         </CardContent>
                     </Card>
                 ) : (
@@ -172,6 +296,8 @@ export default function ProfileReviewsPage() {
                                 review={review}
                                 onEdit={handleEditReview}
                                 onDelete={handleDeleteReview}
+                                showActions={true}
+                                productId={review.product}
                                 data-testid={`my-review-${review.id}`}
                             />
                         ))}

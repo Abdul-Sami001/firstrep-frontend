@@ -29,8 +29,8 @@ export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const { totalItems: wishlistItems } = useWishlist();
 
-  // Get user profile for additional info
-  const { data: profile } = useUserProfile();
+  // Get user profile for additional info (only when authenticated)
+  const { data: profile } = useUserProfile(isAuthenticated);
 
   const navigationItems = [
     { name: 'ACTIVE RANGE', href: '/shop-clean', id: null },

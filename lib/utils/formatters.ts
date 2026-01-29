@@ -112,6 +112,78 @@ export const formatters = {
     },
 };
 
+// UK Postal Code utilities
+export const postalCodeUtils = {
+    /**
+     * Normalizes a UK postal code by removing spaces and converting to uppercase
+     * @param postcode - Postal code string (with or without spaces)
+     * @returns Normalized postal code without spaces
+     */
+    normalize: (postcode: string): string => {
+        return postcode.replace(/\s+/g, '').toUpperCase().trim();
+    },
+
+    /**
+     * Formats a UK postal code with a space in the middle
+     * @param postcode - Postal code string (with or without spaces)
+     * @returns Formatted postal code with space (e.g., "SW1A 1AA")
+     */
+    format: (postcode: string): string => {
+        const normalized = postalCodeUtils.normalize(postcode);
+        if (normalized.length < 5) return postcode; // Too short to format
+        
+        // UK postcodes typically have the format: AA9A 9AA or A9A 9AA or A9 9AA or AA9 9AA
+        // Insert space before the last 3 characters
+        if (normalized.length >= 6) {
+            const spacePosition = normalized.length - 3;
+            return normalized.slice(0, spacePosition) + ' ' + normalized.slice(spacePosition);
+        }
+        return normalized;
+    },
+
+    /**
+     * Auto-formats postal code as user types
+     * @param value - Current input value
+     * @returns Formatted value with space inserted at appropriate position
+     */
+    autoFormat: (value: string): string => {
+        // Remove all spaces first
+        const cleaned = value.replace(/\s+/g, '').toUpperCase();
+        
+        // Don't format if too short
+        if (cleaned.length <= 3) {
+            return cleaned;
+        }
+        
+        // Insert space before last 3 characters when user has typed enough
+        if (cleaned.length > 3) {
+            const spacePosition = cleaned.length - 3;
+            return cleaned.slice(0, spacePosition) + ' ' + cleaned.slice(spacePosition);
+        }
+        
+        return cleaned;
+    },
+
+    /**
+     * Validates UK postal code format (more lenient - handles spaces)
+     * @param postcode - Postal code to validate
+     * @returns true if valid UK postal code format
+     */
+    isValid: (postcode: string): boolean => {
+        if (!postcode || !postcode.trim()) return false;
+        
+        // Normalize first (remove spaces)
+        const normalized = postalCodeUtils.normalize(postcode);
+        
+        // UK postal code patterns:
+        // AA9A 9AA, A9A 9AA, A9 9AA, AA9 9AA, A99 9AA, AA99 9AA
+        // More lenient pattern that covers most UK postcodes
+        const ukPostcodePattern = /^[A-Z]{1,2}[0-9]{1,2}[A-Z]?[0-9][A-Z]{2}$/i;
+        
+        return ukPostcodePattern.test(normalized);
+    },
+};
+
 // Named exports for convenience
 export const formatCurrency = formatters.formatCurrency;
 export const formatPrice = formatters.formatPrice;

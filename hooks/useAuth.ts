@@ -23,11 +23,17 @@ export const useLogin = () => {
             // Store access token
             if (typeof window !== 'undefined') {
                 localStorage.setItem('access_token', response.access);
+                // Dispatch custom event to notify AuthContext
+                window.dispatchEvent(new Event('auth-token-changed'));
             }
 
             // Invalidate user queries
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USER.CURRENT });
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USER.PROFILE });
+            
+            // Invalidate cart and wishlist queries to refresh navbar data
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CART.ALL });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.WISHLIST.ALL });
 
             toast({
                 title: "Welcome back!",
@@ -75,9 +81,14 @@ export const useLogout = () => {
             // Clear access token
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('access_token');
+                // Dispatch custom event to notify AuthContext
+                window.dispatchEvent(new Event('auth-token-changed'));
             }
-            // Clear all queries
+            // Clear all queries and refetch cart/wishlist to show empty state
             queryClient.clear();
+            // Refetch cart and wishlist to ensure they show empty state
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CART.ALL });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.WISHLIST.ALL });
 
             toast({
                 title: "Logged out",
@@ -88,8 +99,13 @@ export const useLogout = () => {
             // Even if logout fails on backend, clear local state
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('access_token');
+                // Dispatch custom event to notify AuthContext
+                window.dispatchEvent(new Event('auth-token-changed'));
             }
             queryClient.clear();
+            // Refetch cart and wishlist to ensure they show empty state
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CART.ALL });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.WISHLIST.ALL });
         },
     });
 };
@@ -107,10 +123,11 @@ export const useCurrentUser = (enabled: boolean = true) => {
     });
 };
 
-export const useUserProfile = () => {
+export const useUserProfile = (enabled: boolean = true) => {
     return useQuery({
         queryKey: QUERY_KEYS.USER.PROFILE,
         queryFn: usersApi.getProfile,
+        enabled,
         ...QUERY_CONFIG,
         retry: (failureCount, error: any) => {
             if (error?.response?.status === 401) return false;

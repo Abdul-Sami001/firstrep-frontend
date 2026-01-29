@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reviewsApi, Review, ReviewFilters, CreateReviewRequest, UpdateReviewRequest, RatingStats, PaginatedReviews } from '@/lib/api/reviews';
 import { QUERY_KEYS } from '@/lib/utils/constants';
 import { logError } from '@/lib/utils/errors';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Performance-optimized query options
 const DEFAULT_STALE_TIME = 3 * 60 * 1000; // 3 minutes
@@ -12,7 +13,20 @@ const STATS_STALE_TIME = 5 * 60 * 1000; // 5 minutes
 export const useProductReviews = (productId: string, filters?: ReviewFilters & { page?: number; page_size?: number }) => {
     return useQuery({
         queryKey: QUERY_KEYS.REVIEWS.PRODUCT(productId, filters),
-        queryFn: () => reviewsApi.getProductReviews(productId, filters),
+        queryFn: async () => {
+            const response = await reviewsApi.getProductReviews(productId, filters);
+            // Backend may return array directly or paginated format - normalize to paginated format
+            if (Array.isArray(response)) {
+                return {
+                    count: response.length,
+                    next: null,
+                    previous: null,
+                    results: response,
+                } as PaginatedReviews;
+            }
+            // If already paginated, return as is
+            return response;
+        },
         enabled: !!productId,
         staleTime: DEFAULT_STALE_TIME,
         gcTime: 10 * 60 * 1000, // 10 minutes
@@ -173,60 +187,118 @@ export const useDeleteReview = () => {
 };
 
 // Toggle helpful vote mutation (optimistic update)
-export const useToggleHelpful = (reviewId: string) => {
+export const useToggleHelpful = (reviewId: string, productId?: string) => {
     const queryClient = useQueryClient();
+    const { user } = useAuth();
 
     return useMutation({
         mutationFn: async () => {
-            // Check if already helpful
-            const review = queryClient.getQueryData<Review>(QUERY_KEYS.REVIEWS.DETAIL(reviewId));
-            const isHelpful = review?.helpful_votes?.some(vote => vote.user === 'current-user'); // This would need actual user ID
+            // Check if already helpful - look in product reviews list or detail
+            let review: Review | undefined;
             
-            if (isHelpful) {
+            // Try to get from product reviews list first
+            if (productId) {
+                const productReviews = queryClient.getQueryData<PaginatedReviews>(
+                    QUERY_KEYS.REVIEWS.PRODUCT(productId)
+                );
+                review = productReviews?.results?.find(r => r.id === reviewId);
+            }
+            
+            // Fallback to detail query
+            if (!review) {
+                review = queryClient.getQueryData<Review>(QUERY_KEYS.REVIEWS.DETAIL(reviewId));
+            }
+            
+            // Check if user has already voted
+            const hasVoted = review?.helpful_votes?.some(vote => vote.user === user?.id) || false;
+            
+            // Call appropriate endpoint based on current vote state
+            if (hasVoted) {
                 return reviewsApi.unmarkHelpful(reviewId);
             } else {
                 return reviewsApi.markHelpful(reviewId);
             }
         },
         onMutate: async () => {
-            // Cancel outgoing refetches
+            // Cancel outgoing refetches for both detail and product reviews
             await queryClient.cancelQueries({ queryKey: QUERY_KEYS.REVIEWS.DETAIL(reviewId) });
+            if (productId) {
+                await queryClient.cancelQueries({ queryKey: QUERY_KEYS.REVIEWS.PRODUCT(productId) });
+            }
 
-            // Snapshot previous value
+            // Snapshot previous values
             const previousReview = queryClient.getQueryData<Review>(QUERY_KEYS.REVIEWS.DETAIL(reviewId));
+            const previousProductReviews = productId 
+                ? queryClient.getQueryData<PaginatedReviews>(QUERY_KEYS.REVIEWS.PRODUCT(productId))
+                : null;
 
-            // Optimistically update
-            if (previousReview) {
-                const isCurrentlyHelpful = previousReview.helpful_votes?.some(vote => vote.user === 'current-user');
-                const newHelpfulCount = isCurrentlyHelpful 
-                    ? previousReview.helpful_count - 1 
-                    : previousReview.helpful_count + 1;
+            // Check if user has already voted to determine toggle direction
+            const hasVoted = previousReview?.helpful_votes?.some(vote => vote.user === user?.id) || false;
+            const countChange = hasVoted ? -1 : 1;
 
-                queryClient.setQueryData(QUERY_KEYS.REVIEWS.DETAIL(reviewId), {
-                    ...previousReview,
-                    helpful_count: newHelpfulCount,
-                    helpful_votes: isCurrentlyHelpful 
-                        ? previousReview.helpful_votes.filter(vote => vote.user !== 'current-user')
-                        : [...(previousReview.helpful_votes || []), { 
-                            id: 'temp', 
-                            review: reviewId, 
-                            user: 'current-user', 
-                            created_at: new Date().toISOString() 
-                        }]
+            // Optimistically update product reviews list if available
+            if (productId && previousProductReviews) {
+                const updatedResults = previousProductReviews.results.map(r => {
+                    if (r.id === reviewId) {
+                        const newHelpfulCount = Math.max(0, r.helpful_count + countChange);
+                        const updatedVotes = hasVoted
+                            ? (r.helpful_votes || []).filter(vote => vote.user !== user?.id)
+                            : [...(r.helpful_votes || []), {
+                                id: 'temp',
+                                review: reviewId,
+                                user: user?.id || '',
+                                created_at: new Date().toISOString()
+                            }];
+                        return {
+                            ...r,
+                            helpful_count: newHelpfulCount,
+                            helpful_votes: updatedVotes,
+                        };
+                    }
+                    return r;
+                });
+
+                queryClient.setQueryData(QUERY_KEYS.REVIEWS.PRODUCT(productId), {
+                    ...previousProductReviews,
+                    results: updatedResults,
                 });
             }
 
-            return { previousReview };
+            // Optimistically update detail query if available
+            if (previousReview) {
+                const newHelpfulCount = Math.max(0, previousReview.helpful_count + countChange);
+                const updatedVotes = hasVoted
+                    ? (previousReview.helpful_votes || []).filter(vote => vote.user !== user?.id)
+                    : [...(previousReview.helpful_votes || []), {
+                        id: 'temp',
+                        review: reviewId,
+                        user: user?.id || '',
+                        created_at: new Date().toISOString()
+                    }];
+                queryClient.setQueryData(QUERY_KEYS.REVIEWS.DETAIL(reviewId), {
+                    ...previousReview,
+                    helpful_count: newHelpfulCount,
+                    helpful_votes: updatedVotes,
+                });
+            }
+
+            return { previousReview, previousProductReviews };
         },
         onError: (err, variables, context) => {
             // Rollback on error
             if (context?.previousReview) {
                 queryClient.setQueryData(QUERY_KEYS.REVIEWS.DETAIL(reviewId), context.previousReview);
             }
+            if (context?.previousProductReviews && productId) {
+                queryClient.setQueryData(QUERY_KEYS.REVIEWS.PRODUCT(productId), context.previousProductReviews);
+            }
         },
         onSettled: () => {
             // Refetch to ensure consistency
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.REVIEWS.DETAIL(reviewId) });
+            if (productId) {
+                queryClient.invalidateQueries({ queryKey: QUERY_KEYS.REVIEWS.PRODUCT(productId) });
+            }
         },
     });
 };

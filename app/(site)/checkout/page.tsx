@@ -15,6 +15,7 @@ import { useUserProfile, useUpdateProfile } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
 import { getStorefrontId } from "@/lib/utils/storefront";
+import { postalCodeUtils } from "@/lib/utils/formatters";
 import { 
     useValidateGiftCard, 
     useApplyGiftCardToCart,
@@ -274,12 +275,25 @@ function CheckoutContent() {
     // Pre-fill address form from user profile
     useEffect(() => {
         if (profile) {
+            // Try to extract postal code from profile address if available
+            let postalCode = "";
+            if (profile.address) {
+                // UK postcodes are typically at the end of address strings
+                // Try to extract it (this is a simple heuristic)
+                const addressParts = profile.address.split(',').map(p => p.trim());
+                const possiblePostcode = addressParts[addressParts.length - 1];
+                // If it looks like a postcode, use it
+                if (postalCodeUtils.isValid(possiblePostcode)) {
+                    postalCode = postalCodeUtils.format(possiblePostcode);
+                }
+            }
+            
             setAddressForm({
                 email: profile.email || "",
                 address: profile.address || "",
                 city: "",
                 state: "",
-                zip_code: "",
+                zip_code: postalCode,
                 country: "UK"
             });
         }
@@ -301,9 +315,9 @@ function CheckoutContent() {
         if (!addressForm.zip_code.trim()) errors.zip_code = "Postal code is required";
         if (!addressForm.country.trim()) errors.country = "Country is required";
 
-        // Basic postal code validation for UK
-        if (addressForm.zip_code && !/^[A-Z]{1,2}[0-9]{1,2}[A-Z]?[0-9][A-Z]{2}$/i.test(addressForm.zip_code)) {
-            errors.zip_code = "Please enter a valid UK postal code";
+        // Improved postal code validation for UK (handles spaces)
+        if (addressForm.zip_code.trim() && !postalCodeUtils.isValid(addressForm.zip_code)) {
+            errors.zip_code = "Please enter a valid UK postal code (e.g., SW1A 1AA or M1 1AA)";
         }
 
         setFormErrors(errors);
@@ -311,7 +325,30 @@ function CheckoutContent() {
     };
 
     const handleAddressChange = (field: keyof AddressForm, value: string) => {
-        setAddressForm(prev => ({ ...prev, [field]: value }));
+        let processedValue = value;
+        
+        // Auto-format postal code as user types
+        if (field === 'zip_code') {
+            // Remove all spaces first, then convert to uppercase
+            const cleaned = value.replace(/\s+/g, '').toUpperCase();
+            
+            // Only auto-format when user is adding characters (not deleting)
+            const previousLength = (addressForm.zip_code || '').replace(/\s+/g, '').length;
+            const currentLength = cleaned.length;
+            
+            if (currentLength > previousLength && currentLength > 3) {
+                // User is typing - auto-format with space
+                processedValue = postalCodeUtils.autoFormat(cleaned);
+            } else if (currentLength <= 3) {
+                // Too short to format
+                processedValue = cleaned;
+            } else {
+                // User might be editing - format it properly
+                processedValue = postalCodeUtils.autoFormat(cleaned);
+            }
+        }
+        
+        setAddressForm(prev => ({ ...prev, [field]: processedValue }));
         // Clear error when user starts typing
         if (formErrors[field]) {
             setFormErrors(prev => ({ ...prev, [field]: undefined }));
@@ -355,11 +392,13 @@ function CheckoutContent() {
 
             // Create order and Stripe checkout session
             // Email is required for guest checkout, uses account email for authenticated users
+            // Normalize postal code (remove spaces) before sending to backend
+            const normalizedPostcode = postalCodeUtils.normalize(addressForm.zip_code);
             const checkoutData: any = {
                 shipping_address: addressForm.address,
                 city: addressForm.city,
                 state: addressForm.state,
-                zip_code: addressForm.zip_code,
+                zip_code: normalizedPostcode,
                 country: addressForm.country,
                 payment_method: 'stripe',
             };
@@ -557,11 +596,15 @@ function CheckoutContent() {
                                                         onChange={(e) => handleAddressChange('zip_code', e.target.value)}
                                                         required
                                                         data-testid="input-postal-code"
-                                                        className={`bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] ${formErrors.zip_code ? "border-red-500" : ""}`}
+                                                        className={`bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#00bfff] uppercase ${formErrors.zip_code ? "border-red-500" : ""}`}
                                                         placeholder="SW1A 1AA"
+                                                        maxLength={8}
                                                     />
                                                     {formErrors.zip_code && (
                                                         <p className="text-xs text-red-400 mt-1">{formErrors.zip_code}</p>
+                                                    )}
+                                                    {!formErrors.zip_code && (
+                                                        <p className="text-xs text-gray-400 mt-1">Enter your UK postcode (space will be added automatically)</p>
                                                     )}
                                                 </div>
                                                 <div>
